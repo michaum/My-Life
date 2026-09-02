@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/popover";
 
 type Status = "To do" | "In progress" | "In review" | "Done";
+type CalendarMode = "day" | "workweek" | "week" | "month";
 type ProjectIcon =
   | "folder"
   | "home"
@@ -75,6 +76,7 @@ type Project = {
   color: string;
   icon: ProjectIcon;
 };
+type Person = { id: string; name: string; phone: string; smsEnabled: boolean };
 type Task = {
   id: string;
   projectId: string;
@@ -436,6 +438,7 @@ export default function Taskflow() {
     [comments, setComments] = useState<Comment[]>([]),
     [sections, setSections] = useState<Section[]>([]),
     [customFields, setCustomFields] = useState<CustomField[]>([]),
+    [people, setPeople] = useState<Person[]>([]),
     [workflowOptions, setWorkflowOptions] =
       useState<ChoiceOption[]>(defaultStatusOptions),
     [filterLabels, setFilterLabels] =
@@ -463,9 +466,12 @@ export default function Taskflow() {
     [confirmDelete, setConfirmDelete] = useState(false),
     [comment, setComment] = useState(""),
     [subtask, setSubtask] = useState("");
+  const [peopleOpen, setPeopleOpen] = useState(false),
+    [personDraft, setPersonDraft] = useState<Person | null>(null);
   const [month, setMonth] = useState(
-    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    () => new Date(),
   );
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
   const [dragging, setDragging] = useState<string | null>(null),
     [dropTarget, setDropTarget] = useState<Status | null>(null);
   async function refresh() {
@@ -477,6 +483,7 @@ export default function Taskflow() {
       comments: Comment[];
       sections: Section[];
       customFields: CustomField[];
+      people: Person[];
       statusOptions: ChoiceOption[];
       filterLabels: FilterLabels;
     };
@@ -486,6 +493,7 @@ export default function Taskflow() {
     setComments(d.comments);
     setSections(d.sections);
     setCustomFields(d.customFields);
+    setPeople(d.people);
     setWorkflowOptions(d.statusOptions);
     setFilterLabels(d.filterLabels);
     return d;
@@ -654,6 +662,16 @@ export default function Taskflow() {
     });
     setConfirmDelete(false);
   }
+  function newPerson() {
+    setPersonDraft({ id: crypto.randomUUID(), name: "", phone: "", smsEnabled: true });
+  }
+  async function savePerson(e: FormEvent) {
+    e.preventDefault();
+    if (personDraft && await mutate({ action: "savePerson", person: personDraft }, "Person saved")) setPersonDraft(null);
+  }
+  async function testSms(person: Person) {
+    await mutate({ action: "testSms", id: person.id }, `Test SMS sent to ${person.name}`);
+  }
   function newSection() {
     if (!project) return;
     setSectionDraft({
@@ -788,7 +806,7 @@ export default function Taskflow() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "taskflow-backup.json";
+    a.download = "my-life-backup.json";
     a.click();
     URL.revokeObjectURL(url);
     setNotice("Workspace exported");
@@ -1112,9 +1130,37 @@ export default function Taskflow() {
       </div>
     </div>
   );
-  const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
-  const calendarStart = new Date(monthStart);
-  calendarStart.setDate(1 - monthStart.getDay());
+  const calendarStart = new Date(month);
+  let calendarDays = 42;
+  if (calendarMode === "month") {
+    calendarStart.setDate(1);
+    calendarStart.setDate(1 - calendarStart.getDay());
+  } else if (calendarMode === "week") {
+    calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay());
+    calendarDays = 7;
+  } else if (calendarMode === "workweek") {
+    calendarStart.setDate(calendarStart.getDate() - ((calendarStart.getDay() + 6) % 7));
+    calendarDays = 5;
+  } else {
+    calendarDays = 1;
+  }
+  const calendarDates = Array.from({ length: calendarDays }, (_, i) => {
+    const d = new Date(calendarStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+  const calendarTitle =
+    calendarMode === "month"
+      ? month.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+      : calendarMode === "day"
+        ? month.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+        : `${calendarDates[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${calendarDates.at(-1)!.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+  const moveCalendar = (direction: -1 | 1) => {
+    const next = new Date(month);
+    if (calendarMode === "month") next.setMonth(next.getMonth() + direction);
+    else next.setDate(next.getDate() + direction * (calendarMode === "day" ? 1 : 7));
+    setMonth(next);
+  };
   return (
     <div className="app-shell">
       {mobile && (
@@ -1125,11 +1171,11 @@ export default function Taskflow() {
         />
       )}
       <aside className={`sidebar ${mobile ? "open" : ""}`}>
-        <a className="brand" href="/" aria-label="Pinky Star home">
+        <a className="brand" href="/" aria-label="My Life home">
           <span className="brand-mark">
             <ShootingStarIcon size={23} />
           </span>
-          Pinky Star<span className="brand-dot">.</span>
+          My Life<span className="brand-dot">.</span>
         </a>
         <div className="workspace-label">
           <span className="workspace-icon">M</span>
@@ -1169,6 +1215,10 @@ export default function Taskflow() {
           >
             <LayoutGrid size={17} />
             All tasks
+          </button>
+          <button className="nav-item" onClick={() => setPeopleOpen(true)}>
+            <Users size={17} />
+            People
           </button>
         </nav>
         <div className="sidebar-section-title">
@@ -1263,6 +1313,7 @@ export default function Taskflow() {
           </div>
         </header>
         <section className="project-header">
+          <div className="project-header-art" aria-hidden="true" />
           <div className="project-heading">
             <div
               className="project-symbol"
@@ -1702,22 +1753,32 @@ export default function Taskflow() {
             {view === "Calendar" && (
               <div className="calendar-wrap">
                 <div className="calendar-heading">
-                  <h2>
-                    {month.toLocaleDateString("en-US", {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </h2>
+                  <h2>{calendarTitle}</h2>
                   <div>
+                    <div className="calendar-view-switcher" aria-label="Calendar view">
+                      {([
+                        ["day", "Day"],
+                        ["workweek", "Work week"],
+                        ["week", "Week"],
+                        ["month", "Month"],
+                      ] as const).map(([mode, label]) => (
+                        <Button
+                          key={mode}
+                          variant={calendarMode === mode ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCalendarMode(mode)}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() =>
                         setMonth(
                           new Date(
-                            new Date().getFullYear(),
-                            new Date().getMonth(),
-                            1,
+                          new Date(),
                           ),
                         )
                       }
@@ -1729,13 +1790,7 @@ export default function Taskflow() {
                       size="icon"
                       aria-label="Previous month"
                       onClick={() =>
-                        setMonth(
-                          new Date(
-                            month.getFullYear(),
-                            month.getMonth() - 1,
-                            1,
-                          ),
-                        )
+                        moveCalendar(-1)
                       }
                     >
                       <ChevronLeft />
@@ -1745,35 +1800,30 @@ export default function Taskflow() {
                       size="icon"
                       aria-label="Next month"
                       onClick={() =>
-                        setMonth(
-                          new Date(
-                            month.getFullYear(),
-                            month.getMonth() + 1,
-                            1,
-                          ),
-                        )
+                        moveCalendar(1)
                       }
                     >
                       <ChevronRight />
                     </Button>
                   </div>
                 </div>
-                <div className="calendar-grid">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                <div
+                  className={`calendar-grid calendar-grid--${calendarMode}`}
+                  style={{ gridTemplateColumns: `repeat(${calendarDays === 42 ? 7 : calendarDays}, minmax(0, 1fr))` }}
+                >
+                  {calendarDates.slice(0, calendarDays === 42 ? 7 : calendarDays).map(
                     (d) => (
-                      <div className="weekday" key={d}>
-                        {d}
+                      <div className="weekday" key={d.toISOString()}>
+                        {d.toLocaleDateString("en-US", { weekday: "short" })}
                       </div>
                     ),
                   )}
-                  {Array.from({ length: 42 }, (_, i) => {
-                    const d = new Date(calendarStart);
-                    d.setDate(d.getDate() + i);
+                  {calendarDates.map((d) => {
                     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
                     return (
                       <div
                         key={key}
-                        className={`calendar-day ${d.getMonth() !== month.getMonth() ? "other-month" : ""}`}
+                        className={`calendar-day ${calendarMode === "month" && d.getMonth() !== month.getMonth() ? "other-month" : ""}`}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                           e.preventDefault();
@@ -1990,6 +2040,28 @@ export default function Taskflow() {
           {notice}
         </div>
       )}
+      <Dialog open={peopleOpen} onOpenChange={setPeopleOpen}>
+        <DialogContent>
+          <DialogTitle>People</DialogTitle>
+          <DialogDescription>Add people you assign tasks to. SMS is sent only when an assignee changes and their notifications are enabled.</DialogDescription>
+          {personDraft ? (
+            <form onSubmit={savePerson} className="editor-form">
+              <label>Name<Input autoFocus required maxLength={100} value={personDraft.name} onChange={(e) => setPersonDraft({ ...personDraft, name: e.target.value })} /></label>
+              <label>Mobile phone number<Input required placeholder="+18195550123" value={personDraft.phone} onChange={(e) => setPersonDraft({ ...personDraft, phone: e.target.value })} /></label>
+              <label className="checkbox-row"><input type="checkbox" checked={personDraft.smsEnabled} onChange={(e) => setPersonDraft({ ...personDraft, smsEnabled: e.target.checked })} /> Send SMS notifications for new assignments</label>
+              <div className="editor-footer"><Button type="button" variant="ghost" onClick={() => setPersonDraft(null)}>Cancel</Button><Button type="submit" disabled={busy}>Save person</Button></div>
+            </form>
+          ) : (
+            <>
+              <Button onClick={newPerson}><Plus size={15} /> Add person</Button>
+              <div className="people-list">
+                {people.map((person) => <div className="person-row" key={person.id}><div><strong>{person.name}</strong><small>{person.phone} · SMS {person.smsEnabled ? "on" : "off"}</small></div><Button variant="ghost" size="sm" disabled={!person.smsEnabled || busy} onClick={() => void testSms(person)}>Test SMS</Button><Button variant="ghost" size="icon" aria-label={`Edit ${person.name}`} onClick={() => setPersonDraft({ ...person })}><Pencil size={14} /></Button><Button variant="ghost" size="icon" aria-label={`Delete ${person.name}`} onClick={() => void mutate({ action: "deletePerson", id: person.id }, "Person deleted")}><Trash2 size={14} /></Button></div>)}
+                {!people.length && <p className="calendar-note">Add a person to assign tasks and optionally notify them by SMS.</p>}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={!!draft}
         onOpenChange={(open) => {
@@ -2073,14 +2145,15 @@ export default function Taskflow() {
                 </label>
                 <label>
                   Assignee
-                  <Input
-                    placeholder="Name or leave unassigned"
-                    maxLength={100}
+                  <NativeSelect
                     value={draft.assignee}
                     onChange={(e) =>
                       setDraft({ ...draft, assignee: e.target.value })
                     }
-                  />
+                  >
+                    <option value="">Unassigned</option>
+                    {people.map((person) => <option key={person.id} value={person.name}>{person.name}</option>)}
+                  </NativeSelect>
                 </label>
                 <label>
                   Due date

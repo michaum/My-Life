@@ -26,6 +26,17 @@ export const projects = sqliteTable("projects", {
   icon: text("icon").notNull().default("folder"),
   createdAt: text("created_at").notNull(),
 });
+export const people = sqliteTable(
+  "people",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    phone: text("phone").notNull(),
+    smsEnabled: integer("sms_enabled", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [index("idx_people_name").on(table.name)],
+);
 export const tasks = sqliteTable(
   "tasks",
   {

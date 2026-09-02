@@ -50,6 +50,13 @@
       "when": 1788293754087,
       "tag": "0006_breezy_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1788369325599,
+      "tag": "0007_demonic_albert_cleary",
+      "breakpoints": true
     }
   ]
 }

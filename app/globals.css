@@ -178,6 +178,9 @@ p {
 .nav-item:hover {
   background: #e8ece1;
 }
+.people-list { display: grid; gap: 10px; margin-top: 14px; }
+.person-row { display: flex; align-items: center; gap: 10px; padding: 11px; border: 1px solid var(--border); border-radius: 7px; }
+.person-row > div { flex: 1; }.person-row small { display: block; color: var(--muted-foreground); margin-top: 3px; }
 .nav-item.selected {
   background: #e0e8d8;
   color: #34573d;
@@ -885,11 +888,22 @@ h1 {
   display: flex;
   gap: 4px;
 }
+.calendar-heading .calendar-view-switcher {
+  display: flex;
+  gap: 4px;
+  margin-right: 10px;
+}
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(100px, 1fr));
   min-width: 700px;
 }
+.calendar-grid--day { min-width: 280px; }
+.calendar-grid--workweek { min-width: 600px; }
+.calendar-grid--week { min-width: 700px; }
+.calendar-grid--day .calendar-day { min-height: 500px; }
+.calendar-grid--workweek .calendar-day,
+.calendar-grid--week .calendar-day { min-height: 430px; }
 .weekday {
   font-size: 10px;
   color: #8d9a80;
@@ -1436,6 +1450,9 @@ h1 {
   }
   .calendar-heading {
     padding: 12px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
   .calendar-heading h2 {
     font-size: 13px;

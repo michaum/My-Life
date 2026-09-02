@@ -1,5 +1,6 @@
 import { database } from "@/db/raw";
 import { z } from "zod";
+import { env } from "cloudflare:workers";
 
 const statuses = ["To do", "In progress", "In review", "Done"] as const;
 const taskSchema = z.object({
@@ -56,6 +57,42 @@ const taskSchema = z.object({
     .refine((v) => Object.keys(v).length <= 50, "Too many custom values")
     .default({}),
 });
+const personSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(100),
+  phone: z.string().regex(/^\+[1-9]\d{7,14}$/, "Use a full phone number, for example +18195550123."),
+  smsEnabled: z.boolean(),
+});
+type SmsContact = { name: string; phone: string; sms_enabled: number };
+class SmsDeliveryError extends Error {}
+async function sendSmsMessage(phone: string, text: string) {
+  const settings = env as unknown as Record<string, string | undefined>;
+  const required = ["SINCH_ACCESS_KEY", "SINCH_KEY_SECRET", "SINCH_PROJECT_ID", "SINCH_CONVERSATION_APP_ID", "SINCH_SENDER"];
+  if (required.some((key) => !settings[key])) throw new SmsDeliveryError("SMS notifications are not configured.");
+  const response = await fetch(`https://us.conversation.api.sinch.com/v1/projects/${settings.SINCH_PROJECT_ID}/messages:send`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${btoa(`${settings.SINCH_ACCESS_KEY}:${settings.SINCH_KEY_SECRET}`)}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      app_id: settings.SINCH_CONVERSATION_APP_ID,
+      recipient: { identified_by: { channel_identities: [{ channel: "SMS", identity: phone }] } },
+      message: { text_message: { text } },
+      channel_priority_order: ["SMS"],
+      channel_properties: { SMS_SENDER: settings.SINCH_SENDER },
+    }),
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Sinch SMS request failed", response.status, error.slice(0, 500));
+    throw new SmsDeliveryError(`Sinch rejected the SMS request (error ${response.status}).`);
+  }
+}
+async function sendAssignmentSms(contact: SmsContact, task: z.infer<typeof taskSchema>) {
+  const details = [task.due ? `Due: ${task.due}` : "", task.dueTime ? `Time: ${task.dueTime}` : ""].filter(Boolean).join(" · ");
+  await sendSmsMessage(contact.phone, `My Life: You have been assigned “${task.title}”.${details ? ` ${details}` : ""}`);
+}
 const projectSchema = z.object({
   id: z.string().min(1).max(100),
   name: z.string().trim().min(1).max(100),
@@ -173,6 +210,7 @@ export async function GET() {
       comments,
       sections,
       customFields,
+      people,
       taskValues,
       workspaceSettings,
     ] = await db.batch([
@@ -181,6 +219,7 @@ export async function GET() {
       db.prepare("SELECT * FROM comments ORDER BY created_at"),
       db.prepare("SELECT * FROM sections ORDER BY sort_order, created_at"),
       db.prepare("SELECT * FROM custom_fields ORDER BY created_at"),
+      db.prepare("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
       db.prepare("SELECT * FROM task_values ORDER BY task_id, field_id"),
       db.prepare(
         "SELECT status_options,filter_labels FROM workspace WHERE id='initialized'",
@@ -235,6 +274,7 @@ export async function GET() {
             options: normalizeOptions(parsed),
           };
         }),
+        people: people.results.map((person: any) => ({ ...person, smsEnabled: Boolean(person.sms_enabled) })),
         statusOptions: statusOptionsSchema
           .catch(
             statuses.map((label, index) => ({
@@ -401,6 +441,23 @@ export async function POST(request: Request) {
         )
         .bind(p.id, p.name, p.description, p.color, p.icon, now)
         .run();
+    } else if (b.action === "savePerson") {
+      const person = personSchema.parse(b.person);
+      await db.prepare("INSERT INTO people(id,name,phone,sms_enabled,created_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,phone=excluded.phone,sms_enabled=excluded.sms_enabled")
+        .bind(person.id, person.name, person.phone, person.smsEnabled ? 1 : 0, now).run();
+    } else if (b.action === "deletePerson") {
+      const id = z.string().min(1).parse(b.id);
+      await db.prepare("DELETE FROM people WHERE id=?").bind(id).run();
+    } else if (b.action === "testSms") {
+      const id = z.string().min(1).parse(b.id);
+      const contact = await db
+        .prepare("SELECT name,phone,sms_enabled FROM people WHERE id=?")
+        .bind(id)
+        .first<SmsContact>();
+      if (!contact) return Response.json({ error: "Person no longer exists." }, { status: 400 });
+      if (!contact.sms_enabled)
+        return Response.json({ error: "Turn on SMS notifications for this person first." }, { status: 400 });
+      await sendSmsMessage(contact.phone, "My Life test: SMS notifications are connected.");
     } else if (b.action === "deleteProject") {
       const id = z.string().min(1).parse(b.id);
       await db.batch([
@@ -590,6 +647,7 @@ export async function POST(request: Request) {
       ]);
     } else if (b.action === "saveTask") {
       const t = taskSchema.parse(b.task);
+      const previous = await db.prepare("SELECT assignee FROM tasks WHERE id=?").bind(t.id).first<{ assignee: string }>();
       if (
         !(await db
           .prepare("SELECT id FROM projects WHERE id=?")
@@ -680,6 +738,12 @@ export async function POST(request: Request) {
             .bind(t.id, fieldId, value),
         ),
       ]);
+      if (t.assignee && previous?.assignee !== t.assignee) {
+        const contact = await db.prepare("SELECT name,phone,sms_enabled FROM people WHERE lower(name)=lower(?)").bind(t.assignee).first<SmsContact>();
+        if (contact?.sms_enabled) {
+          try { await sendAssignmentSms(contact, t); } catch (error) { console.error("Assignment SMS failed", error); }
+        }
+      }
     } else if (b.action === "deleteTask") {
       const id = z.string().min(1).parse(b.id);
       await db.batch([
@@ -718,6 +782,8 @@ export async function POST(request: Request) {
         { error: error.issues[0]?.message || "Please check your fields." },
         { status: 400 },
       );
+    if (error instanceof SmsDeliveryError)
+      return Response.json({ error: error.message }, { status: 502 });
     return Response.json(
       { error: "Your change could not be saved. Please try again." },
       { status: 500 },
