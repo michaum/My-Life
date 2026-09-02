@@ -57,6 +57,20 @@
       "when": 1788369325599,
       "tag": "0007_demonic_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788389054821,
+      "tag": "0008_slimy_supreme_intelligence",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1788389346862,
+      "tag": "0009_tan_carnage",
+      "breakpoints": true
     }
   ]
 }

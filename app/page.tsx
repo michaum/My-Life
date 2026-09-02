@@ -77,6 +77,23 @@ type Project = {
   icon: ProjectIcon;
 };
 type Person = { id: string; name: string; phone: string; smsEnabled: boolean };
+type CurrentUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  personId: string | null;
+};
+
+type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: "admin" | "user";
+  personId: string | null;
+  active: boolean;
+  createdAt: string;
+};
 type Task = {
   id: string;
   projectId: string;
@@ -468,14 +485,114 @@ export default function Taskflow() {
     [subtask, setSubtask] = useState("");
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [adminUsersOpen, setAdminUsersOpen] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminUsersError, setAdminUsersError] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
   const [month, setMonth] = useState(
     () => new Date(),
   );
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
   const [dragging, setDragging] = useState<string | null>(null),
     [dropTarget, setDropTarget] = useState<Status | null>(null);
+  async function loadAdminUsers() {
+    setAdminUsersLoading(true);
+    setAdminUsersError("");
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to load users.");
+      }
+
+      setAdminUsers(data.users ?? []);
+    } catch (error) {
+      setAdminUsersError((error as Error).message);
+    } finally {
+      setAdminUsersLoading(false);
+    }
+  }
+
+  async function createAdminUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAdminUsersError("");
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: newUserName,
+          email: newUserEmail,
+          password: newUserPassword,
+          role: newUserRole,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to create user.");
+      }
+
+      setNewUserName("");
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setNewUserRole("user");
+      await loadAdminUsers();
+    } catch (error) {
+      setAdminUsersError((error as Error).message);
+    }
+  }
+
+  async function updateAdminUser(
+    id: string,
+    changes: Partial<Pick<AdminUser, "role" | "active">> & {
+      password?: string;
+    },
+  ) {
+    setAdminUsersError("");
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id, ...changes }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to update user.");
+      }
+
+      await loadAdminUsers();
+    } catch (error) {
+      setAdminUsersError((error as Error).message);
+    }
+  }
+
   async function refresh() {
     const r = await fetch("/api/workspace", { cache: "no-store" });
+
+    if (r.status === 401) {
+      window.location.href = "/login";
+      throw new Error("Authentication required.");
+    }
+
     const d = (await r.json()) as {
       error?: string;
       projects: Project[];
@@ -519,7 +636,28 @@ export default function Taskflow() {
     }
   }
   useEffect(() => {
-    void initialize();
+    async function start() {
+      const sessionResponse = await fetch("/api/auth/session", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (sessionResponse.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (sessionResponse.ok) {
+        const sessionData = (await sessionResponse.json()) as {
+          user: CurrentUser;
+        };
+        setCurrentUser(sessionData.user);
+      }
+
+      await initialize();
+    }
+
+    void start();
   }, []);
   useEffect(() => {
     if (notice) {
@@ -1178,9 +1316,13 @@ export default function Taskflow() {
           My Life<span className="brand-dot">.</span>
         </a>
         <div className="workspace-label">
-          <span className="workspace-icon">M</span>
+          <span className="workspace-icon">
+            {currentUser?.name?.charAt(0).toUpperCase() || "M"}
+          </span>
           <div>
-            <strong>Marcel’s workspace</strong>
+            <strong>
+              {currentUser ? `${currentUser.name}’s workspace` : "My workspace"}
+            </strong>
             <small>Personal workspace</small>
           </div>
           <LockKeyhole size={12} />
@@ -1203,7 +1345,8 @@ export default function Taskflow() {
               {
                 tasks.filter(
                   (t) =>
-                    t.assignee.toLowerCase() === "marcel" &&
+                    t.assignee.toLowerCase() ===
+                      (currentUser?.name ?? "").toLowerCase() &&
                     t.status !== "Done",
                 ).length
               }
@@ -1273,15 +1416,48 @@ export default function Taskflow() {
             <Download size={16} />
             Export workspace
           </button>
+          {currentUser?.role === "admin" ? (
+            <button
+              className="nav-item"
+              onClick={() => {
+                setAdminUsersOpen(true);
+                void loadAdminUsers();
+              }}
+            >
+              <Settings2 size={16} />
+              Admin users
+            </button>
+          ) : null}
           <button className="nav-item" onClick={() => setHelp(true)}>
             <CircleHelp size={16} />
             Help & getting started
           </button>
+          <button
+            className="nav-item"
+            onClick={async () => {
+              try {
+                await fetch("/api/auth/logout", {
+                  method: "POST",
+                  credentials: "include",
+                });
+              } finally {
+                window.location.href = "/login";
+              }
+            }}
+          >
+            Log out
+          </button>
           <div className="profile">
-            <span className="avatar">M</span>
+            <span className="avatar">
+              {currentUser?.name?.charAt(0).toUpperCase() || "M"}
+            </span>
             <div>
-              <strong>Marcel</strong>
-              <small>Your personal space</small>
+              <strong>{currentUser?.name ?? "User"}</strong>
+              <small>
+                {currentUser?.role === "admin"
+                  ? "Administrator"
+                  : "Your personal space"}
+              </small>
             </div>
             <span className="online-dot" />
           </div>
@@ -2033,6 +2209,156 @@ export default function Taskflow() {
             </footer>
           </>
         )}
+
+      <Dialog open={adminUsersOpen} onOpenChange={setAdminUsersOpen}>
+        <DialogContent style={{ maxWidth: "760px" }}>
+          <DialogTitle>Admin users</DialogTitle>
+          <DialogDescription>
+            Create and manage accounts that can sign in to My Life.
+          </DialogDescription>
+
+          <form
+            onSubmit={createAdminUser}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+              marginTop: "12px",
+            }}
+          >
+            <Input
+              placeholder="Name"
+              value={newUserName}
+              onChange={(event) => setNewUserName(event.target.value)}
+              required
+            />
+
+            <Input
+              type="email"
+              placeholder="Email"
+              value={newUserEmail}
+              onChange={(event) => setNewUserEmail(event.target.value)}
+              required
+            />
+
+            <Input
+              type="password"
+              placeholder="Temporary password"
+              value={newUserPassword}
+              onChange={(event) => setNewUserPassword(event.target.value)}
+              minLength={8}
+              required
+            />
+
+            <NativeSelect
+              value={newUserRole}
+              onChange={(event) =>
+                setNewUserRole(event.target.value as "admin" | "user")
+              }
+            >
+              <option value="user">User</option>
+              <option value="admin">Administrator</option>
+            </NativeSelect>
+
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Button type="submit">Create user</Button>
+            </div>
+          </form>
+
+          {adminUsersError ? (
+            <div
+              style={{
+                marginTop: "14px",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                background: "#fff1f1",
+                color: "#a40000",
+              }}
+            >
+              {adminUsersError}
+            </div>
+          ) : null}
+
+          <div
+            style={{
+              display: "grid",
+              gap: "10px",
+              marginTop: "20px",
+              maxHeight: "380px",
+              overflowY: "auto",
+            }}
+          >
+            {adminUsersLoading ? (
+              <div>Loading users...</div>
+            ) : (
+              adminUsers.map((user) => (
+                <div
+                  key={user.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.4fr 1.8fr auto auto auto",
+                    gap: "10px",
+                    alignItems: "center",
+                    padding: "10px 0",
+                    borderBottom: "1px solid #e5e5e5",
+                  }}
+                >
+                  <div>
+                    <strong>{user.name}</strong>
+                    {!user.active ? (
+                      <small style={{ display: "block", opacity: 0.6 }}>
+                        Disabled
+                      </small>
+                    ) : null}
+                  </div>
+
+                  <div style={{ fontSize: "14px" }}>{user.email}</div>
+
+                  <NativeSelect
+                    value={user.role}
+                    onChange={(event) =>
+                      void updateAdminUser(user.id, {
+                        role: event.target.value as "admin" | "user",
+                      })
+                    }
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </NativeSelect>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      void updateAdminUser(user.id, {
+                        active: !user.active,
+                      })
+                    }
+                  >
+                    {user.active ? "Disable" : "Enable"}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const password = window.prompt(
+                        `Enter a new password for ${user.name}:`,
+                      );
+
+                      if (password) {
+                        void updateAdminUser(user.id, { password });
+                      }
+                    }}
+                  >
+                    Reset password
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       </main>
       {notice && (
         <div className="toast" role="status">

@@ -37,6 +37,39 @@ export const people = sqliteTable(
   },
   (table) => [index("idx_people_name").on(table.name)],
 );
+
+export const users = sqliteTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    passwordHash: text("password_hash").notNull(),
+    role: text("role").notNull().default("user"),
+    personId: text("person_id"),
+    active: integer("active", { mode: "boolean" }).notNull().default(true),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("idx_users_email").on(table.email),
+    index("idx_users_person_id").on(table.personId),
+  ],
+);
+
+export const sessions = sqliteTable(
+  "sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: text("expires_at").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("idx_sessions_user").on(table.userId),
+    index("idx_sessions_expires").on(table.expiresAt),
+  ],
+);
+
 export const tasks = sqliteTable(
   "tasks",
   {

@@ -1,6 +1,7 @@
 import { database } from "@/db/raw";
 import { z } from "zod";
 import { env } from "cloudflare:workers";
+import { requireUser } from "@/lib/auth-db";
 
 const statuses = ["To do", "In progress", "In review", "Done"] as const;
 const taskSchema = z.object({
@@ -201,7 +202,10 @@ function normalizeOptions(raw: unknown) {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireUser(request);
+  if (auth.response) return auth.response;
+
   try {
     const db = database();
     const [
@@ -317,6 +321,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await requireUser(request);
+  if (auth.response) return auth.response;
+
   try {
     if (request.headers.get("sec-fetch-site") === "cross-site")
       return Response.json({ error: "Invalid origin" }, { status: 403 });
