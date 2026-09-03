@@ -246,3 +246,69 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "Unable to update user." }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  if (!isSameOrigin(request)) {
+    return Response.json({ error: "Invalid request origin." }, { status: 403 });
+  }
+
+  const auth = await requireAdmin(request);
+  if (auth.response) return auth.response;
+
+  try {
+    const body = z.object({ id: z.string().min(1) }).parse(await request.json());
+    const db = database();
+
+    if (body.id === auth.user.id) {
+      return Response.json(
+        { error: "You cannot delete your own account." },
+        { status: 400 },
+      );
+    }
+
+    const existing = await db
+      .prepare(
+        `SELECT id, role, active
+         FROM users
+         WHERE id = ?
+         LIMIT 1`,
+      )
+      .bind(body.id)
+      .first<{ id: string; role: string; active: number }>();
+
+    if (!existing) {
+      return Response.json({ error: "User not found." }, { status: 404 });
+    }
+
+    if (existing.role === "admin" && existing.active === 1) {
+      const count = await db
+        .prepare(
+          `SELECT COUNT(*) AS count
+           FROM users
+           WHERE role = 'admin' AND active = 1`,
+        )
+        .first<{ count: number }>();
+
+      if ((count?.count ?? 0) <= 1) {
+        return Response.json(
+          { error: "You must keep at least one active administrator." },
+          { status: 400 },
+        );
+      }
+    }
+
+    await db
+      .prepare("DELETE FROM users WHERE id = ?")
+      .bind(body.id)
+      .run();
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return Response.json({ error: "Invalid user information." }, { status: 400 });
+    }
+
+    console.error("Unable to delete user", error);
+    return Response.json({ error: "Unable to delete user." }, { status: 500 });
+  }
+}

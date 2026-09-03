@@ -506,6 +506,7 @@ const [editAdminUserEmail, setEditAdminUserEmail] = useState("");
 const [editAdminUserRole, setEditAdminUserRole] = useState<"admin" | "user">("user");
 const [editAdminUserActive, setEditAdminUserActive] = useState(true);
 const [resetPasswordUser, setResetPasswordUser] = useState<AdminUser | null>(null);
+const [deleteAdminUser, setDeleteAdminUser] = useState<AdminUser | null>(null);
 const [resetPasswordValue, setResetPasswordValue] = useState("");
 const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   const [month, setMonth] = useState(
@@ -673,6 +674,33 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setResetPasswordUser(user);
     setResetPasswordValue("");
     setResetPasswordConfirm("");
+  }
+
+  async function deleteSelectedAdminUser() {
+    if (!deleteAdminUser) return;
+
+    setAdminUsersError("");
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id: deleteAdminUser.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to delete user.");
+      }
+
+      setDeleteAdminUser(null);
+      await loadAdminUsers();
+      setNotice("User deleted");
+    } catch (error) {
+      setAdminUsersError((error as Error).message);
+    }
   }
 
   async function saveResetPassword(event: FormEvent<HTMLFormElement>) {
@@ -2594,9 +2622,49 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   >
                     Reset password
                   </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDeleteAdminUser(user)}
+                  >
+                    Delete
+                  </Button>
                 </div>
               ))
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteAdminUser !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteAdminUser(null);
+        }}
+      >
+        <DialogContent style={{ maxWidth: "480px" }}>
+          <DialogTitle>Delete user?</DialogTitle>
+          <DialogDescription>
+            {deleteAdminUser
+              ? `Permanently delete ${deleteAdminUser.name}'s login account? Their People entry and existing tasks will not be deleted.`
+              : "Permanently delete this login account?"}
+          </DialogDescription>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDeleteAdminUser(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void deleteSelectedAdminUser()}
+            >
+              Delete user
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
