@@ -494,6 +494,14 @@ export default function Taskflow() {
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+const [editingAdminUser, setEditingAdminUser] = useState<AdminUser | null>(null);
+const [editAdminUserName, setEditAdminUserName] = useState("");
+const [editAdminUserEmail, setEditAdminUserEmail] = useState("");
+const [editAdminUserRole, setEditAdminUserRole] = useState<"admin" | "user">("user");
+const [editAdminUserActive, setEditAdminUserActive] = useState(true);
+const [resetPasswordUser, setResetPasswordUser] = useState<AdminUser | null>(null);
+const [resetPasswordValue, setResetPasswordValue] = useState("");
+const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   const [month, setMonth] = useState(
     () => new Date(),
   );
@@ -559,7 +567,9 @@ export default function Taskflow() {
 
   async function updateAdminUser(
     id: string,
-    changes: Partial<Pick<AdminUser, "role" | "active">> & {
+    changes: Partial<
+      Pick<AdminUser, "name" | "email" | "role" | "active">
+    > & {
       password?: string;
     },
   ) {
@@ -583,6 +593,59 @@ export default function Taskflow() {
     } catch (error) {
       setAdminUsersError((error as Error).message);
     }
+  }
+
+  function openEditAdminUser(user: AdminUser) {
+    setAdminUsersError("");
+    setEditingAdminUser(user);
+    setEditAdminUserName(user.name);
+    setEditAdminUserEmail(user.email);
+    setEditAdminUserRole(user.role);
+    setEditAdminUserActive(user.active);
+  }
+
+  async function saveEditedAdminUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingAdminUser) return;
+
+    await updateAdminUser(editingAdminUser.id, {
+      name: editAdminUserName,
+      email: editAdminUserEmail,
+      role: editAdminUserRole,
+      active: editAdminUserActive,
+    });
+
+    setEditingAdminUser(null);
+  }
+
+  function openResetPassword(user: AdminUser) {
+    setAdminUsersError("");
+    setResetPasswordUser(user);
+    setResetPasswordValue("");
+    setResetPasswordConfirm("");
+  }
+
+  async function saveResetPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!resetPasswordUser) return;
+
+    if (resetPasswordValue.length < 8) {
+      setAdminUsersError("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (resetPasswordValue !== resetPasswordConfirm) {
+      setAdminUsersError("Passwords do not match.");
+      return;
+    }
+
+    await updateAdminUser(resetPasswordUser.id, {
+      password: resetPasswordValue,
+    });
+
+    setResetPasswordUser(null);
+    setResetPasswordValue("");
+    setResetPasswordConfirm("");
   }
 
   async function refresh() {
@@ -2344,15 +2407,15 @@ export default function Taskflow() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      const password = window.prompt(
-                        `Enter a new password for ${user.name}:`,
-                      );
+                    onClick={() => openEditAdminUser(user)}
+                  >
+                    Edit
+                  </Button>
 
-                      if (password) {
-                        void updateAdminUser(user.id, { password });
-                      }
-                    }}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => openResetPassword(user)}
                   >
                     Reset password
                   </Button>
@@ -2360,6 +2423,147 @@ export default function Taskflow() {
               ))
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editingAdminUser !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingAdminUser(null);
+        }}
+      >
+        <DialogContent style={{ maxWidth: "520px" }}>
+          <DialogTitle>Edit user</DialogTitle>
+          <DialogDescription>
+            Update this user's account information and permissions.
+          </DialogDescription>
+
+          <form
+            onSubmit={saveEditedAdminUser}
+            style={{ display: "grid", gap: "14px", marginTop: "16px" }}
+          >
+            <label>
+              Name
+              <Input
+                value={editAdminUserName}
+                onChange={(event) => setEditAdminUserName(event.target.value)}
+                required
+              />
+            </label>
+
+            <label>
+              Email
+              <Input
+                type="email"
+                value={editAdminUserEmail}
+                onChange={(event) => setEditAdminUserEmail(event.target.value)}
+                required
+              />
+            </label>
+
+            <label>
+              Role
+              <NativeSelect
+                value={editAdminUserRole}
+                onChange={(event) =>
+                  setEditAdminUserRole(event.target.value as "admin" | "user")
+                }
+              >
+                <option value="user">User</option>
+                <option value="admin">Administrator</option>
+              </NativeSelect>
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                checked={editAdminUserActive}
+                onChange={(event) =>
+                  setEditAdminUserActive(event.target.checked)
+                }
+              />{" "}
+              Account enabled
+            </label>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setEditingAdminUser(null)}
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit">Save changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={resetPasswordUser !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordUser(null);
+            setResetPasswordValue("");
+            setResetPasswordConfirm("");
+          }
+        }}
+      >
+        <DialogContent style={{ maxWidth: "480px" }}>
+          <DialogTitle>Reset password</DialogTitle>
+          <DialogDescription>
+            {resetPasswordUser
+              ? `Set a new password for ${resetPasswordUser.name}.`
+              : "Set a new password."}
+          </DialogDescription>
+
+          <form
+            onSubmit={saveResetPassword}
+            style={{ display: "grid", gap: "14px", marginTop: "16px" }}
+          >
+            <label>
+              New password
+              <Input
+                type="password"
+                value={resetPasswordValue}
+                onChange={(event) =>
+                  setResetPasswordValue(event.target.value)
+                }
+                minLength={8}
+                required
+              />
+            </label>
+
+            <label>
+              Confirm password
+              <Input
+                type="password"
+                value={resetPasswordConfirm}
+                onChange={(event) =>
+                  setResetPasswordConfirm(event.target.value)
+                }
+                minLength={8}
+                required
+              />
+            </label>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setResetPasswordUser(null);
+                  setResetPasswordValue("");
+                  setResetPasswordConfirm("");
+                }}
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit">Reset password</Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
       </main>
