@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import Database from "@tauri-apps/plugin-sql";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -152,6 +153,18 @@ type CustomField = {
   type: "Text" | "Number" | "Date" | "Choice";
   options: ChoiceOption[];
 };
+function normalizeOptions(value: unknown): ChoiceOption[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is ChoiceOption =>
+      Boolean(item) &&
+      typeof item === "object" &&
+      typeof (item as ChoiceOption).id === "string" &&
+      typeof (item as ChoiceOption).label === "string" &&
+      typeof (item as ChoiceOption).color === "string",
+  );
+}
+
 const statuses: Status[] = ["To do", "In progress", "In review", "Done"];
 const statusColors = ["#7f8a8d", "#ff1a66", "#727272", "#727272"];
 const defaultStatusOptions: ChoiceOption[] = statuses.map((label, index) => ({
@@ -742,7 +755,103 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setResetPasswordConfirm("");
   }
 
+  async function loadLocalWorkspace() {
+    const db = await Database.load("sqlite:mylife.db");
+
+    const [
+      projects,
+      tasks,
+      comments,
+      sections,
+      customFields,
+      people,
+      taskValues,
+      workspaceSettings,
+    ] = await Promise.all([
+      db.select<any[]>("SELECT * FROM projects ORDER BY created_at"),
+      db.select<any[]>("SELECT * FROM tasks ORDER BY sort_order, created_at"),
+      db.select<any[]>("SELECT * FROM comments ORDER BY created_at"),
+      db.select<any[]>("SELECT * FROM sections ORDER BY sort_order, created_at"),
+      db.select<any[]>("SELECT * FROM custom_fields ORDER BY created_at"),
+      db.select<any[]>("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
+      db.select<any[]>("SELECT * FROM task_values ORDER BY task_id, field_id"),
+      db.select<any[]>("SELECT status_options,filter_labels FROM workspace WHERE id='initialized'"),
+    ]);
+
+    const valuesByTask = new Map<string, Record<string, string>>();
+    for (const row of taskValues) {
+      const values = valuesByTask.get(row.task_id) ?? {};
+      values[row.field_id] = row.value;
+      valuesByTask.set(row.task_id, values);
+    }
+
+    return {
+      projects,
+      tasks: tasks.map((t: any) => ({
+        ...t,
+        projectId: t.project_id,
+        sectionId: t.section_id,
+        dueTime: t.due_time,
+        endTime: t.end_time,
+        emoji: t.emoji,
+        fontFamily: t.font_family,
+        fontSize: t.font_size,
+        fontStyle: t.font_style,
+        fontColor: t.font_color,
+        boardFontColor: t.board_font_color ?? t.font_color,
+        listFontColor: t.list_font_color ?? t.font_color,
+        calendarFontColor: t.calendar_font_color ?? t.font_color,
+        overviewFontColor: t.overview_font_color ?? t.font_color,
+        sortOrder: t.sort_order,
+        subtasks: JSON.parse(t.subtasks),
+        customValues: valuesByTask.get(t.id) ?? {},
+      })),
+      comments,
+      sections: sections.map((s: any) => ({
+        ...s,
+        projectId: s.project_id,
+        sortOrder: s.sort_order,
+      })),
+      customFields: customFields.map((f: any) => {
+        let parsed: unknown = [];
+        try {
+          parsed = JSON.parse(f.options);
+        } catch {}
+        return {
+          ...f,
+          projectId: f.project_id,
+          options: normalizeOptions(parsed),
+        };
+      }),
+      people: people.map((person: any) => ({
+        ...person,
+        smsEnabled: Boolean(person.sms_enabled),
+      })),
+      statusOptions: JSON.parse(
+        String(workspaceSettings[0]?.status_options || "[]"),
+      ) as ChoiceOption[],
+      filterLabels: JSON.parse(
+        String(workspaceSettings[0]?.filter_labels || "{}"),
+      ) as FilterLabels,
+    };
+  }
+
   async function refresh() {
+    const isDesktop = "__TAURI_INTERNALS__" in window;
+
+    if (isDesktop) {
+      const d = await loadLocalWorkspace();
+      setProjects(d.projects);
+      setTasks(d.tasks);
+      setComments(d.comments);
+      setSections(d.sections);
+      setCustomFields(d.customFields);
+      setPeople(d.people);
+      setWorkflowOptions(d.statusOptions);
+      setFilterLabels(d.filterLabels);
+      return d;
+    }
+
     const r = await fetch("/api/workspace", { cache: "no-store" });
 
     if (r.status === 401) {

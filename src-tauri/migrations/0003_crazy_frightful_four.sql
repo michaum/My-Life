@@ -1,0 +1,1 @@
+ALTER TABLE `tasks` ADD `color` text DEFAULT '#e5e5e5' NOT NULL;

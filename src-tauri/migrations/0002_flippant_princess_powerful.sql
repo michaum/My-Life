@@ -1,0 +1,1 @@
+ALTER TABLE `workspace` ADD `status_options` text DEFAULT '[{"id":"To do","label":"To do","color":"#7f8a8d"},{"id":"In progress","label":"In progress","color":"#ff1a66"},{"id":"In review","label":"In review","color":"#727272"},{"id":"Done","label":"Done","color":"#727272"}]' NOT NULL;
