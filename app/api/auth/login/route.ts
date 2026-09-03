@@ -3,6 +3,11 @@ import { z } from "zod";
 import { database } from "@/db/raw";
 import { verifyPassword, sessionCookie } from "@/lib/auth";
 import { createSession } from "@/lib/auth-db";
+import {
+  checkLoginRateLimit,
+  clearLoginRateLimit,
+  recordFailedLogin,
+} from "@/lib/login-rate-limit";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -23,6 +28,19 @@ export async function POST(request: Request) {
   try {
     const body = loginSchema.parse(await request.json());
     const email = body.email.trim().toLowerCase();
+    const ip =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
+    const rateLimitKey = `${ip}:${email}`;
+
+    const rateLimit = await checkLoginRateLimit(rateLimitKey);
+    if (rateLimit.blocked) {
+      return Response.json(
+        { error: "Too many failed attempts. Try again later." },
+        { status: 429 },
+      );
+    }
 
     const db = database();
 
@@ -44,6 +62,7 @@ export async function POST(request: Request) {
       .first<LoginUser>();
 
     if (!user || user.active !== 1) {
+      await recordFailedLogin(rateLimitKey);
       return Response.json(
         { error: "Invalid email or password." },
         { status: 401 },
@@ -53,11 +72,14 @@ export async function POST(request: Request) {
     const valid = await verifyPassword(body.password, user.passwordHash);
 
     if (!valid) {
+      await recordFailedLogin(rateLimitKey);
       return Response.json(
         { error: "Invalid email or password." },
         { status: 401 },
       );
     }
+
+    await clearLoginRateLimit(rateLimitKey);
 
     const { token, expires } = await createSession(user.id);
 
