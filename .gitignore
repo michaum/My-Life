@@ -44,3 +44,9 @@ next-env.d.ts
 *.tsbuildinfo
 .directory
 .dev.vars
+
+# Tauri / Rust build output
+src-tauri/target/
+
+# Local database backups
+backups/
