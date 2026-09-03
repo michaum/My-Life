@@ -836,8 +836,141 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     };
   }
 
+  async function saveTaskLocally(payload: any) {
+    const db = await Database.load("sqlite:mylife.db");
+    const t = payload.task as Task;
+    const now = new Date().toISOString();
+
+    const projectRows = await db.select<any[]>(
+      "SELECT id FROM projects WHERE id=?",
+      [t.projectId],
+    );
+    if (!projectRows.length) {
+      throw new Error("Project no longer exists.");
+    }
+
+    if (t.sectionId) {
+      const sectionRows = await db.select<any[]>(
+        "SELECT id FROM sections WHERE id=? AND project_id=?",
+        [t.sectionId, t.projectId],
+      );
+      if (!sectionRows.length) {
+        throw new Error("Section no longer exists.");
+      }
+    }
+
+    const fieldRows = await db.select<any[]>(
+      "SELECT id FROM custom_fields WHERE project_id=?",
+      [t.projectId],
+    );
+    const valid = new Set(fieldRows.map((f) => f.id));
+    const values = Object.entries(t.customValues).filter(([id]) =>
+      valid.has(id),
+    );
+
+    let sectionId = t.sectionId;
+
+    for (const [fieldId, value] of values) {
+      const choiceRows = await db.select<any[]>(
+        "SELECT options FROM custom_fields WHERE id=? AND type='Choice'",
+        [fieldId],
+      );
+
+      if (choiceRows.length) {
+        let parsed: unknown = [];
+        try {
+          parsed = JSON.parse(choiceRows[0].options);
+        } catch {}
+
+        const option = normalizeOptions(parsed).find(
+          (item) => item.id === value || item.label === value,
+        );
+
+        if (option?.label.trim().toLowerCase() === "completer") {
+          const target = await db.select<any[]>(
+            "SELECT id FROM sections WHERE project_id=? AND lower(name)=?",
+            [t.projectId, "completer"],
+          );
+          if (target.length) sectionId = target[0].id;
+        }
+      }
+    }
+
+    await db.execute(
+      `INSERT INTO tasks(
+        id,project_id,section_id,title,description,status,color,priority,
+        assignee,due,due_time,end_time,emoji,font_family,font_size,font_style,
+        font_color,board_font_color,list_font_color,calendar_font_color,
+        overview_font_color,sort_order,subtasks,created_at
+      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET
+        project_id=excluded.project_id,
+        section_id=excluded.section_id,
+        title=excluded.title,
+        description=excluded.description,
+        status=excluded.status,
+        color=excluded.color,
+        priority=excluded.priority,
+        assignee=excluded.assignee,
+        due=excluded.due,
+        due_time=excluded.due_time,
+        end_time=excluded.end_time,
+        emoji=excluded.emoji,
+        font_family=excluded.font_family,
+        font_size=excluded.font_size,
+        font_style=excluded.font_style,
+        font_color=excluded.font_color,
+        board_font_color=excluded.board_font_color,
+        list_font_color=excluded.list_font_color,
+        calendar_font_color=excluded.calendar_font_color,
+        overview_font_color=excluded.overview_font_color,
+        sort_order=excluded.sort_order,
+        subtasks=excluded.subtasks`,
+      [
+        t.id,
+        t.projectId,
+        sectionId,
+        t.title,
+        t.description,
+        t.status,
+        t.color,
+        t.priority,
+        t.assignee,
+        t.due,
+        t.dueTime,
+        t.endTime,
+        t.emoji,
+        t.fontFamily,
+        t.fontSize,
+        t.fontStyle,
+        t.fontColor,
+        t.boardFontColor,
+        t.listFontColor,
+        t.calendarFontColor,
+        t.overviewFontColor,
+        t.sortOrder,
+        JSON.stringify(t.subtasks),
+        now,
+      ],
+    );
+
+    await db.execute("DELETE FROM task_values WHERE task_id=?", [t.id]);
+
+    for (const [fieldId, value] of values) {
+      await db.execute(
+        "INSERT INTO task_values(task_id,field_id,value) VALUES(?,?,?)",
+        [t.id, fieldId, value],
+      );
+    }
+
+    await db.execute(
+      "INSERT INTO sync_queue(id,payload,created_at,attempts) VALUES(?,?,?,0)",
+      [crypto.randomUUID(), JSON.stringify(payload), now],
+    );
+  }
+
   async function refresh() {
-    const isDesktop = "__TAURI_INTERNALS__" in window;
+    const isDesktop = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
 
     if (isDesktop) {
       const d = await loadLocalWorkspace();
@@ -935,19 +1068,33 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     if (busy) return false;
     setBusy(true);
     setError("");
+
     try {
+      const action = (payload as { action?: string }).action;
+      const isDesktop = "__TAURI_INTERNALS__" in window;
+
+      if (isDesktop && action === "saveTask") {
+        await saveTaskLocally(payload);
+        await refresh();
+        setNotice(message);
+        return true;
+      }
+
       const r = await fetch("/api/workspace", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const d = (await r.json()) as { error?: string };
       if (!r.ok) throw new Error(d.error);
+
       await refresh();
       setNotice(message);
       return true;
     } catch (e) {
-      setError((e as Error).message);
+      console.error("Mutation failed:", e);
+      setError(String((e as Error)?.message || e));
       return false;
     } finally {
       setBusy(false);

@@ -69,6 +69,12 @@ pub fn run() {
             sql: include_str!("../migrations/0010_login_rate_limits.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 12,
+            description: "0011_sync_queue",
+            sql: include_str!("../migrations/0011_sync_queue.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
