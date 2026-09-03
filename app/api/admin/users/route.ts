@@ -149,6 +149,13 @@ export async function PATCH(request: Request) {
       return Response.json({ error: "User not found." }, { status: 404 });
     }
 
+    if (body.id === auth.user.id && body.active === false) {
+      return Response.json(
+        { error: "You cannot disable your own account." },
+        { status: 400 },
+      );
+    }
+
     const becomingInactive = body.active === false && existing.active === 1;
     const losingAdmin =
       body.role === "user" &&
