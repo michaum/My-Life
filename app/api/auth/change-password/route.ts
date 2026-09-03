@@ -2,6 +2,7 @@ import { z } from "zod";
 import { database } from "@/db/raw";
 import { hashPassword, verifyPassword } from "@/lib/auth";
 import { requireUser } from "@/lib/auth-db";
+import { isSameOrigin } from "@/lib/request-security";
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -9,6 +10,10 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return Response.json({ error: "Invalid request origin." }, { status: 403 });
+  }
+
   const auth = await requireUser(request);
   if (auth.response) return auth.response;
 

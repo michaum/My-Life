@@ -2,6 +2,7 @@ import { z } from "zod";
 import { database } from "@/db/raw";
 import { hashPassword } from "@/lib/auth";
 import { requireAdmin } from "@/lib/auth-db";
+import { isSameOrigin } from "@/lib/request-security";
 
 type AdminUserRow = {
   id: string;
@@ -66,6 +67,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOrigin(request)) {
+    return Response.json({ error: "Invalid request origin." }, { status: 403 });
+  }
+
   const auth = await requireAdmin(request);
   if (auth.response) return auth.response;
 
@@ -119,6 +124,10 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (!isSameOrigin(request)) {
+    return Response.json({ error: "Invalid request origin." }, { status: 403 });
+  }
+
   const auth = await requireAdmin(request);
   if (auth.response) return auth.response;
 
