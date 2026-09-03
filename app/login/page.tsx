@@ -56,6 +56,7 @@ export default function LoginPage() {
         display: "grid",
         placeItems: "center",
         padding: "24px",
+        background: "#3f3f3f",
       }}
     >
       <form
@@ -65,7 +66,11 @@ export default function LoginPage() {
           maxWidth: "420px",
           padding: "32px",
           borderRadius: "20px",
-          background: "white",
+          border: "1px solid black",
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.63), rgba(255,255,255,0.63)), url('/images/my-life-backgound.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          color: "#111",
           boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
         }}
       >
