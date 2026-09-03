@@ -6,6 +6,17 @@ import {
   sessionExpiry,
 } from "@/lib/auth";
 
+
+async function cleanupExpiredSessions() {
+  const db = database();
+  const now = new Date().toISOString();
+
+  await db
+    .prepare("DELETE FROM sessions WHERE expires_at <= ?")
+    .bind(now)
+    .run();
+}
+
 export type AuthUser = {
   id: string;
   name: string;
@@ -15,6 +26,8 @@ export type AuthUser = {
 };
 
 export async function createSession(userId: string) {
+  await cleanupExpiredSessions();
+
   const db = database();
 
   const token = createSessionToken();
@@ -47,6 +60,8 @@ export async function deleteSession(token: string) {
 }
 
 export async function getCurrentUser(request: Request): Promise<AuthUser | null> {
+  await cleanupExpiredSessions();
+
   const token = readCookie(request, "my_life_session");
 
   if (!token) return null;
