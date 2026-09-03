@@ -486,6 +486,12 @@ export default function Taskflow() {
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+const [accountOpen, setAccountOpen] = useState(false);
+const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+const [currentPassword, setCurrentPassword] = useState("");
+const [newAccountPassword, setNewAccountPassword] = useState("");
+const [confirmAccountPassword, setConfirmAccountPassword] = useState("");
+const [accountPasswordError, setAccountPasswordError] = useState("");
   const [adminUsersOpen, setAdminUsersOpen] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminUsersLoading, setAdminUsersLoading] = useState(false);
@@ -616,6 +622,50 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     });
 
     setEditingAdminUser(null);
+  }
+
+  function openChangePassword() {
+    setAccountPasswordError("");
+    setCurrentPassword("");
+    setNewAccountPassword("");
+    setConfirmAccountPassword("");
+    setChangePasswordOpen(true);
+  }
+
+  async function saveAccountPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAccountPasswordError("");
+
+    if (newAccountPassword !== confirmAccountPassword) {
+      setAccountPasswordError("New passwords do not match.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          currentPassword,
+          newPassword: newAccountPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to change password.");
+      }
+
+      setChangePasswordOpen(false);
+      setCurrentPassword("");
+      setNewAccountPassword("");
+      setConfirmAccountPassword("");
+      setNotice("Password changed");
+    } catch (error) {
+      setAccountPasswordError((error as Error).message);
+    }
   }
 
   function openResetPassword(user: AdminUser) {
@@ -1549,9 +1599,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               <LockKeyhole size={12} />
               Private workspace
             </span>
-            <span className="avatar">
+            <button
+              type="button"
+              className="avatar"
+              aria-label="Open account"
+              onClick={() => setAccountOpen(true)}
+            >
               {currentUser?.name?.charAt(0).toUpperCase() || "M"}
-            </span>
+            </button>
           </div>
         </header>
         <section className="project-header">
@@ -2275,6 +2330,126 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             </footer>
           </>
         )}
+
+      <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+        <DialogContent style={{ maxWidth: "440px" }}>
+          <DialogTitle>My account</DialogTitle>
+          <DialogDescription>
+            Your My Life account information.
+          </DialogDescription>
+
+          <div style={{ display: "grid", gap: "14px", marginTop: "16px" }}>
+            <div>
+              <strong>{currentUser?.name}</strong>
+              <div style={{ opacity: 0.7 }}>{currentUser?.email}</div>
+            </div>
+
+            <div>
+              Role: {currentUser?.role === "admin" ? "Administrator" : "User"}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openChangePassword}
+            >
+              Change password
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={async () => {
+                await fetch("/api/auth/logout", {
+                  method: "POST",
+                  credentials: "include",
+                });
+                window.location.href = "/login";
+              }}
+            >
+              Log out
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={changePasswordOpen}
+        onOpenChange={(open) => {
+          setChangePasswordOpen(open);
+
+          if (!open) {
+            setCurrentPassword("");
+            setNewAccountPassword("");
+            setConfirmAccountPassword("");
+            setAccountPasswordError("");
+          }
+        }}
+      >
+        <DialogContent style={{ maxWidth: "480px" }}>
+          <DialogTitle>Change password</DialogTitle>
+          <DialogDescription>
+            Enter your current password, then choose a new one.
+          </DialogDescription>
+
+          <form
+            onSubmit={saveAccountPassword}
+            style={{ display: "grid", gap: "14px", marginTop: "16px" }}
+          >
+            <label>
+              Current password
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                required
+              />
+            </label>
+
+            <label>
+              New password
+              <Input
+                type="password"
+                value={newAccountPassword}
+                onChange={(event) => setNewAccountPassword(event.target.value)}
+                minLength={8}
+                required
+              />
+            </label>
+
+            <label>
+              Confirm new password
+              <Input
+                type="password"
+                value={confirmAccountPassword}
+                onChange={(event) =>
+                  setConfirmAccountPassword(event.target.value)
+                }
+                minLength={8}
+                required
+              />
+            </label>
+
+            {accountPasswordError ? (
+              <div style={{ color: "#a40000" }}>
+                {accountPasswordError}
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setChangePasswordOpen(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button type="submit">Change password</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={adminUsersOpen} onOpenChange={setAdminUsersOpen}>
         <DialogContent style={{ maxWidth: "760px" }}>
