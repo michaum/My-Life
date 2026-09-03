@@ -67,7 +67,7 @@ export default function LoginPage() {
           padding: "32px",
           borderRadius: "20px",
           border: "1px solid black",
-          backgroundImage: "linear-gradient(rgba(255,255,255,0.63), rgba(255,255,255,0.63)), url('/images/my-life-backgound.png')",
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.86), rgba(255,255,255,0.86)), url('/images/my-life-backgound.png')",
           backgroundSize: "cover",
           backgroundPosition: "center",
           color: "#111",
@@ -76,7 +76,7 @@ export default function LoginPage() {
       >
         <div style={{ marginBottom: "28px" }}>
           <h1 style={{ margin: 0, fontSize: "32px" }}>My Life</h1>
-          <p style={{ margin: "8px 0 0", opacity: 0.7 }}>
+          <p style={{ margin: "8px 0 0", color: "#3f3f3f", fontWeight: 500 }}>
             Sign in to your shared workspace.
           </p>
         </div>
@@ -96,8 +96,11 @@ export default function LoginPage() {
               boxSizing: "border-box",
               padding: "12px 14px",
               borderRadius: "10px",
-              border: "1px solid #ccc",
+              border: "1px solid #8a8a8a",
+              background: "rgba(255,255,255,0.96)",
+              color: "#111",
               fontSize: "16px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
             }}
           />
         </label>
@@ -117,8 +120,11 @@ export default function LoginPage() {
               boxSizing: "border-box",
               padding: "12px 14px",
               borderRadius: "10px",
-              border: "1px solid #ccc",
+              border: "1px solid #8a8a8a",
+              background: "rgba(255,255,255,0.96)",
+              color: "#111",
               fontSize: "16px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
             }}
           />
         </label>
@@ -145,9 +151,12 @@ export default function LoginPage() {
             padding: "12px 16px",
             border: 0,
             borderRadius: "10px",
+            background: "#ff1a66",
+            color: "#ffffff",
             fontSize: "16px",
             fontWeight: 700,
             cursor: busy ? "wait" : "pointer",
+            boxShadow: "0 3px 10px rgba(0,0,0,0.18)",
           }}
         >
           {busy ? "Signing in..." : "Sign in"}

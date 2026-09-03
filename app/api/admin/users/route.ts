@@ -8,6 +8,7 @@ type AdminUserRow = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   role: string;
   personId: string | null;
   active: number;
@@ -19,6 +20,7 @@ const createUserSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8),
   role: z.enum(["admin", "user"]).default("user"),
+  phone: z.string().trim().min(1, "Cell number is required."),
   personId: z.string().nullable().optional(),
 });
 
@@ -26,6 +28,7 @@ const updateUserSchema = z.object({
   id: z.string().min(1),
   name: z.string().trim().min(1).optional(),
   email: z.string().trim().email().optional(),
+  phone: z.string().trim().min(1).optional(),
   role: z.enum(["admin", "user"]).optional(),
   personId: z.string().nullable().optional(),
   active: z.boolean().optional(),
@@ -42,15 +45,16 @@ export async function GET(request: Request) {
     const result = await db
       .prepare(
         `SELECT
-           id,
-           name,
-           email,
-           role,
-           person_id AS personId,
-           active,
-           created_at AS createdAt
+           users.id AS id,
+           users.name AS name,
+           users.email AS email,
+           COALESCE((SELECT phone FROM people WHERE people.id = users.person_id), '') AS phone,
+           users.role AS role,
+           users.person_id AS personId,
+           users.active AS active,
+           users.created_at AS createdAt
          FROM users
-         ORDER BY name COLLATE NOCASE, email COLLATE NOCASE`,
+         ORDER BY users.name COLLATE NOCASE, users.email COLLATE NOCASE`,
       )
       .all<AdminUserRow>();
 
@@ -81,6 +85,21 @@ export async function POST(request: Request) {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     const email = body.email.toLowerCase();
+
+    const phoneDigits = body.phone.replace(/\D/g, "");
+    let phone: string;
+
+    if (phoneDigits.length === 10) {
+      phone = `+1${phoneDigits}`;
+    } else if (phoneDigits.length === 11 && phoneDigits.startsWith("1")) {
+      phone = `+${phoneDigits}`;
+    } else {
+      return Response.json(
+        { error: "Enter a valid 10-digit cell number." },
+        { status: 400 },
+      );
+    }
+
     const passwordHash = await hashPassword(body.password);
 
     const existing = await db
@@ -95,6 +114,45 @@ export async function POST(request: Request) {
       );
     }
 
+    let personId = body.personId ?? null;
+
+    if (!personId) {
+      const existingPerson = await db
+        .prepare(
+          `SELECT id
+           FROM people
+           WHERE lower(name) = lower(?)
+           AND phone = ?
+           LIMIT 1`,
+        )
+        .bind(body.name, phone)
+        .first<{ id: string }>();
+
+      if (existingPerson) {
+        personId = existingPerson.id;
+
+        await db
+          .prepare(
+            `UPDATE people
+             SET name = ?, phone = ?, sms_enabled = 1
+             WHERE id = ?`,
+          )
+          .bind(body.name, phone, personId)
+          .run();
+      } else {
+        personId = crypto.randomUUID();
+
+        await db
+          .prepare(
+            `INSERT INTO people
+              (id, name, phone, sms_enabled, created_at)
+             VALUES (?, ?, ?, 1, ?)`,
+          )
+          .bind(personId, body.name, phone, now)
+          .run();
+      }
+    }
+
     await db
       .prepare(
         `INSERT INTO users
@@ -107,7 +165,7 @@ export async function POST(request: Request) {
         email,
         passwordHash,
         body.role,
-        body.personId ?? null,
+        personId,
         now,
       )
       .run();
@@ -137,13 +195,18 @@ export async function PATCH(request: Request) {
 
     const existing = await db
       .prepare(
-        `SELECT id, role, active
+        `SELECT id, role, active, person_id AS personId
          FROM users
          WHERE id = ?
          LIMIT 1`,
       )
       .bind(body.id)
-      .first<{ id: string; role: string; active: number }>();
+      .first<{
+        id: string;
+        role: string;
+        active: number;
+        personId: string | null;
+      }>();
 
     if (!existing) {
       return Response.json({ error: "User not found." }, { status: 404 });
@@ -199,6 +262,22 @@ export async function PATCH(request: Request) {
       }
     }
 
+    let normalizedPhone: string | undefined;
+
+    if (body.phone !== undefined) {
+      const phoneDigits = body.phone.replace(/\D/g, "");
+      if (phoneDigits.length === 10) {
+        normalizedPhone = `+1${phoneDigits}`;
+      } else if (phoneDigits.length === 11 && phoneDigits.startsWith("1")) {
+        normalizedPhone = `+${phoneDigits}`;
+      } else {
+        return Response.json(
+          { error: "Enter a valid 10-digit cell number." },
+          { status: 400 },
+        );
+      }
+    }
+
     const updates: string[] = [];
     const values: unknown[] = [];
 
@@ -242,6 +321,29 @@ export async function PATCH(request: Request) {
       .prepare(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`)
       .bind(...values)
       .run();
+
+    const linkedPersonId =
+      body.personId !== undefined ? body.personId : existing.personId;
+
+    if (linkedPersonId && (body.name !== undefined || normalizedPhone !== undefined)) {
+      const personUpdates: string[] = [];
+      const personValues: unknown[] = [];
+
+      if (body.name !== undefined) {
+        personUpdates.push("name = ?");
+        personValues.push(body.name);
+      }
+      if (normalizedPhone !== undefined) {
+        personUpdates.push("phone = ?");
+        personValues.push(normalizedPhone);
+      }
+
+      personValues.push(linkedPersonId);
+      await db
+        .prepare(`UPDATE people SET ${personUpdates.join(", ")} WHERE id = ?`)
+        .bind(...personValues)
+        .run();
+    }
 
     return Response.json({ ok: true });
   } catch (error) {

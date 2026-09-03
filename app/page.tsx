@@ -89,6 +89,7 @@ type AdminUser = {
   id: string;
   name: string;
   email: string;
+  phone: string;
   role: "admin" | "user";
   personId: string | null;
   active: boolean;
@@ -129,7 +130,7 @@ type Task = {
 };
 type FilterLabels = {
   priority: { High: string; Medium: string; Low: string };
-  sort: { Default: string; "Due date": string; Priority: string; Name: string };
+  sort: { Default: string; "Smart / Urgency": string; "Due date": string; Priority: string; Name: string };
 };
 type Comment = {
   id: string;
@@ -162,6 +163,7 @@ const defaultFilterLabels: FilterLabels = {
   priority: { High: "High", Medium: "Medium", Low: "Low" },
   sort: {
     Default: "Sort: default",
+    "Smart / Urgency": "Smart / Urgency",
     "Due date": "Due date",
     Priority: "Priority",
     Name: "Name",
@@ -466,6 +468,8 @@ export default function Taskflow() {
     [priority, setPriority] = useState("All priorities"),
     [statusFilter, setStatusFilter] = useState("All statuses"),
     [sort, setSort] = useState("Default");
+  const [taskDateFilter, setTaskDateFilter] =
+    useState<"all" | "overdue" | "today" | "upcoming">("all");
   const [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -486,6 +490,10 @@ export default function Taskflow() {
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+const currentPersonName =
+  people.find((person) => person.id === currentUser?.personId)?.name ??
+  currentUser?.name ??
+  "";
 const [accountOpen, setAccountOpen] = useState(false);
 const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 const [currentPassword, setCurrentPassword] = useState("");
@@ -498,11 +506,13 @@ const [accountPasswordError, setAccountPasswordError] = useState("");
   const [adminUsersError, setAdminUsersError] = useState("");
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPhone, setNewUserPhone] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
 const [editingAdminUser, setEditingAdminUser] = useState<AdminUser | null>(null);
 const [editAdminUserName, setEditAdminUserName] = useState("");
 const [editAdminUserEmail, setEditAdminUserEmail] = useState("");
+const [editAdminUserPhone, setEditAdminUserPhone] = useState("");
 const [editAdminUserRole, setEditAdminUserRole] = useState<"admin" | "user">("user");
 const [editAdminUserActive, setEditAdminUserActive] = useState(true);
 const [resetPasswordUser, setResetPasswordUser] = useState<AdminUser | null>(null);
@@ -551,6 +561,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         body: JSON.stringify({
           name: newUserName,
           email: newUserEmail,
+          phone: newUserPhone,
           password: newUserPassword,
           role: newUserRole,
         }),
@@ -564,9 +575,11 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       setNewUserName("");
       setNewUserEmail("");
+      setNewUserPhone("");
       setNewUserPassword("");
       setNewUserRole("user");
       await loadAdminUsers();
+      await refresh();
     } catch (error) {
       setAdminUsersError((error as Error).message);
     }
@@ -575,7 +588,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   async function updateAdminUser(
     id: string,
     changes: Partial<
-      Pick<AdminUser, "name" | "email" | "role" | "active">
+      Pick<AdminUser, "name" | "email" | "phone" | "role" | "active">
     > & {
       password?: string;
     },
@@ -597,6 +610,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       }
 
       await loadAdminUsers();
+      await refresh();
     } catch (error) {
       setAdminUsersError((error as Error).message);
     }
@@ -607,6 +621,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setEditingAdminUser(user);
     setEditAdminUserName(user.name);
     setEditAdminUserEmail(user.email);
+    setEditAdminUserPhone(user.phone);
     setEditAdminUserRole(user.role);
     setEditAdminUserActive(user.active);
   }
@@ -618,6 +633,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     await updateAdminUser(editingAdminUser.id, {
       name: editAdminUserName,
       email: editAdminUserEmail,
+      phone: editAdminUserPhone,
       role: editAdminUserRole,
       active: editAdminUserActive,
     });
@@ -843,7 +859,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       active === "home" ||
       (active === "mine"
         ? t.assignee.toLowerCase() ===
-          (currentUser?.name ?? "").toLowerCase()
+          currentPersonName.toLowerCase()
         : t.projectId === active),
   );
   const filtered = useMemo(
@@ -856,29 +872,86 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 .toLowerCase()
                 .includes(query.toLowerCase())) &&
             (priority === "All priorities" || t.priority === priority) &&
-            (statusFilter === "All statuses" || t.status === statusFilter),
+            (statusFilter === "All statuses" || t.status === statusFilter) &&
+            (taskDateFilter === "all" ||
+            (taskDateFilter === "overdue"
+              ? t.status !== "Done" && !!t.due && t.due < todayKey()
+              : taskDateFilter === "today"
+                ? t.status !== "Done" && t.due === todayKey()
+                : taskDateFilter === "upcoming"
+                  ? (() => {
+                      if (t.status === "Done" || !t.due) return false;
+                      const start = new Date(`${todayKey()}T00:00:00`);
+                      const end = new Date(start);
+                      end.setDate(end.getDate() + 7);
+                      const due = new Date(`${t.due}T00:00:00`);
+                      return due > start && due <= end;
+                    })()
+                  : t.status !== "Done" && !t.due)),
         )
-        .sort((a, b) =>
-          sort === "Due date"
+        .sort((a, b) => {
+          if (sort === "Smart / Urgency") {
+            const urgencyRank = (t: Task) => {
+              if (t.status === "Done") return 5;
+              if (t.due && t.due < todayKey()) return 0;
+              if (t.due === todayKey()) return 1;
+              if (t.due) {
+                const start = new Date(`${todayKey()}T00:00:00`);
+                const end = new Date(start);
+                end.setDate(end.getDate() + 7);
+                const due = new Date(`${t.due}T00:00:00`);
+                return due > start && due <= end ? 2 : 3;
+              }
+              return 4;
+            };
+
+            const rankDiff = urgencyRank(a) - urgencyRank(b);
+            if (rankDiff) return rankDiff;
+
+            if (a.due || b.due) {
+              const dueDiff = (a.due || "9999").localeCompare(b.due || "9999");
+              if (dueDiff) return dueDiff;
+            }
+
+            const priorityDiff =
+              ["High", "Medium", "Low"].indexOf(a.priority) -
+              ["High", "Medium", "Low"].indexOf(b.priority);
+
+            return priorityDiff || a.sortOrder - b.sortOrder;
+          }
+
+          return sort === "Due date"
             ? (a.due || "9999").localeCompare(b.due || "9999")
             : sort === "Priority"
               ? ["High", "Medium", "Low"].indexOf(a.priority) -
                 ["High", "Medium", "Low"].indexOf(b.priority)
               : sort === "Name"
                 ? a.title.localeCompare(b.title)
-                : a.sortOrder - b.sortOrder,
-        ),
-    [scope, query, priority, statusFilter, sort],
+                : a.sortOrder - b.sortOrder;
+        }),
+    [scope, query, priority, statusFilter, taskDateFilter, sort],
   );
   const completed = scope.filter((t) => t.status === "Done").length,
     overdue = scope.filter(
       (t) => t.status !== "Done" && t.due && t.due < todayKey(),
-    ).length;
+    ).length,
+    dueToday = scope.filter(
+      (t) => t.status !== "Done" && t.due === todayKey(),
+    ).length,
+    upcoming = scope.filter((t) => {
+      if (t.status === "Done" || !t.due) return false;
+      const start = new Date(`${todayKey()}T00:00:00`);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 7);
+      const due = new Date(`${t.due}T00:00:00`);
+      return due > start && due <= end;
+    }).length;
   function navigate(id: string) {
     setActive(id);
     setQuery("");
     setPriority("All priorities");
     setStatusFilter("All statuses");
+    setTaskDateFilter("all");
     setMobile(false);
     if (id === "home") setView("Overview");
     else if (view === "Overview") setView("Board");
@@ -1294,10 +1367,61 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       )}
       <div className="card-footer">
         <span
-          className={`due ${t.due && t.due < todayKey() && t.status !== "Done" ? "late" : ""}`}
+          className={`due ${
+            t.status === "Done" || !t.due
+              ? ""
+              : t.due < todayKey()
+                ? "late"
+                : t.due === todayKey()
+                  ? "due-today"
+                  : (() => {
+                      const start = new Date(`${todayKey()}T00:00:00`);
+                      const end = new Date(start);
+                      end.setDate(end.getDate() + 7);
+                      const due = new Date(`${t.due}T00:00:00`);
+                      return due > start && due <= end ? "due-upcoming" : "";
+                    })()
+          }`}
         >
+          {t.status !== "Done" && t.due && (
+            <span
+              aria-hidden="true"
+              style={{
+                width: "7px",
+                height: "7px",
+                borderRadius: "999px",
+                flex: "0 0 7px",
+                background:
+                  t.due < todayKey()
+                    ? "#d94b4b"
+                    : t.due === todayKey()
+                      ? "#d8a800"
+                      : (() => {
+                          const start = new Date(`${todayKey()}T00:00:00`);
+                          const end = new Date(start);
+                          end.setDate(end.getDate() + 7);
+                          const due = new Date(`${t.due}T00:00:00`);
+                          return due > start && due <= end ? "#4f9d69" : "transparent";
+                        })(),
+              }}
+            />
+          )}
           <CalendarDays size={13} />
-          {dateText(t.due)}
+          {t.status !== "Done" && t.due && t.due < todayKey()
+            ? `Overdue · ${dateText(t.due)}`
+            : t.status !== "Done" && t.due === todayKey()
+              ? `Today · ${dateText(t.due)}`
+              : t.status !== "Done" && t.due
+                ? (() => {
+                    const start = new Date(`${todayKey()}T00:00:00`);
+                    const end = new Date(start);
+                    end.setDate(end.getDate() + 7);
+                    const due = new Date(`${t.due}T00:00:00`);
+                    return due > start && due <= end
+                      ? `Upcoming · ${dateText(t.due)}`
+                      : dateText(t.due);
+                  })()
+                : dateText(t.due)}
         </span>
         <div className="card-meta">
           {comments.filter((c) => c.task_id === t.id).length > 0 && (
@@ -1488,7 +1612,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 tasks.filter(
                   (t) =>
                     t.assignee.toLowerCase() ===
-                      (currentUser?.name ?? "").toLowerCase() &&
+                      currentPersonName.toLowerCase() &&
                     t.status !== "Done",
                 ).length
               }
@@ -1567,7 +1691,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               }}
             >
               <Settings2 size={16} />
-              Admin users
+              Admin Panel
             </button>
           ) : null}
           <button className="nav-item" onClick={() => setHelp(true)}>
@@ -1677,6 +1801,136 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 ? "A clear view of the work assigned to you."
                 : "Keep your projects moving, one small step at a time.")}
           </p>
+          {active === "mine" && (
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                marginTop: "10px",
+                marginBottom: "10px",
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  setTaskDateFilter(taskDateFilter === "overdue" ? "all" : "overdue")
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setTaskDateFilter(
+                      taskDateFilter === "overdue" ? "all" : "overdue",
+                    );
+                  }
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  width: "auto",
+                  minWidth: 0,
+                  height: "auto",
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  border:
+                    taskDateFilter === "overdue"
+                      ? "1px solid #ff1a66"
+                      : "1px solid #d7d7d7",
+                  background:
+                    taskDateFilter === "overdue" ? "#ffe8f0" : "#f8f8f8",
+                  color: "#333",
+                  fontSize: "11px",
+                  lineHeight: 1,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                }}
+              >
+                ⚠ {overdue} Overdue
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  setTaskDateFilter(taskDateFilter === "today" ? "all" : "today")
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setTaskDateFilter(
+                      taskDateFilter === "today" ? "all" : "today",
+                    );
+                  }
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  width: "auto",
+                  minWidth: 0,
+                  height: "auto",
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  border:
+                    taskDateFilter === "today"
+                      ? "1px solid #ff1a66"
+                      : "1px solid #d7d7d7",
+                  background:
+                    taskDateFilter === "today" ? "#ffe8f0" : "#f8f8f8",
+                  color: "#333",
+                  fontSize: "11px",
+                  lineHeight: 1,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                }}
+              >
+                📅 {dueToday} Due Today
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={() =>
+                  setTaskDateFilter(
+                    taskDateFilter === "upcoming" ? "all" : "upcoming",
+                  )
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setTaskDateFilter(
+                      taskDateFilter === "upcoming" ? "all" : "upcoming",
+                    );
+                  }
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  width: "auto",
+                  minWidth: 0,
+                  height: "auto",
+                  padding: "4px 8px",
+                  borderRadius: "999px",
+                  border:
+                    taskDateFilter === "upcoming"
+                      ? "1px solid #ff1a66"
+                      : "1px solid #d7d7d7",
+                  background:
+                    taskDateFilter === "upcoming" ? "#ffe8f0" : "#f8f8f8",
+                  color: "#333",
+                  fontSize: "11px",
+                  lineHeight: 1,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                }}
+              >
+                🗓️ {upcoming} Upcoming
+              </span>
+              
+            </div>
+          )}
           <div className="project-summary">
             <span className="status-label">
               <span /> {overdue ? "Needs attention" : "Let’s make progress"}
@@ -1804,7 +2058,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   value={sort}
                   onChange={(e) => setSort(e.target.value)}
                 >
-                  {(["Default", "Due date", "Priority", "Name"] as const).map(
+                  {(["Default", "Smart / Urgency", "Due date", "Priority", "Name"] as const).map(
                     (value) => (
                       <option key={value} value={value}>
                         {filterLabels.sort[value]}
@@ -2481,7 +2735,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       <Dialog open={adminUsersOpen} onOpenChange={setAdminUsersOpen}>
         <DialogContent style={{ maxWidth: "760px" }}>
-          <DialogTitle>Admin users</DialogTitle>
+          <DialogTitle>Admin Panel</DialogTitle>
           <DialogDescription>
             Create and manage accounts that can sign in to My Life.
           </DialogDescription>
@@ -2509,6 +2763,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               onChange={(event) => setNewUserEmail(event.target.value)}
               required
             />
+              <Input
+                required
+                type="tel"
+                placeholder="Cell number (+18195550123)"
+                value={newUserPhone}
+                onChange={(e) => setNewUserPhone(e.target.value)}
+              />
 
             <Input
               type="password"
@@ -2691,6 +2952,16 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 value={editAdminUserName}
                 onChange={(event) => setEditAdminUserName(event.target.value)}
                 required
+              />
+            </label>
+            <label>
+              Cell Number
+              <Input
+                required
+                type="tel"
+                placeholder="6133168197"
+                value={editAdminUserPhone}
+                onChange={(event) => setEditAdminUserPhone(event.target.value)}
               />
             </label>
 
@@ -3998,7 +4269,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               </fieldset>
               <fieldset className="option-editor">
                 <legend>Sort choices</legend>
-                {(["Default", "Due date", "Priority", "Name"] as const).map(
+                {(["Default", "Smart / Urgency", "Due date", "Priority", "Name"] as const).map(
                   (key) => (
                     <label key={key}>
                       {key}
