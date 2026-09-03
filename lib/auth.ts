@@ -1,4 +1,14 @@
-const PASSWORD_ITERATIONS = 310000;
+import { promisify } from "node:util";
+import { randomBytes, scrypt as scryptCallback } from "node:crypto";
+
+const scrypt = promisify(scryptCallback);
+
+const SCRYPT_N = 16384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const SCRYPT_KEY_LENGTH = 32;
+const SCRYPT_MAXMEM = 32 * 1024 * 1024;
+
 const SESSION_DAYS = 30;
 
 const encoder = new TextEncoder();
@@ -11,6 +21,7 @@ function bytesToHex(bytes: Uint8Array) {
 
 function hexToBytes(hex: string) {
   if (hex.length % 2 !== 0) throw new Error("Invalid hex");
+
   const out = new Uint8Array(hex.length / 2);
 
   for (let i = 0; i < out.length; i++) {
@@ -45,64 +56,73 @@ function constantTimeEqual(a: Uint8Array, b: Uint8Array) {
   return diff === 0;
 }
 
-async function derivePassword(
-  password: string,
-  salt: Uint8Array,
-  iterations: number,
-) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-
-  const bits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      hash: "SHA-256",
-      salt,
-      iterations,
-    },
-    key,
-    256,
-  );
-
-  return new Uint8Array(bits);
-}
-
 export async function hashPassword(password: string) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const derived = await derivePassword(password, salt, PASSWORD_ITERATIONS);
+  const salt = randomBytes(16);
+
+  const derived = (await scrypt(
+    password,
+    salt,
+    SCRYPT_KEY_LENGTH,
+    {
+      N: SCRYPT_N,
+      r: SCRYPT_R,
+      p: SCRYPT_P,
+      maxmem: SCRYPT_MAXMEM,
+    },
+  )) as Buffer;
 
   return [
-    "pbkdf2_sha256",
-    PASSWORD_ITERATIONS,
-    bytesToHex(salt),
-    bytesToHex(derived),
+    "scrypt",
+    SCRYPT_N,
+    SCRYPT_R,
+    SCRYPT_P,
+    salt.toString("hex"),
+    derived.toString("hex"),
   ].join("$");
 }
 
 export async function verifyPassword(password: string, stored: string) {
   const parts = stored.split("$");
 
-  if (parts.length !== 4 || parts[0] !== "pbkdf2_sha256") {
+  if (parts.length !== 6 || parts[0] !== "scrypt") {
     return false;
   }
 
-  const iterations = Number(parts[1]);
+  const n = Number(parts[1]);
+  const r = Number(parts[2]);
+  const p = Number(parts[3]);
 
-  if (!Number.isInteger(iterations) || iterations < 1) {
+  if (
+    !Number.isInteger(n) ||
+    !Number.isInteger(r) ||
+    !Number.isInteger(p) ||
+    n < 2 ||
+    r < 1 ||
+    p < 1
+  ) {
     return false;
   }
 
   try {
-    const salt = hexToBytes(parts[2]);
-    const expected = hexToBytes(parts[3]);
-    const actual = await derivePassword(password, salt, iterations);
+    const salt = Buffer.from(parts[4], "hex");
+    const expected = hexToBytes(parts[5]);
 
-    return constantTimeEqual(actual, expected);
+    const derived = (await scrypt(
+      password,
+      salt,
+      expected.length,
+      {
+        N: n,
+        r,
+        p,
+        maxmem: SCRYPT_MAXMEM,
+      },
+    )) as Buffer;
+
+    return constantTimeEqual(
+      new Uint8Array(derived),
+      expected,
+    );
   } catch {
     return false;
   }
@@ -113,7 +133,11 @@ export function createSessionToken() {
 }
 
 export async function hashSessionToken(token: string) {
-  const digest = await crypto.subtle.digest("SHA-256", encoder.encode(token));
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(token),
+  );
+
   return bytesToHex(new Uint8Array(digest));
 }
 
@@ -145,6 +169,7 @@ export function sessionCookie(
   expires: Date,
 ) {
   const url = new URL(request.url);
+
   const secure =
     url.protocol === "https:" &&
     url.hostname !== "localhost" &&
@@ -168,6 +193,7 @@ export function sessionCookie(
 
 export function clearSessionCookie(request: Request) {
   const url = new URL(request.url);
+
   const secure =
     url.protocol === "https:" &&
     url.hostname !== "localhost" &&

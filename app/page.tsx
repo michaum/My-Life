@@ -701,7 +701,8 @@ export default function Taskflow() {
       active === "all" ||
       active === "home" ||
       (active === "mine"
-        ? t.assignee.toLowerCase() === "marcel"
+        ? t.assignee.toLowerCase() ===
+          (currentUser?.name ?? "").toLowerCase()
         : t.projectId === active),
   );
   const filtered = useMemo(
@@ -1485,7 +1486,9 @@ export default function Taskflow() {
               <LockKeyhole size={12} />
               Private workspace
             </span>
-            <span className="avatar">M</span>
+            <span className="avatar">
+              {currentUser?.name?.charAt(0).toUpperCase() || "M"}
+            </span>
           </div>
         </header>
         <section className="project-header">
