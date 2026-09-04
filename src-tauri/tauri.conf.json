@@ -17,11 +17,15 @@
     "windows": [
       {
         "title": "My Life",
-        "width": 800,
-        "height": 600,
+        "width": 1200,
+        "height": 900,
         "resizable": true,
         "fullscreen": false,
-        "url": "https://mylife.michaum.workers.dev"
+        "url": "https://mylife.michaum.workers.dev",
+        "center": true,
+        "maximized": true,
+        "decorations": true,
+        "transparent": true
       }
     ],
     "security": {
