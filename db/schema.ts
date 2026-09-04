@@ -87,6 +87,8 @@ export const tasks = sqliteTable(
     due: text("due").notNull().default(""),
     dueTime: text("due_time").notNull().default(""),
     endTime: text("end_time").notNull().default(""),
+    recurrenceUnit: text("recurrence_unit").notNull().default("none"),
+    recurrenceInterval: integer("recurrence_interval").notNull().default(1),
     emoji: text("emoji").notNull().default(""),
     fontFamily: text("font_family").notNull().default("Arial"),
     fontSize: text("font_size").notNull().default("11"),

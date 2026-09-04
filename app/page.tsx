@@ -109,6 +109,8 @@ type Task = {
   due: string;
   dueTime: string;
   endTime: string;
+  recurrenceUnit: "none" | "days" | "months" | "years";
+  recurrenceInterval: number;
   emoji: string;
   fontFamily:
     | "Arial"
@@ -793,6 +795,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         sectionId: t.section_id,
         dueTime: t.due_time,
         endTime: t.end_time,
+        recurrenceUnit: t.recurrence_unit || "none",
+        recurrenceInterval: Number(t.recurrence_interval || 1),
         emoji: t.emoji,
         fontFamily: t.font_family,
         fontSize: t.font_size,
@@ -899,10 +903,11 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     await db.execute(
       `INSERT INTO tasks(
         id,project_id,section_id,title,description,status,color,priority,
-        assignee,due,due_time,end_time,emoji,font_family,font_size,font_style,
-        font_color,board_font_color,list_font_color,calendar_font_color,
-        overview_font_color,sort_order,subtasks,created_at
-      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        assignee,due,due_time,end_time,recurrence_unit,recurrence_interval,
+        emoji,font_family,font_size,font_style,font_color,board_font_color,
+        list_font_color,calendar_font_color,overview_font_color,sort_order,
+        subtasks,created_at
+      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         project_id=excluded.project_id,
         section_id=excluded.section_id,
@@ -915,6 +920,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         due=excluded.due,
         due_time=excluded.due_time,
         end_time=excluded.end_time,
+        recurrence_unit=excluded.recurrence_unit,
+        recurrence_interval=excluded.recurrence_interval,
         emoji=excluded.emoji,
         font_family=excluded.font_family,
         font_size=excluded.font_size,
@@ -939,6 +946,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         t.due,
         t.dueTime,
         t.endTime,
+        t.recurrenceUnit || "none",
+        t.recurrenceInterval || 1,
         t.emoji,
         t.fontFamily,
         t.fontSize,
@@ -1848,6 +1857,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       due: "",
       dueTime: "",
       endTime: "",
+      recurrenceUnit: "none",
+      recurrenceInterval: 1,
       emoji: "",
       fontFamily: "Arial",
       fontSize: "11",
@@ -1869,6 +1880,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   function editTask(task: Task) {
     setDraft({
       ...task,
+      recurrenceUnit: task.recurrenceUnit || "none",
+      recurrenceInterval: task.recurrenceInterval || 1,
       subtasks: task.subtasks.map((s) => ({ ...s })),
       customValues: { ...task.customValues },
     });
@@ -1931,11 +1944,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   }
   async function saveTask(e: FormEvent) {
     e.preventDefault();
-    if (
-      draft &&
-      (await mutate({ action: "saveTask", task: draft }, "Task saved"))
-    )
+    if (!draft) return;
+    if ((draft.recurrenceUnit || "none") !== "none" && !draft.due) {
+      setError("A recurring task needs a due date.");
+      return;
+    }
+    if (await mutate({ action: "saveTask", task: draft }, "Task saved")) {
       setDraft(null);
+    }
   }
   async function saveProject(e: FormEvent) {
     e.preventDefault();
@@ -2003,10 +2019,86 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     )
       setFilterDraft(null);
   }
-  function changeStatus(t: Task, status: Status) {
-    void mutate(
+  function nextRecurringDate(
+    due: string,
+    interval: number,
+    unit: Task["recurrenceUnit"],
+  ) {
+    const [year, month, day] = due.split("-").map(Number);
+    const amount = Math.max(1, interval || 1);
+
+    const format = (y: number, m: number, d: number) =>
+      `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+    if (unit === "days") {
+      const date = new Date(Date.UTC(year, month - 1, day));
+      date.setUTCDate(date.getUTCDate() + amount);
+      return format(
+        date.getUTCFullYear(),
+        date.getUTCMonth() + 1,
+        date.getUTCDate(),
+      );
+    }
+
+    if (unit === "months") {
+      const totalMonths = year * 12 + (month - 1) + amount;
+      const targetYear = Math.floor(totalMonths / 12);
+      const targetMonthIndex = totalMonths % 12;
+      const lastDay = new Date(
+        Date.UTC(targetYear, targetMonthIndex + 1, 0),
+      ).getUTCDate();
+
+      return format(
+        targetYear,
+        targetMonthIndex + 1,
+        Math.min(day, lastDay),
+      );
+    }
+
+    if (unit === "years") {
+      const targetYear = year + amount;
+      const lastDay = new Date(
+        Date.UTC(targetYear, month, 0),
+      ).getUTCDate();
+
+      return format(targetYear, month, Math.min(day, lastDay));
+    }
+
+    return due;
+  }
+
+  async function changeStatus(t: Task, status: Status) {
+    const completingRecurringTask =
+      status === "Done" &&
+      t.status !== "Done" &&
+      Boolean(t.due) &&
+      (t.recurrenceUnit || "none") !== "none";
+
+    const saved = await mutate(
       { action: "saveTask", task: { ...t, status } },
       status === "Done" ? "Nice work. Task completed!" : "Task moved",
+    );
+
+    if (!saved || !completingRecurringTask) return;
+
+    const nextTask: Task = {
+      ...t,
+      id: crypto.randomUUID(),
+      status: "To do",
+      due: nextRecurringDate(
+        t.due,
+        t.recurrenceInterval || 1,
+        t.recurrenceUnit,
+      ),
+      subtasks: t.subtasks.map((subtask) => ({
+        ...subtask,
+        done: false,
+      })),
+    };
+
+    await mutate(
+      { action: "saveTask", task: nextTask },
+      "Next recurring task created",
     );
   }
   function exportWorkspace() {
@@ -4105,6 +4197,52 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   />
                 </label>
                 <label>
+                  Repeat
+                  <NativeSelect
+                    value={draft.recurrenceUnit || "none"}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        recurrenceUnit: e.target.value as Task["recurrenceUnit"],
+                      })
+                    }
+                  >
+                    <option value="none">Does not repeat</option>
+                    <option value="days">Days</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                  </NativeSelect>
+                </label>
+                {(draft.recurrenceUnit || "none") !== "none" && (
+                  <label>
+                    Repeat every
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={draft.recurrenceInterval || 1}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            recurrenceInterval: Math.max(
+                              1,
+                              Number.parseInt(e.target.value || "1", 10),
+                            ),
+                          })
+                        }
+                      />
+                      <span>
+                        {draft.recurrenceUnit === "days"
+                          ? "day(s)"
+                          : draft.recurrenceUnit === "months"
+                            ? "month(s)"
+                            : "year(s)"}
+                      </span>
+                    </div>
+                  </label>
+                )}
+                <label>
                   Priority
                   <NativeSelect
                     value={draft.priority}
@@ -4560,21 +4698,64 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               </label>
               <fieldset>
                 <legend>Project color</legend>
-                <div className="color-choices">
-                  {colors.map((c) => (
-                    <button
-                      type="button"
-                      key={c}
-                      aria-label={`Choose ${c}`}
-                      aria-pressed={projectDraft.color === c}
-                      style={{ background: c }}
-                      onClick={() =>
-                        setProjectDraft({ ...projectDraft, color: c })
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <input
+                    type="color"
+                    aria-label="Choose project color"
+                    value={projectDraft.color}
+                    onChange={(e) =>
+                      setProjectDraft({
+                        ...projectDraft,
+                        color: e.target.value.toUpperCase(),
+                      })
+                    }
+                    style={{
+                      width: 54,
+                      height: 40,
+                      padding: 2,
+                      cursor: "pointer",
+                    }}
+                  />
+                  <Input
+                    aria-label="Project color hex value"
+                    value={projectDraft.color}
+                    maxLength={7}
+                    style={{ width: 115 }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (/^#[0-9a-fA-F]{0,6}$/.test(value)) {
+                        setProjectDraft({
+                          ...projectDraft,
+                          color: value,
+                        });
                       }
-                    >
-                      {projectDraft.color === c && <Check size={18} />}
-                    </button>
-                  ))}
+                    }}
+                    onBlur={() => {
+                      if (!/^#[0-9a-fA-F]{6}$/.test(projectDraft.color)) {
+                        setProjectDraft({
+                          ...projectDraft,
+                          color: "#658373",
+                        });
+                      }
+                    }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: projectDraft.color,
+                      border: "1px solid rgba(0,0,0,.15)",
+                    }}
+                  />
                 </div>
               </fieldset>
               <fieldset>
