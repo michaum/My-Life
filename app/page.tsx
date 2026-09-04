@@ -969,6 +969,529 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     );
   }
 
+
+
+  async function mutateLocally(payload: any) {
+    const db = await Database.load("sqlite:mylife.db");
+    const action = payload.action as string | undefined;
+    const now = new Date().toISOString();
+
+    if (action === "saveProject") {
+      const p = payload.project;
+
+      await db.execute(
+        `INSERT INTO projects(id,name,description,color,icon,created_at)
+         VALUES(?,?,?,?,?,?)
+         ON CONFLICT(id) DO UPDATE SET
+           name=excluded.name,
+           description=excluded.description,
+           color=excluded.color,
+           icon=excluded.icon`,
+        [p.id, p.name, p.description, p.color, p.icon, now],
+      );
+    } else if (action === "deleteProject") {
+      const id = payload.id;
+
+      const taskRows = await db.select<any[]>(
+        "SELECT id FROM tasks WHERE project_id=?",
+        [id],
+      );
+
+      for (const task of taskRows) {
+        await db.execute("DELETE FROM comments WHERE task_id=?", [task.id]);
+        await db.execute("DELETE FROM task_values WHERE task_id=?", [task.id]);
+      }
+
+      await db.execute("DELETE FROM tasks WHERE project_id=?", [id]);
+
+      const fieldRows = await db.select<any[]>(
+        "SELECT id FROM custom_fields WHERE project_id=?",
+        [id],
+      );
+
+      for (const field of fieldRows) {
+        await db.execute("DELETE FROM task_values WHERE field_id=?", [field.id]);
+      }
+
+      await db.execute("DELETE FROM custom_fields WHERE project_id=?", [id]);
+      await db.execute("DELETE FROM sections WHERE project_id=?", [id]);
+      await db.execute("DELETE FROM projects WHERE id=?", [id]);
+    } else if (action === "savePerson") {
+      const person = payload.person;
+
+      await db.execute(
+        `INSERT INTO people(id,name,phone,sms_enabled,created_at)
+         VALUES(?,?,?,?,?)
+         ON CONFLICT(id) DO UPDATE SET
+           name=excluded.name,
+           phone=excluded.phone,
+           sms_enabled=excluded.sms_enabled`,
+        [
+          person.id,
+          person.name,
+          person.phone,
+          person.smsEnabled ? 1 : 0,
+          now,
+        ],
+      );
+    } else if (action === "deletePerson") {
+      await db.execute("DELETE FROM people WHERE id=?", [payload.id]);
+    } else if (action === "saveSection") {
+      const s = payload.section;
+
+      const projectRows = await db.select<any[]>(
+        "SELECT id FROM projects WHERE id=?",
+        [s.projectId],
+      );
+
+      if (!projectRows.length) {
+        throw new Error("Project no longer exists.");
+      }
+
+      await db.execute(
+        `INSERT INTO sections(id,project_id,name,sort_order,created_at)
+         VALUES(?,?,?,?,?)
+         ON CONFLICT(id) DO UPDATE SET
+           name=excluded.name,
+           sort_order=excluded.sort_order`,
+        [s.id, s.projectId, s.name, s.sortOrder, now],
+      );
+    } else if (action === "reorderSections") {
+      for (let index = 0; index < payload.ids.length; index += 1) {
+        await db.execute(
+          "UPDATE sections SET sort_order=? WHERE id=? AND project_id=?",
+          [index, payload.ids[index], payload.projectId],
+        );
+      }
+    } else if (action === "reorderTasks") {
+      const sectionRows = await db.select<any[]>(
+        "SELECT id,name FROM sections WHERE project_id=?",
+        [payload.projectId],
+      );
+
+      const fieldRows = await db.select<any[]>(
+        "SELECT id,options FROM custom_fields WHERE project_id=? AND type='Choice'",
+        [payload.projectId],
+      );
+
+      const sectionNames = new Map(
+        sectionRows.map((section) => [
+          section.id,
+          String(section.name).trim().toLowerCase(),
+        ]),
+      );
+
+      const choiceMatches = fieldRows.flatMap((field) => {
+        let parsed: unknown = [];
+
+        try {
+          parsed = JSON.parse(field.options);
+        } catch {}
+
+        return normalizeOptions(parsed).map((option) => ({
+          fieldId: field.id,
+          ...option,
+          labelKey: option.label.trim().toLowerCase(),
+        }));
+      });
+
+      for (const item of payload.items) {
+        await db.execute(
+          `UPDATE tasks
+           SET section_id=?,sort_order=?,status=?
+           WHERE id=? AND project_id=?`,
+          [
+            item.sectionId,
+            item.sortOrder,
+            item.status,
+            item.id,
+            payload.projectId,
+          ],
+        );
+
+        const sectionName = sectionNames.get(item.sectionId);
+
+        for (const option of choiceMatches) {
+          if (option.labelKey !== sectionName) continue;
+
+          await db.execute(
+            `INSERT INTO task_values(task_id,field_id,value)
+             VALUES(?,?,?)
+             ON CONFLICT(task_id,field_id)
+             DO UPDATE SET value=excluded.value`,
+            [item.id, option.fieldId, option.id],
+          );
+        }
+      }
+    } else if (action === "deleteSection") {
+      await db.execute("UPDATE tasks SET section_id='' WHERE section_id=?", [
+        payload.id,
+      ]);
+      await db.execute("DELETE FROM sections WHERE id=?", [payload.id]);
+    } else if (action === "saveCustomField") {
+      const f = payload.field;
+
+      const projectRows = await db.select<any[]>(
+        "SELECT id FROM projects WHERE id=?",
+        [f.projectId],
+      );
+
+      if (!projectRows.length) {
+        throw new Error("Project no longer exists.");
+      }
+
+      const previousRows = await db.select<any[]>(
+        "SELECT options FROM custom_fields WHERE id=?",
+        [f.id],
+      );
+
+      let oldOptions: ReturnType<typeof normalizeOptions> = [];
+
+      if (previousRows.length) {
+        try {
+          oldOptions = normalizeOptions(
+            JSON.parse(previousRows[0].options),
+          );
+        } catch {}
+      }
+
+      const options =
+        f.type === "Choice" ? normalizeOptions(f.options) : [];
+
+      await db.execute(
+        `INSERT INTO custom_fields(
+           id,project_id,name,type,options,created_at
+         )
+         VALUES(?,?,?,?,?,?)
+         ON CONFLICT(id) DO UPDATE SET
+           name=excluded.name,
+           type=excluded.type,
+           options=excluded.options`,
+        [
+          f.id,
+          f.projectId,
+          f.name,
+          f.type,
+          JSON.stringify(options),
+          now,
+        ],
+      );
+
+      for (const option of oldOptions) {
+        await db.execute(
+          "UPDATE task_values SET value=? WHERE field_id=? AND value=?",
+          [option.id, f.id, option.label],
+        );
+      }
+    } else if (action === "deleteCustomField") {
+      await db.execute("DELETE FROM task_values WHERE field_id=?", [payload.id]);
+      await db.execute("DELETE FROM custom_fields WHERE id=?", [payload.id]);
+    } else if (action === "saveStatusOptions") {
+      await db.execute(
+        "UPDATE workspace SET status_options=? WHERE id='initialized'",
+        [JSON.stringify(payload.options)],
+      );
+    } else if (action === "saveFilterLabels") {
+      await db.execute(
+        "UPDATE workspace SET filter_labels=? WHERE id='initialized'",
+        [JSON.stringify(payload.labels)],
+      );
+    } else if (action === "deleteTask") {
+      await db.execute("DELETE FROM comments WHERE task_id=?", [payload.id]);
+      await db.execute("DELETE FROM task_values WHERE task_id=?", [payload.id]);
+      await db.execute("DELETE FROM tasks WHERE id=?", [payload.id]);
+    } else if (action === "comment") {
+      const taskRows = await db.select<any[]>(
+        "SELECT id FROM tasks WHERE id=?",
+        [payload.taskId],
+      );
+
+      if (!taskRows.length) {
+        throw new Error("Task no longer exists.");
+      }
+
+      await db.execute(
+        "INSERT INTO comments(id,task_id,body,created_at) VALUES(?,?,?,?)",
+        [crypto.randomUUID(), payload.taskId, payload.body, now],
+      );
+    } else {
+      return false;
+    }
+
+    await db.execute(
+      "INSERT INTO sync_queue(id,payload,created_at,attempts) VALUES(?,?,?,0)",
+      [crypto.randomUUID(), JSON.stringify(payload), now],
+    );
+
+    return true;
+  }
+
+
+  async function downloadServerWorkspaceToLocal() {
+    const isDesktop =
+      "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+
+    if (!isDesktop || !navigator.onLine) return false;
+
+    const db = await Database.load("sqlite:mylife.db");
+
+    const pending = await db.select<Array<{ count: number }>>(
+      "SELECT COUNT(*) AS count FROM sync_queue",
+    );
+
+    if (Number(pending[0]?.count ?? 0) > 0) {
+      console.log("Skipping server snapshot because local changes are pending.");
+      return false;
+    }
+
+    const r = await fetch("/api/workspace", {
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (r.status === 401) {
+      return false;
+    }
+
+    if (!r.ok) {
+      throw new Error("Could not download the online workspace.");
+    }
+
+    const data = (await r.json()) as {
+      projects: any[];
+      tasks: any[];
+      comments: any[];
+      sections: any[];
+      customFields: any[];
+      people: any[];
+      statusOptions: ChoiceOption[];
+      filterLabels: FilterLabels;
+    };
+
+    const now = new Date().toISOString();
+
+    await db.execute("BEGIN IMMEDIATE");
+
+    try {
+      await db.execute("DELETE FROM comments");
+      await db.execute("DELETE FROM task_values");
+      await db.execute("DELETE FROM tasks");
+      await db.execute("DELETE FROM custom_fields");
+      await db.execute("DELETE FROM sections");
+      await db.execute("DELETE FROM projects");
+      await db.execute("DELETE FROM people");
+
+      await db.execute(
+        "INSERT OR IGNORE INTO workspace(id) VALUES('initialized')",
+      );
+
+      for (const p of data.projects) {
+        await db.execute(
+          `INSERT INTO projects(
+             id,name,description,color,icon,created_at
+           ) VALUES(?,?,?,?,?,?)`,
+          [
+            p.id,
+            p.name,
+            p.description ?? "",
+            p.color ?? "#727272",
+            p.icon ?? "folder",
+            p.created_at ?? now,
+          ],
+        );
+      }
+
+      for (const s of data.sections) {
+        await db.execute(
+          `INSERT INTO sections(
+             id,project_id,name,sort_order,created_at
+           ) VALUES(?,?,?,?,?)`,
+          [
+            s.id,
+            s.projectId,
+            s.name,
+            s.sortOrder ?? 0,
+            s.created_at ?? now,
+          ],
+        );
+      }
+
+      for (const f of data.customFields) {
+        const options =
+          f.type === "Choice" ? normalizeOptions(f.options) : [];
+
+        await db.execute(
+          `INSERT INTO custom_fields(
+             id,project_id,name,type,options,created_at
+           ) VALUES(?,?,?,?,?,?)`,
+          [
+            f.id,
+            f.projectId,
+            f.name,
+            f.type,
+            JSON.stringify(options),
+            f.created_at ?? now,
+          ],
+        );
+      }
+
+      for (const t of data.tasks) {
+        await db.execute(
+          `INSERT INTO tasks(
+             id,project_id,section_id,title,description,status,color,priority,
+             assignee,due,due_time,end_time,emoji,font_family,font_size,
+             font_style,font_color,board_font_color,list_font_color,
+             calendar_font_color,overview_font_color,sort_order,subtasks,
+             created_at
+           ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [
+            t.id,
+            t.projectId,
+            t.sectionId ?? "",
+            t.title,
+            t.description ?? "",
+            t.status ?? "To do",
+            t.color ?? "#e5e5e5",
+            t.priority ?? "Medium",
+            t.assignee ?? "",
+            t.due ?? "",
+            t.dueTime ?? "",
+            t.endTime ?? "",
+            t.emoji ?? "",
+            t.fontFamily ?? "Arial",
+            t.fontSize ?? "11",
+            t.fontStyle ?? "normal",
+            t.fontColor ?? "#1d2128",
+            t.boardFontColor ?? t.fontColor ?? "#1d2128",
+            t.listFontColor ?? t.fontColor ?? "#1d2128",
+            t.calendarFontColor ?? t.fontColor ?? "#1d2128",
+            t.overviewFontColor ?? t.fontColor ?? "#1d2128",
+            t.sortOrder ?? 0,
+            JSON.stringify(t.subtasks ?? []),
+            t.created_at ?? now,
+          ],
+        );
+
+        for (const [fieldId, value] of Object.entries(
+          t.customValues ?? {},
+        )) {
+          await db.execute(
+            `INSERT INTO task_values(task_id,field_id,value)
+             VALUES(?,?,?)`,
+            [t.id, fieldId, value],
+          );
+        }
+      }
+
+      for (const c of data.comments) {
+        await db.execute(
+          `INSERT INTO comments(id,task_id,body,created_at)
+           VALUES(?,?,?,?)`,
+          [
+            c.id,
+            c.task_id ?? c.taskId,
+            c.body,
+            c.created_at ?? now,
+          ],
+        );
+      }
+
+      for (const person of data.people) {
+        await db.execute(
+          `INSERT INTO people(
+             id,name,phone,sms_enabled,created_at
+           ) VALUES(?,?,?,?,?)`,
+          [
+            person.id,
+            person.name,
+            person.phone ?? "",
+            person.smsEnabled ? 1 : 0,
+            person.created_at ?? now,
+          ],
+        );
+      }
+
+      await db.execute(
+        `UPDATE workspace
+         SET status_options=?,filter_labels=?
+         WHERE id='initialized'`,
+        [
+          JSON.stringify(data.statusOptions ?? []),
+          JSON.stringify(data.filterLabels ?? {}),
+        ],
+      );
+
+      await db.execute("COMMIT");
+      return true;
+    } catch (error) {
+      await db.execute("ROLLBACK");
+      throw error;
+    }
+  }
+
+  async function processSyncQueue() {
+    const isDesktop = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+    if (!isDesktop || !navigator.onLine) return;
+
+    const db = await Database.load("sqlite:mylife.db");
+
+    const queued = await db.select<
+      Array<{
+        id: string;
+        payload: string;
+        attempts: number;
+      }>
+    >(
+      "SELECT id,payload,attempts FROM sync_queue ORDER BY created_at ASC",
+    );
+
+    for (const item of queued) {
+      try {
+        const payload = JSON.parse(item.payload);
+
+        const r = await fetch("/api/workspace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+
+        if (r.status === 401) {
+          return;
+        }
+
+        if (!r.ok) {
+          const d = (await r.json().catch(() => ({}))) as {
+            error?: string;
+          };
+
+          console.error(
+            "Queued mutation failed:",
+            d.error || `HTTP ${r.status}`,
+          );
+
+          await db.execute(
+            "UPDATE sync_queue SET attempts=attempts+1 WHERE id=?",
+            [item.id],
+          );
+
+          return;
+        }
+
+        await db.execute("DELETE FROM sync_queue WHERE id=?", [item.id]);
+      } catch (error) {
+        console.error("Sync queue processing failed:", error);
+
+        await db.execute(
+          "UPDATE sync_queue SET attempts=attempts+1 WHERE id=?",
+          [item.id],
+        );
+
+        return;
+      }
+    }
+  }
+
   async function refresh() {
     const isDesktop = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
 
@@ -1017,25 +1540,83 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   async function initialize() {
     setLoading(true);
     setError("");
+
     try {
+      const isDesktop =
+        "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+
+      if (isDesktop) {
+        const d = await refresh();
+
+        if (!d.projects.some((p: Project) => p.id === active)) {
+          setActive(d.projects[0]?.id || "all");
+        }
+
+        return;
+      }
+
       const r = await fetch("/api/workspace", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "initialize" }),
       });
-      if (!r.ok)
+
+      if (!r.ok) {
         throw new Error("Could not open your workspace. Please try again.");
+      }
+
       const d = await refresh();
-      if (!d.projects.some((p: Project) => p.id === active))
+
+      if (!d.projects.some((p: Project) => p.id === active)) {
         setActive(d.projects[0]?.id || "all");
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     async function start() {
+      const isDesktop =
+        "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+
+      if (isDesktop) {
+        await initialize();
+
+        if (!navigator.onLine) {
+          return;
+        }
+
+        try {
+          const sessionResponse = await fetch("/api/auth/session", {
+            credentials: "include",
+            cache: "no-store",
+          });
+
+          if (sessionResponse.status === 401) {
+            window.location.href = "/login";
+            return;
+          }
+
+          if (sessionResponse.ok) {
+            const sessionData = (await sessionResponse.json()) as {
+              user: CurrentUser;
+            };
+
+            setCurrentUser(sessionData.user);
+            await processSyncQueue();
+            await downloadServerWorkspaceToLocal();
+            await refresh();
+          }
+        } catch (error) {
+          console.error("Desktop session check failed:", error);
+        }
+
+        return;
+      }
+
       const sessionResponse = await fetch("/api/auth/session", {
         credentials: "include",
         cache: "no-store",
@@ -1058,6 +1639,29 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
     void start();
   }, []);
+
+  useEffect(() => {
+    const isDesktop = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+    if (!isDesktop) return;
+
+    const sync = async () => {
+      try {
+        await processSyncQueue();
+        await downloadServerWorkspaceToLocal();
+        await refresh();
+      } catch (error) {
+        console.error("Reconnect sync failed:", error);
+      }
+    };
+
+    sync();
+    window.addEventListener("online", sync);
+
+    return () => {
+      window.removeEventListener("online", sync);
+    };
+  }, []);
+
   useEffect(() => {
     if (notice) {
       const timeout = setTimeout(() => setNotice(""), 3000);
@@ -1073,11 +1677,22 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       const action = (payload as { action?: string }).action;
       const isDesktop = "__TAURI_INTERNALS__" in window;
 
-      if (isDesktop && action === "saveTask") {
-        await saveTaskLocally(payload);
-        await refresh();
-        setNotice(message);
-        return true;
+      if (isDesktop) {
+        if (action === "saveTask") {
+          await saveTaskLocally(payload);
+          await refresh();
+          setNotice(message);
+          return true;
+        }
+
+        const handledLocally = await mutateLocally(payload);
+
+        if (handledLocally) {
+          await refresh();
+          setNotice(message);
+          void processSyncQueue();
+          return true;
+        }
       }
 
       const r = await fetch("/api/workspace", {
