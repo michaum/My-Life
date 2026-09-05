@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Database from "@tauri-apps/plugin-sql";
+import { getVersion } from "@tauri-apps/api/app";
 import { check } from "@tauri-apps/plugin-updater";
 import {
   ArrowUpRight,
@@ -506,6 +507,12 @@ export default function Taskflow() {
     [subtask, setSubtask] = useState("");
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
+  const [appVersion, setAppVersion] = useState("");
+  const [availableUpdate, setAvailableUpdate] =
+    useState<Awaited<ReturnType<typeof check>>>(null);
+  const [updateInstalling, setUpdateInstalling] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 const currentPersonName =
   people.find((person) => person.id === currentUser?.personId)?.name ??
@@ -1662,9 +1669,23 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     const isDesktop =
       "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
 
-    if (!isDesktop || !navigator.onLine) return;
+    if (!isDesktop) return;
 
     let cancelled = false;
+
+    void getVersion()
+      .then((version) => {
+        if (!cancelled) setAppVersion(version);
+      })
+      .catch((error) => {
+        console.error("Could not read app version:", error);
+      });
+
+    if (!navigator.onLine) {
+      return () => {
+        cancelled = true;
+      };
+    }
 
     async function checkForUpdates() {
       try {
@@ -1672,13 +1693,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
         if (!update || cancelled) return;
 
-        const installNow = window.confirm(
-          `My Life ${update.version} is available.\n\nWould you like to install the update now?`,
-        );
-
-        if (!installNow || cancelled) return;
-
-        await update.downloadAndInstall();
+        setAvailableUpdate(update);
       } catch (error) {
         console.error("Update check failed:", error);
       }
@@ -1690,6 +1705,23 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       cancelled = true;
     };
   }, []);
+
+  async function installAvailableUpdate() {
+    if (!availableUpdate || updateInstalling) return;
+
+    setUpdateInstalling(true);
+    setUpdateError("");
+
+    try {
+      await availableUpdate.downloadAndInstall();
+    } catch (error) {
+      console.error("Update installation failed:", error);
+      setUpdateError(
+        error instanceof Error ? error.message : String(error),
+      );
+      setUpdateInstalling(false);
+    }
+  }
 
   useEffect(() => {
     const isDesktop = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
@@ -2573,6 +2605,195 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   };
   return (
     <div className="app-shell">
+      <Dialog
+        open={availableUpdate !== null}
+        onOpenChange={(open) => {
+          if (!open && !updateInstalling) {
+            setAvailableUpdate(null);
+            setUpdateError("");
+          }
+        }}
+      >
+        <DialogContent
+          style={{
+            width: "min(440px, calc(100vw - 32px))",
+            borderRadius: "18px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "#17171b",
+            color: "#ffffff",
+            padding: "26px",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.55)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "18px",
+            }}
+          >
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "12px",
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(255,26,102,0.14)",
+                color: "#ff1a66",
+              }}
+            >
+              {updateInstalling ? (
+                <Loader2
+                  size={22}
+                  style={{ animation: "spin 1s linear infinite" }}
+                />
+              ) : (
+                <Download size={22} />
+              )}
+            </div>
+
+            <div>
+              <DialogTitle
+                style={{
+                  margin: 0,
+                  fontSize: "19px",
+                  fontWeight: 700,
+                  color: "#ffffff",
+                }}
+              >
+                {updateInstalling ? "Updating My Life" : "My Life Update"}
+              </DialogTitle>
+
+              <DialogDescription
+                style={{
+                  marginTop: "3px",
+                  color: "rgba(255,255,255,0.55)",
+                  fontSize: "13px",
+                }}
+              >
+                {updateInstalling
+                  ? "Please keep My Life open while the update is installed."
+                  : "A new version is ready to install."}
+              </DialogDescription>
+            </div>
+          </div>
+
+          {!updateInstalling ? (
+            <>
+              <div
+                style={{
+                  padding: "15px 16px",
+                  borderRadius: "12px",
+                  background: "rgba(255,255,255,0.05)",
+                  marginBottom: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.65)",
+                  }}
+                >
+                  Available version
+                </div>
+                <div
+                  style={{
+                    marginTop: "4px",
+                    fontSize: "22px",
+                    fontWeight: 700,
+                  }}
+                >
+                  v{availableUpdate?.version}
+                </div>
+              </div>
+
+              {updateError && (
+                <div
+                  style={{
+                    marginBottom: "16px",
+                    padding: "11px 13px",
+                    borderRadius: "10px",
+                    background: "rgba(255,70,70,0.12)",
+                    color: "#ff9a9a",
+                    fontSize: "13px",
+                  }}
+                >
+                  {updateError}
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "10px",
+                }}
+              >
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAvailableUpdate(null)}
+                  style={{
+                    borderColor: "rgba(255,255,255,0.16)",
+                    background: "transparent",
+                    color: "#ffffff",
+                  }}
+                >
+                  Later
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => void installAvailableUpdate()}
+                  style={{
+                    background: "#ff1a66",
+                    color: "#ffffff",
+                    border: "none",
+                    fontWeight: 700,
+                  }}
+                >
+                  <Download size={16} />
+                  Update & Install
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div
+              style={{
+                padding: "18px",
+                borderRadius: "12px",
+                background: "rgba(255,255,255,0.05)",
+                textAlign: "center",
+              }}
+            >
+              <Loader2
+                size={28}
+                style={{
+                  margin: "0 auto 12px",
+                  animation: "spin 1s linear infinite",
+                  color: "#ff1a66",
+                }}
+              />
+              <strong style={{ display: "block", fontSize: "15px" }}>
+                Downloading and installing update…
+              </strong>
+              <span
+                style={{
+                  display: "block",
+                  marginTop: "6px",
+                  fontSize: "12px",
+                  color: "rgba(255,255,255,0.52)",
+                }}
+              >
+                My Life may close briefly when installation begins.
+              </span>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {mobile && (
         <button
           className="sidebar-backdrop"
@@ -2586,6 +2807,20 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             <ShootingStarIcon size={23} />
           </span>
           My Life<span className="brand-dot">.</span>
+          {appVersion && (
+            <span
+              style={{
+                marginLeft: "7px",
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.48)",
+                letterSpacing: "0.02em",
+                alignSelf: "center",
+              }}
+            >
+              v{appVersion}
+            </span>
+          )}
         </a>
         <div className="workspace-label">
           <span className="workspace-icon">
