@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { getVersion } from "@tauri-apps/api/app";
 
 async function setLoginWindowMode() {
   if (!("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) return;
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [appVersion, setAppVersion] = useState("");
 
   useEffect(() => {
     const previousHtmlBackground = document.documentElement.style.background;
@@ -47,6 +49,15 @@ export default function LoginPage() {
     document.body.style.margin = "0";
 
     void setLoginWindowMode();
+
+    const isDesktop =
+      "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+
+    if (isDesktop) {
+      void getVersion()
+        .then((version) => setAppVersion(version))
+        .catch((error) => console.error("Could not read app version:", error));
+    }
 
     const savedEmail = localStorage.getItem("mylife-remember-email");
     const savedPassword = localStorage.getItem("mylife-remember-password");
@@ -281,6 +292,19 @@ export default function LoginPage() {
         >
           {busy ? "Signing in..." : "Sign in"}
         </button>
+        {appVersion && (
+          <div
+            style={{
+              marginTop: "18px",
+              textAlign: "center",
+              fontSize: "12px",
+              color: "#555",
+              fontWeight: 500,
+            }}
+          >
+            My Life v{appVersion}
+          </div>
+        )}
       </form>
     </main>
   );
