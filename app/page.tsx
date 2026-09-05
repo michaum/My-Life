@@ -511,6 +511,10 @@ export default function Taskflow() {
   const [availableUpdate, setAvailableUpdate] =
     useState<Awaited<ReturnType<typeof check>>>(null);
   const [updateInstalling, setUpdateInstalling] = useState(false);
+  const [updateStage, setUpdateStage] =
+    useState<"idle" | "downloading" | "installing">("idle");
+  const [updateDownloaded, setUpdateDownloaded] = useState(0);
+  const [updateTotal, setUpdateTotal] = useState(0);
   const [updateError, setUpdateError] = useState("");
 
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -1710,16 +1714,44 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     if (!availableUpdate || updateInstalling) return;
 
     setUpdateInstalling(true);
+    setUpdateStage("downloading");
+    setUpdateDownloaded(0);
+    setUpdateTotal(0);
     setUpdateError("");
 
+    let downloaded = 0;
+    let total = 0;
+
     try {
-      await availableUpdate.downloadAndInstall();
+      await availableUpdate.downloadAndInstall((event) => {
+        switch (event.event) {
+          case "Started":
+            total = event.data.contentLength ?? 0;
+            setUpdateTotal(total);
+            setUpdateDownloaded(0);
+            setUpdateStage("downloading");
+            break;
+
+          case "Progress":
+            downloaded += event.data.chunkLength;
+            setUpdateDownloaded(downloaded);
+            break;
+
+          case "Finished":
+            if (total > 0) {
+              setUpdateDownloaded(total);
+            }
+            setUpdateStage("installing");
+            break;
+        }
+      });
     } catch (error) {
       console.error("Update installation failed:", error);
       setUpdateError(
         error instanceof Error ? error.message : String(error),
       );
       setUpdateInstalling(false);
+      setUpdateStage("idle");
     }
   }
 
@@ -2611,6 +2643,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           if (!open && !updateInstalling) {
             setAvailableUpdate(null);
             setUpdateError("");
+            setUpdateStage("idle");
+            setUpdateDownloaded(0);
+            setUpdateTotal(0);
           }
         }}
       >
@@ -2663,7 +2698,11 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   color: "#ffffff",
                 }}
               >
-                {updateInstalling ? "Updating My Life" : "My Life Update"}
+                {updateInstalling
+                  ? updateStage === "installing"
+                    ? "Installing My Life"
+                    : "Updating My Life"
+                  : "My Life Update"}
               </DialogTitle>
 
               <DialogDescription
@@ -2674,7 +2713,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 }}
               >
                 {updateInstalling
-                  ? "Please keep My Life open while the update is installed."
+                  ? updateStage === "installing"
+                    ? "The download is complete. My Life is installing the update."
+                    : "Please keep My Life open while the update downloads."
                   : "A new version is ready to install."}
               </DialogDescription>
             </div>
@@ -2765,30 +2806,129 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 padding: "18px",
                 borderRadius: "12px",
                 background: "rgba(255,255,255,0.05)",
-                textAlign: "center",
               }}
             >
-              <Loader2
-                size={28}
-                style={{
-                  margin: "0 auto 12px",
-                  animation: "spin 1s linear infinite",
-                  color: "#ff1a66",
-                }}
-              />
-              <strong style={{ display: "block", fontSize: "15px" }}>
-                Downloading and installing update…
-              </strong>
-              <span
-                style={{
-                  display: "block",
-                  marginTop: "6px",
-                  fontSize: "12px",
-                  color: "rgba(255,255,255,0.52)",
-                }}
-              >
-                My Life may close briefly when installation begins.
-              </span>
+              {(() => {
+                const percentage =
+                  updateTotal > 0
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (updateDownloaded / updateTotal) * 100,
+                        ),
+                      )
+                    : updateStage === "installing"
+                      ? 100
+                      : 0;
+
+                const downloadedMb =
+                  updateDownloaded / (1024 * 1024);
+                const totalMb = updateTotal / (1024 * 1024);
+
+                return (
+                  <>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <strong style={{ fontSize: "15px" }}>
+                        {updateStage === "installing"
+                          ? `Installing version ${availableUpdate?.version}…`
+                          : `Downloading version ${availableUpdate?.version}`}
+                      </strong>
+
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#ff1a66",
+                        }}
+                      >
+                        {percentage}%
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "9px",
+                        overflow: "hidden",
+                        borderRadius: "999px",
+                        background: "rgba(255,255,255,0.10)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${percentage}%`,
+                          height: "100%",
+                          borderRadius: "999px",
+                          background: "#ff1a66",
+                          transition: "width 160ms ease",
+                        }}
+                      />
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        marginTop: "10px",
+                        fontSize: "12px",
+                        color: "rgba(255,255,255,0.52)",
+                      }}
+                    >
+                      <span>
+                        {updateStage === "installing"
+                          ? "Download complete"
+                          : updateTotal > 0
+                            ? `${downloadedMb.toFixed(1)} MB of ${totalMb.toFixed(1)} MB`
+                            : "Preparing download…"}
+                      </span>
+
+                      {updateStage === "installing" && (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          <Loader2
+                            size={13}
+                            style={{
+                              animation: "spin 1s linear infinite",
+                            }}
+                          />
+                          Installing…
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: "16px",
+                        paddingTop: "14px",
+                        borderTop:
+                          "1px solid rgba(255,255,255,0.08)",
+                        fontSize: "12px",
+                        color: "rgba(255,255,255,0.48)",
+                        textAlign: "center",
+                      }}
+                    >
+                      {updateStage === "installing"
+                        ? "My Life may close briefly while the new version is installed."
+                        : "Please keep My Life open while the update downloads."}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </DialogContent>
