@@ -1,4 +1,4 @@
-name: Windows Release
+name: My Life Release
 
 on:
   push:
@@ -9,7 +9,36 @@ permissions:
   contents: write
 
 jobs:
+  deploy-web:
+    name: Deploy Web
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web frontend
+        run: npm run build
+
+      - name: Deploy My Life to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+
   build-windows:
+    name: Build Windows
+    needs: deploy-web
     runs-on: windows-latest
 
     steps:
