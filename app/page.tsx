@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Database from "@tauri-apps/plugin-sql";
 import { getVersion } from "@tauri-apps/api/app";
+import packageJson from "../package.json";
 import { check } from "@tauri-apps/plugin-updater";
 import {
   ArrowUpRight,
@@ -507,7 +508,7 @@ export default function Taskflow() {
     [subtask, setSubtask] = useState("");
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
-  const [appVersion, setAppVersion] = useState("");
+  const [appVersion, setAppVersion] = useState(packageJson.version ?? "");
   const [availableUpdate, setAvailableUpdate] =
     useState<Awaited<ReturnType<typeof check>>>(null);
   const [updateInstalling, setUpdateInstalling] = useState(false);
