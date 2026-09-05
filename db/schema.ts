@@ -23,6 +23,7 @@ export const projects = sqliteTable("projects", {
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
   color: text("color").notNull().default("#658373"),
+  sidebarFontColor: text("sidebar_font_color").notNull().default("#ffffff"),
   icon: text("icon").notNull().default("folder"),
   createdAt: text("created_at").notNull(),
 });

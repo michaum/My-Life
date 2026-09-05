@@ -101,6 +101,10 @@ const projectSchema = z.object({
   name: z.string().trim().min(1).max(100),
   description: z.string().max(2000),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  sidebarFontColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .default("#ffffff"),
   icon: z.enum([
     "folder",
     "home",
@@ -243,7 +247,10 @@ export async function GET(request: Request) {
     }
     return Response.json(
       {
-        projects: projects.results,
+        projects: projects.results.map((p: any) => ({
+          ...p,
+          sidebarFontColor: p.sidebar_font_color ?? "#ffffff",
+        })),
         tasks: tasks.results.map((t: any) => ({
           ...t,
           projectId: t.project_id,
@@ -448,9 +455,17 @@ export async function POST(request: Request) {
       const p = projectSchema.parse(b.project);
       await db
         .prepare(
-          "INSERT INTO projects(id,name,description,color,icon,created_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,description=excluded.description,color=excluded.color,icon=excluded.icon",
+          "INSERT INTO projects(id,name,description,color,sidebar_font_color,icon,created_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,description=excluded.description,color=excluded.color,sidebar_font_color=excluded.sidebar_font_color,icon=excluded.icon",
         )
-        .bind(p.id, p.name, p.description, p.color, p.icon, now)
+        .bind(
+          p.id,
+          p.name,
+          p.description,
+          p.color,
+          p.sidebarFontColor,
+          p.icon,
+          now,
+        )
         .run();
     } else if (b.action === "savePerson") {
       const person = personSchema.parse(b.person);

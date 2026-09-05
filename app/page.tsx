@@ -75,6 +75,7 @@ type Project = {
   name: string;
   description: string;
   color: string;
+  sidebarFontColor: string;
   icon: ProjectIcon;
 };
 type Person = { id: string; name: string; phone: string; smsEnabled: boolean };
@@ -788,7 +789,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }
 
     return {
-      projects,
+      projects: projects.map((p: any) => ({
+        ...p,
+        sidebarFontColor: p.sidebar_font_color ?? "#ffffff",
+      })),
       tasks: tasks.map((t: any) => ({
         ...t,
         projectId: t.project_id,
@@ -989,14 +993,23 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       const p = payload.project;
 
       await db.execute(
-        `INSERT INTO projects(id,name,description,color,icon,created_at)
-         VALUES(?,?,?,?,?,?)
+        `INSERT INTO projects(id,name,description,color,sidebar_font_color,icon,created_at)
+         VALUES(?,?,?,?,?,?,?)
          ON CONFLICT(id) DO UPDATE SET
            name=excluded.name,
            description=excluded.description,
            color=excluded.color,
+           sidebar_font_color=excluded.sidebar_font_color,
            icon=excluded.icon`,
-        [p.id, p.name, p.description, p.color, p.icon, now],
+        [
+          p.id,
+          p.name,
+          p.description,
+          p.color,
+          p.sidebarFontColor ?? "#ffffff",
+          p.icon,
+          now,
+        ],
       );
     } else if (action === "deleteProject") {
       const id = payload.id;
@@ -1259,7 +1272,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     });
 
     if (r.status === 401) {
-      return false;
+      throw new Error("Workspace download returned 401 Unauthorized.");
     }
 
     if (!r.ok) {
@@ -1278,10 +1291,6 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     };
 
     const now = new Date().toISOString();
-
-    await db.execute("BEGIN IMMEDIATE");
-
-    try {
       await db.execute("DELETE FROM comments");
       await db.execute("DELETE FROM task_values");
       await db.execute("DELETE FROM tasks");
@@ -1297,13 +1306,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       for (const p of data.projects) {
         await db.execute(
           `INSERT INTO projects(
-             id,name,description,color,icon,created_at
-           ) VALUES(?,?,?,?,?,?)`,
+             id,name,description,color,sidebar_font_color,icon,created_at
+           ) VALUES(?,?,?,?,?,?,?)`,
           [
             p.id,
             p.name,
             p.description ?? "",
             p.color ?? "#727272",
+            p.sidebarFontColor ?? p.sidebar_font_color ?? "#ffffff",
             p.icon ?? "folder",
             p.created_at ?? now,
           ],
@@ -1351,8 +1361,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
              assignee,due,due_time,end_time,emoji,font_family,font_size,
              font_style,font_color,board_font_color,list_font_color,
              calendar_font_color,overview_font_color,sort_order,subtasks,
-             created_at
-           ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+             recurrence_unit,recurrence_interval,created_at
+           ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [
             t.id,
             t.projectId,
@@ -1377,6 +1387,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             t.overviewFontColor ?? t.fontColor ?? "#1d2128",
             t.sortOrder ?? 0,
             JSON.stringify(t.subtasks ?? []),
+            t.recurrenceUnit ?? "none",
+            t.recurrenceInterval ?? 1,
             t.created_at ?? now,
           ],
         );
@@ -1429,13 +1441,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           JSON.stringify(data.filterLabels ?? {}),
         ],
       );
-
-      await db.execute("COMMIT");
-      return true;
-    } catch (error) {
-      await db.execute("ROLLBACK");
-      throw error;
-    }
+    return true;
   }
 
   async function processSyncQueue() {
@@ -1621,6 +1627,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           }
         } catch (error) {
           console.error("Desktop session check failed:", error);
+          setError("Desktop sync failed: " + (error instanceof Error ? error.message : String(error)));
         }
 
         return;
@@ -1895,6 +1902,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       name: "",
       description: "",
       color: colors[projects.length % colors.length],
+      sidebarFontColor: "#ffffff",
       icon: "folder",
     });
     setConfirmDelete(false);
@@ -2611,7 +2619,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 <span className="project-nav-icon" style={{ color: p.color }}>
                   <Icon size={14} />
                 </span>
-                <span className="truncate">{p.name}</span>
+                <span className="truncate"><span style={{ color: p.sidebarFontColor ?? "#ffffff" }}>{p.name}</span></span>
                 <span className="nav-count">
                   {
                     tasks.filter(
@@ -2750,7 +2758,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 size="icon"
                 aria-label="Edit project"
                 onClick={() => {
-                  setProjectDraft({ ...project });
+                  setProjectDraft({
+                    ...project,
+                    sidebarFontColor: project.sidebarFontColor ?? "#ffffff",
+                  });
                   setConfirmDelete(false);
                 }}
               >
@@ -4758,6 +4769,74 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   />
                 </div>
               </fieldset>
+
+              <fieldset>
+                <legend>Sidebar font color</legend>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <input
+                    type="color"
+                    aria-label="Choose sidebar project font color"
+                    value={projectDraft.sidebarFontColor ?? "#ffffff"}
+                    onChange={(e) =>
+                      setProjectDraft({
+                        ...projectDraft,
+                        sidebarFontColor: e.target.value.toUpperCase(),
+                      })
+                    }
+                    style={{
+                      width: 54,
+                      height: 40,
+                      padding: 2,
+                      cursor: "pointer",
+                    }}
+                  />
+                  <Input
+                    aria-label="Sidebar project font color hex value"
+                    value={projectDraft.sidebarFontColor ?? "#ffffff"}
+                    maxLength={7}
+                    style={{ width: 115 }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (/^#[0-9a-fA-F]{0,6}$/.test(value)) {
+                        setProjectDraft({
+                          ...projectDraft,
+                          sidebarFontColor: value,
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      if (
+                        !/^#[0-9a-fA-F]{6}$/.test(
+                          projectDraft.sidebarFontColor ?? "",
+                        )
+                      ) {
+                        setProjectDraft({
+                          ...projectDraft,
+                          sidebarFontColor: "#ffffff",
+                        });
+                      }
+                    }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: projectDraft.sidebarFontColor ?? "#ffffff",
+                      border: "1px solid rgba(0,0,0,.15)",
+                    }}
+                  />
+                </div>
+              </fieldset>
+
               <fieldset>
                 <legend>Project icon</legend>
                 <div className="project-icon-choices">

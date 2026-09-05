@@ -5,9 +5,17 @@
   "windows": [
     "main"
   ],
+  "remote": {
+    "urls": [
+      "https://mylife.michaum.workers.dev/*"
+    ]
+  },
   "permissions": [
     "core:default",
     "sql:default",
-    "sql:allow-execute"
+    "sql:allow-load",
+    "sql:allow-select",
+    "sql:allow-execute",
+    "sql:allow-close"
   ]
 }

@@ -75,6 +75,18 @@ pub fn run() {
             sql: include_str!("../migrations/0011_sync_queue.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 13,
+            description: "0012_task_recurrence",
+            sql: include_str!("../migrations/0012_task_recurrence.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 14,
+            description: "0013_project_sidebar_font_color",
+            sql: include_str!("../migrations/0013_project_sidebar_font_color.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
