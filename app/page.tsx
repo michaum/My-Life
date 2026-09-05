@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Database from "@tauri-apps/plugin-sql";
+import { check } from "@tauri-apps/plugin-updater";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -1654,6 +1655,40 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }
 
     void start();
+  }, []);
+
+
+  useEffect(() => {
+    const isDesktop =
+      "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+
+    if (!isDesktop || !navigator.onLine) return;
+
+    let cancelled = false;
+
+    async function checkForUpdates() {
+      try {
+        const update = await check();
+
+        if (!update || cancelled) return;
+
+        const installNow = window.confirm(
+          `My Life ${update.version} is available.\n\nWould you like to install the update now?`,
+        );
+
+        if (!installNow || cancelled) return;
+
+        await update.downloadAndInstall();
+      } catch (error) {
+        console.error("Update check failed:", error);
+      }
+    }
+
+    void checkForUpdates();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
