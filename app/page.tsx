@@ -1676,6 +1676,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     if (!isDesktop) return;
 
     let cancelled = false;
+    let checking = false;
 
     void getVersion()
       .then((version) => {
@@ -1685,28 +1686,46 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         console.error("Could not read app version:", error);
       });
 
-    if (!navigator.onLine) {
-      return () => {
-        cancelled = true;
-      };
-    }
-
     async function checkForUpdates() {
+      if (cancelled || checking || !navigator.onLine) return;
+
+      checking = true;
+
       try {
         const update = await check();
 
         if (!update || cancelled) return;
 
+        const dismissedVersion = sessionStorage.getItem(
+          "mylife-dismissed-update",
+        );
+
+        if (dismissedVersion === update.version) return;
+
         setAvailableUpdate(update);
       } catch (error) {
         console.error("Update check failed:", error);
+      } finally {
+        checking = false;
       }
     }
 
     void checkForUpdates();
 
+    const updateInterval = window.setInterval(() => {
+      void checkForUpdates();
+    }, 60 * 60 * 1000);
+
+    const handleOnline = () => {
+      void checkForUpdates();
+    };
+
+    window.addEventListener("online", handleOnline);
+
     return () => {
       cancelled = true;
+      window.clearInterval(updateInterval);
+      window.removeEventListener("online", handleOnline);
     };
   }, []);
 
@@ -2641,6 +2660,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         open={availableUpdate !== null}
         onOpenChange={(open) => {
           if (!open && !updateInstalling) {
+            if (availableUpdate?.version) {
+              sessionStorage.setItem(
+                "mylife-dismissed-update",
+                availableUpdate.version,
+              );
+            }
+
             setAvailableUpdate(null);
             setUpdateError("");
             setUpdateStage("idle");
@@ -2775,7 +2801,20 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setAvailableUpdate(null)}
+                  onClick={() => {
+                    if (availableUpdate?.version) {
+                      sessionStorage.setItem(
+                        "mylife-dismissed-update",
+                        availableUpdate.version,
+                      );
+                    }
+
+                    setAvailableUpdate(null);
+                    setUpdateError("");
+                    setUpdateStage("idle");
+                    setUpdateDownloaded(0);
+                    setUpdateTotal(0);
+                  }}
                   style={{
                     borderColor: "rgba(255,255,255,0.16)",
                     background: "transparent",
