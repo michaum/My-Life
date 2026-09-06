@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Database from "@tauri-apps/plugin-sql";
 import { getVersion } from "@tauri-apps/api/app";
 import packageJson from "../package.json";
@@ -508,6 +508,8 @@ export default function Taskflow() {
     [subtask, setSubtask] = useState("");
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
+  const desktopSyncInProgressRef = useRef(false);
+  const desktopSyncRequestedRef = useRef(false);
   const [appVersion, setAppVersion] = useState(packageJson.version ?? "");
   const [availableUpdate, setAvailableUpdate] =
     useState<Awaited<ReturnType<typeof check>>>(null);
@@ -1605,6 +1607,37 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }
   }
 
+  async function syncDesktopWorkspace() {
+    const isDesktop =
+      "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
+
+    if (!isDesktop || !navigator.onLine) {
+      return;
+    }
+
+    if (desktopSyncInProgressRef.current) {
+      desktopSyncRequestedRef.current = true;
+      return;
+    }
+
+    desktopSyncInProgressRef.current = true;
+
+    try {
+      do {
+        desktopSyncRequestedRef.current = false;
+
+        await processSyncQueue();
+        await downloadServerWorkspaceToLocal();
+        await refresh();
+      } while (
+        desktopSyncRequestedRef.current &&
+        navigator.onLine
+      );
+    } finally {
+      desktopSyncInProgressRef.current = false;
+    }
+  }
+
   useEffect(() => {
     async function start() {
       const isDesktop =
@@ -1634,9 +1667,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             };
 
             setCurrentUser(sessionData.user);
-            await processSyncQueue();
-            await downloadServerWorkspaceToLocal();
-            await refresh();
+            await syncDesktopWorkspace();
           }
         } catch (error) {
           console.error("Desktop session check failed:", error);
@@ -1781,9 +1812,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
     const sync = async () => {
       try {
-        await processSyncQueue();
-        await downloadServerWorkspaceToLocal();
-        await refresh();
+        await syncDesktopWorkspace();
       } catch (error) {
         console.error("Reconnect sync failed:", error);
       }
@@ -1817,6 +1846,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           await saveTaskLocally(payload);
           await refresh();
           setNotice(message);
+          void syncDesktopWorkspace();
           return true;
         }
 
@@ -1825,7 +1855,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         if (handledLocally) {
           await refresh();
           setNotice(message);
-          void processSyncQueue();
+          void syncDesktopWorkspace();
           return true;
         }
       }
