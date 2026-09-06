@@ -113,7 +113,7 @@ type Task = {
   due: string;
   dueTime: string;
   endTime: string;
-  recurrenceUnit: "none" | "days" | "months" | "years";
+  recurrenceUnit: "none" | "days" | "weeks" | "months" | "years";
   recurrenceInterval: number;
   emoji: string;
   fontFamily:
@@ -2190,6 +2190,16 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     if (unit === "days") {
       const date = new Date(Date.UTC(year, month - 1, day));
       date.setUTCDate(date.getUTCDate() + amount);
+      return format(
+        date.getUTCFullYear(),
+        date.getUTCMonth() + 1,
+        date.getUTCDate(),
+      );
+    }
+
+    if (unit === "weeks") {
+      const date = new Date(Date.UTC(year, month - 1, day));
+      date.setUTCDate(date.getUTCDate() + amount * 7);
       return format(
         date.getUTCFullYear(),
         date.getUTCMonth() + 1,
@@ -4700,6 +4710,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   >
                     <option value="none">Does not repeat</option>
                     <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
                     <option value="months">Months</option>
                     <option value="years">Years</option>
                   </NativeSelect>
@@ -4726,9 +4737,11 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                       <span>
                         {draft.recurrenceUnit === "days"
                           ? "day(s)"
-                          : draft.recurrenceUnit === "months"
-                            ? "month(s)"
-                            : "year(s)"}
+                          : draft.recurrenceUnit === "weeks"
+                            ? "week(s)"
+                            : draft.recurrenceUnit === "months"
+                              ? "month(s)"
+                              : "year(s)"}
                       </span>
                     </div>
                   </label>
