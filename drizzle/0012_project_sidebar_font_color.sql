@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN sidebar_font_color TEXT NOT NULL DEFAULT '#ffffff';

@@ -18,6 +18,10 @@ if [[ ! -x "${vinext}" ]]; then
   exit 69
 fi
 
+echo "Running project verification..."
+"${script_dir}/verify-project.sh"
+
+echo
 echo "Running bounded vinext build..."
 timeout \
   --signal=TERM \

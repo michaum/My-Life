@@ -1,0 +1,2 @@
+ALTER TABLE tasks ADD COLUMN recurrence_unit TEXT NOT NULL DEFAULT 'none';
+ALTER TABLE tasks ADD COLUMN recurrence_interval INTEGER NOT NULL DEFAULT 1;

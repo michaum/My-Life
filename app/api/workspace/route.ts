@@ -26,7 +26,7 @@ const taskSchema = z.object({
     ),
   dueTime: z.string().regex(/^$|^([01]\d|2[0-3]):[0-5]\d$/),
   endTime: z.string().regex(/^$|^([01]\d|2[0-3]):[0-5]\d$/),
-  recurrenceUnit: z.enum(["none", "days", "months", "years"]).default("none"),
+  recurrenceUnit: z.enum(["none", "days", "weeks", "months", "years"]).default("none"),
   recurrenceInterval: z.number().int().min(1).max(999).default(1),
   emoji: z.string().max(8),
   fontFamily: z.enum([
@@ -812,6 +812,9 @@ export async function POST(request: Request) {
       );
     if (error instanceof SmsDeliveryError)
       return Response.json({ error: error.message }, { status: 502 });
+
+    console.error("Workspace API error:", error);
+
     return Response.json(
       { error: "Your change could not be saved. Please try again." },
       { status: 500 },

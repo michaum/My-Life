@@ -2683,6 +2683,37 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     d.setDate(d.getDate() + i);
     return d;
   });
+  const taskOccursOnDate = (task: Task, dateKey: string) => {
+    if (!task.due) return false;
+    if (task.due === dateKey) return true;
+
+    // A completed recurring task remains visible on its real due date,
+    // but must not generate future calendar previews. The next real
+    // occurrence is created when the task is completed.
+    if (task.status === "Done") return false;
+
+    const unit = task.recurrenceUnit || "none";
+    if (unit === "none" || dateKey < task.due) return false;
+
+    let occurrence = task.due;
+    let guard = 0;
+
+    while (occurrence < dateKey && guard < 10000) {
+      const next = nextRecurringDate(
+        occurrence,
+        task.recurrenceInterval || 1,
+        unit,
+      );
+
+      if (next <= occurrence) return false;
+
+      occurrence = next;
+      guard += 1;
+    }
+
+    return occurrence === dateKey;
+  };
+
   const calendarTitle =
     calendarMode === "month"
       ? month.toLocaleDateString("en-US", { month: "long", year: "numeric" })
@@ -3889,18 +3920,29 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                           {d.getDate()}
                         </span>
                         {filtered
-                          .filter((t) => t.due === key)
-                          .map((t) => (
-                            <div className="calendar-entry" key={t.id}>
+                          .filter((t) => taskOccursOnDate(t, key))
+                          .map((t) => {
+                            const isOriginalOccurrence = t.due === key;
+
+                            return (
+                            <div
+                              className="calendar-entry"
+                              key={`${t.id}:${key}`}
+                            >
                               <button
-                                draggable={!busy}
+                                draggable={!busy && isOriginalOccurrence}
                                 onDragStart={(e) => {
+                                  if (!isOriginalOccurrence) {
+                                    e.preventDefault();
+                                    return;
+                                  }
+
                                   setDragging(t.id);
                                   e.dataTransfer.setData("text/plain", t.id);
                                   e.dataTransfer.effectAllowed = "move";
                                 }}
                                 onDragEnd={() => setDragging(null)}
-                                className={`calendar-task ${t.status === "Done" ? "struck" : ""} ${dragging === t.id ? "dragging" : ""}`}
+                                className={`calendar-task ${t.status === "Done" ? "struck" : ""} ${dragging === t.id && isOriginalOccurrence ? "dragging" : ""}`}
                                 style={{
                                   background: t.color || "#e5e5e5",
                                   ...taskTextStyle(t, "calendar"),
@@ -3919,7 +3961,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                                 </span>
                               </button>
                             </div>
-                          ))}
+                            );
+                          })}
                       </div>
                     );
                   })}
