@@ -87,6 +87,18 @@ pub fn run() {
             sql: include_str!("../migrations/0013_project_sidebar_font_color.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 15,
+            description: "0014_task_attachments",
+            sql: include_str!("../migrations/0014_task_attachments.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 16,
+            description: "0015_list_column_order",
+            sql: include_str!("../migrations/0015_list_column_order.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

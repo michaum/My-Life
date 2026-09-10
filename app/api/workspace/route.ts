@@ -55,6 +55,17 @@ const taskSchema = z.object({
       }),
     )
     .max(100),
+  attachments: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(100),
+        name: z.string().trim().min(1).max(250),
+        mimeType: z.enum(["image/png", "image/jpeg", "image/webp"]),
+        data: z.string().min(1),
+      }),
+    )
+    .max(5)
+    .default([]),
   customValues: z
     .record(z.string().min(1).max(100), z.string().max(5000))
     .refine((v) => Object.keys(v).length <= 50, "Too many custom values")
@@ -174,6 +185,10 @@ const filterLabelsSchema = z.object({
     Name: z.string().trim().min(1).max(40),
   }),
 });
+const listColumnOrderSchema = z.record(
+  z.string(),
+  z.array(z.string().min(1).max(100)).max(100),
+);
 const defaultFilterLabels = {
   priority: { High: "High", Medium: "Medium", Low: "Low" },
   sort: {
@@ -222,6 +237,7 @@ export async function GET(request: Request) {
       customFields,
       people,
       taskValues,
+      taskAttachments,
       workspaceSettings,
     ] = await db.batch([
       db.prepare("SELECT * FROM projects ORDER BY created_at"),
@@ -231,8 +247,9 @@ export async function GET(request: Request) {
       db.prepare("SELECT * FROM custom_fields ORDER BY created_at"),
       db.prepare("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
       db.prepare("SELECT * FROM task_values ORDER BY task_id, field_id"),
+      db.prepare("SELECT * FROM task_attachments ORDER BY created_at"),
       db.prepare(
-        "SELECT status_options,filter_labels FROM workspace WHERE id='initialized'",
+        "SELECT status_options,filter_labels,list_column_order FROM workspace WHERE id='initialized'",
       ),
     ]);
     const valuesByTask = new Map<string, Record<string, string>>();
@@ -245,6 +262,18 @@ export async function GET(request: Request) {
       values[row.field_id] = row.value;
       valuesByTask.set(row.task_id, values);
     }
+    const attachmentsByTask = new Map<string, any[]>();
+    for (const row of taskAttachments.results as any[]) {
+      const list = attachmentsByTask.get(row.task_id) ?? [];
+      list.push({
+        id: row.id,
+        name: row.name,
+        mimeType: row.mime_type,
+        data: row.data,
+      });
+      attachmentsByTask.set(row.task_id, list);
+    }
+
     return Response.json(
       {
         projects: projects.results.map((p: any) => ({
@@ -270,6 +299,7 @@ export async function GET(request: Request) {
           overviewFontColor: t.overview_font_color ?? t.font_color,
           sortOrder: t.sort_order,
           subtasks: JSON.parse(t.subtasks),
+          attachments: attachmentsByTask.get(t.id) ?? [],
           customValues: valuesByTask.get(t.id) ?? {},
         })),
         comments: comments.results,
@@ -317,6 +347,18 @@ export async function GET(request: Request) {
                   workspaceSettings.results[0] as
                     { filter_labels?: string } | undefined
                 )?.filter_labels || "{}",
+              ),
+            ),
+          ),
+        listColumnOrder: listColumnOrderSchema
+          .catch({})
+          .parse(
+            JSON.parse(
+              String(
+                (
+                  workspaceSettings.results[0] as
+                    { list_column_order?: string } | undefined
+                )?.list_column_order || "{}",
               ),
             ),
           ),
@@ -497,7 +539,12 @@ export async function POST(request: Request) {
             "DELETE FROM task_values WHERE task_id IN (SELECT id FROM tasks WHERE project_id=?)",
           )
           .bind(id),
-        db.prepare("DELETE FROM tasks WHERE project_id=?").bind(id),
+        db
+        .prepare(
+          "DELETE FROM task_attachments WHERE task_id IN (SELECT id FROM tasks WHERE project_id=?)",
+        )
+        .bind(id),
+      db.prepare("DELETE FROM tasks WHERE project_id=?").bind(id),
         db.prepare("DELETE FROM custom_fields WHERE project_id=?").bind(id),
         db.prepare("DELETE FROM sections WHERE project_id=?").bind(id),
         db.prepare("DELETE FROM projects WHERE id=?").bind(id),
@@ -665,6 +712,12 @@ export async function POST(request: Request) {
         .prepare("UPDATE workspace SET filter_labels=? WHERE id='initialized'")
         .bind(JSON.stringify(labels))
         .run();
+    } else if (b.action === "saveListColumnOrder") {
+      const order = listColumnOrderSchema.parse(b.order);
+      await db
+        .prepare("UPDATE workspace SET list_column_order=? WHERE id='initialized'")
+        .bind(JSON.stringify(order))
+        .run();
     } else if (b.action === "deleteCustomField") {
       const id = z.string().min(1).parse(b.id);
       await db.batch([
@@ -758,12 +811,27 @@ export async function POST(request: Request) {
             now,
           ),
         db.prepare("DELETE FROM task_values WHERE task_id=?").bind(t.id),
+        db.prepare("DELETE FROM task_attachments WHERE task_id=?").bind(t.id),
         ...values.map(([fieldId, value]) =>
           db
             .prepare(
               "INSERT INTO task_values(task_id,field_id,value) VALUES(?,?,?)",
             )
             .bind(t.id, fieldId, value),
+        ),
+        ...t.attachments.map((attachment) =>
+          db
+            .prepare(
+              "INSERT INTO task_attachments(id,task_id,name,mime_type,data,created_at) VALUES(?,?,?,?,?,?)",
+            )
+            .bind(
+              attachment.id,
+              t.id,
+              attachment.name,
+              attachment.mimeType,
+              attachment.data,
+              now,
+            ),
         ),
       ]);
       if (t.assignee && previous?.assignee !== t.assignee) {
@@ -777,6 +845,7 @@ export async function POST(request: Request) {
       await db.batch([
         db.prepare("DELETE FROM comments WHERE task_id=?").bind(id),
         db.prepare("DELETE FROM task_values WHERE task_id=?").bind(id),
+        db.prepare("DELETE FROM task_attachments WHERE task_id=?").bind(id),
         db.prepare("DELETE FROM tasks WHERE id=?").bind(id),
       ]);
     } else if (b.action === "comment") {

@@ -1169,15 +1169,100 @@ h1 {
   margin-top: 10px;
 }
 .subtasks-editor > strong,
-.comments-editor > strong {
+.comments-editor > strong,
+.attachments-editor > strong {
   font-size: 11px;
   color: #667a55;
   font-weight: 500;
 }
-.subtasks-editor small {
+.subtasks-editor small,
+.attachments-editor small {
   font-size: 9px;
   color: #a5af99;
   margin-left: 5px;
+}
+
+.attachments-editor {
+  margin-top: 14px;
+}
+
+.attachment-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 72px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px dashed #cbd5c0;
+  border-radius: 10px;
+  background: #fafbf7;
+  color: #718163;
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.attachment-dropzone:hover,
+.attachment-dropzone:focus {
+  border-color: #8ea27c;
+  background: #f5f8f0;
+  outline: none;
+}
+
+.attachment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.attachment-item {
+  position: relative;
+  min-width: 0;
+}
+
+.attachment-item img {
+  display: block;
+  width: 100%;
+  height: 92px;
+  object-fit: cover;
+  border: 1px solid #e2e7db;
+  border-radius: 9px;
+  background: #f4f6f0;
+}
+
+.attachment-item > span {
+  display: block;
+  margin-top: 4px;
+  font-size: 9px;
+  color: #7d8b71;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #9a6757;
+  cursor: pointer;
+}
+
+.attachment-remove:hover {
+  background: #fff;
+  color: #b14f35;
 }
 .subtask-row {
   display: flex;
@@ -1608,6 +1693,24 @@ h1 {
   text-align: left;
   color: #73816a;
 }
+
+.draggable-column-head {
+  cursor: grab;
+  user-select: none;
+  border-radius: 6px;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.draggable-column-head:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.draggable-column-head:active {
+  cursor: grabbing;
+  opacity: 0.72;
+}
 .custom-column-head span {
   max-width: 100%;
   overflow: hidden;
@@ -1743,4 +1846,66 @@ h1 {
   .list-section-head {
     min-width: calc(100vw - 34px);
   }
+}
+
+.column-manager-row {
+  cursor: grab;
+  user-select: none;
+}
+
+.column-manager-row:active {
+  cursor: grabbing;
+}
+
+.column-manager-row > span > svg:first-child {
+  flex: 0 0 auto;
+  color: #9aa690;
+}
+
+.column-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  min-height: 18px;
+  margin-right: 6px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  line-height: 1;
+  opacity: 0.7;
+  vertical-align: middle;
+}
+
+.column-drag-handle:hover {
+  opacity: 1;
+}
+
+.column-drag-handle:active {
+  cursor: grabbing;
+}
+
+.column-drag-handle svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.draggable-column-head {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.draggable-column-head.is-dragging {
+  transform: translateY(-2px) scale(1.02);
+  z-index: 20;
+  position: relative;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  background: var(--background);
+}
+
+.list-head > * {
+  transition: transform 160ms ease;
 }

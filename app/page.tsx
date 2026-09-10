@@ -100,6 +100,13 @@ type AdminUser = {
   active: boolean;
   createdAt: string;
 };
+type TaskAttachment = {
+  id: string;
+  name: string;
+  mimeType: "image/png" | "image/jpeg" | "image/webp";
+  data: string;
+};
+
 type Task = {
   id: string;
   projectId: string;
@@ -133,6 +140,7 @@ type Task = {
   overviewFontColor: string;
   sortOrder: number;
   subtasks: { id: string; title: string; done: boolean }[];
+  attachments: TaskAttachment[];
   customValues: Record<string, string>;
 };
 type FilterLabels = {
@@ -480,7 +488,14 @@ export default function Taskflow() {
     [workflowOptions, setWorkflowOptions] =
       useState<ChoiceOption[]>(defaultStatusOptions),
     [filterLabels, setFilterLabels] =
-      useState<FilterLabels>(defaultFilterLabels);
+      useState<FilterLabels>(defaultFilterLabels),
+    [listColumnOrder, setListColumnOrder] =
+      useState<Record<string, string[]>>({});
+  const listColumnDragSourceRef = useRef<string | null>(null);
+  const listColumnDragStartOrderRef = useRef<string[] | null>(null);
+  const listColumnDragCurrentOrderRef = useRef<string[] | null>(null);
+  const listColumnDragMovedRef = useRef(false);
+  const [listColumnDragging, setListColumnDragging] = useState<string | null>(null);
   const [active, setActive] = useState("welcome-project"),
     [view, setView] = useState("Board"),
     [query, setQuery] = useState(""),
@@ -510,6 +525,114 @@ export default function Taskflow() {
     [personDraft, setPersonDraft] = useState<Person | null>(null);
   const desktopSyncInProgressRef = useRef(false);
   const desktopSyncRequestedRef = useRef(false);
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function addTaskAttachments(files: FileList | File[]) {
+    if (!draft) return;
+
+    const allowedTypes = new Set([
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+    ]);
+
+    const existing = draft.attachments ?? [];
+    const remainingSlots = Math.max(0, 5 - existing.length);
+
+    if (remainingSlots === 0) {
+      setError("A task can have up to 5 screenshots.");
+      return;
+    }
+
+    const selected = Array.from(files)
+      .filter((file) => allowedTypes.has(file.type))
+      .slice(0, remainingSlots);
+
+    if (!selected.length) {
+      setError("Please choose a PNG, JPEG, or WebP image.");
+      return;
+    }
+
+    const added = await Promise.all(
+      selected.map(
+        (file) =>
+          new Promise<TaskAttachment>((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+              if (typeof reader.result !== "string") {
+                reject(new Error("Could not read image."));
+                return;
+              }
+
+              const image = new Image();
+
+              image.onload = () => {
+                const maxDimension = 1920;
+                const largestSide = Math.max(image.width, image.height);
+
+                if (largestSide <= maxDimension) {
+                  resolve({
+                    id: crypto.randomUUID(),
+                    name: file.name || "screenshot",
+                    mimeType: file.type as TaskAttachment["mimeType"],
+                    data: reader.result as string,
+                  });
+                  return;
+                }
+
+                const scale = maxDimension / largestSide;
+                const canvas = document.createElement("canvas");
+                canvas.width = Math.round(image.width * scale);
+                canvas.height = Math.round(image.height * scale);
+
+                const context = canvas.getContext("2d");
+
+                if (!context) {
+                  reject(new Error("Could not process image."));
+                  return;
+                }
+
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                const data = canvas.toDataURL("image/webp", 0.9);
+
+                resolve({
+                  id: crypto.randomUUID(),
+                  name: (file.name || "screenshot").replace(
+                    /\.(png|jpe?g|webp)$/i,
+                    ".webp",
+                  ),
+                  mimeType: "image/webp",
+                  data,
+                });
+              };
+
+              image.onerror = () =>
+                reject(new Error(`Could not process ${file.name}.`));
+
+              image.src = reader.result;
+            };
+
+            reader.onerror = () =>
+              reject(new Error(`Could not read ${file.name}.`));
+
+            reader.readAsDataURL(file);
+          }),
+      ),
+    );
+
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            attachments: [...(current.attachments ?? []), ...added],
+          }
+        : current,
+    );
+
+    setError("");
+  }
   const [appVersion, setAppVersion] = useState(packageJson.version ?? "");
   const [availableUpdate, setAvailableUpdate] =
     useState<Awaited<ReturnType<typeof check>>>(null);
@@ -784,6 +907,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       customFields,
       people,
       taskValues,
+      taskAttachments,
       workspaceSettings,
     ] = await Promise.all([
       db.select<any[]>("SELECT * FROM projects ORDER BY created_at"),
@@ -793,7 +917,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       db.select<any[]>("SELECT * FROM custom_fields ORDER BY created_at"),
       db.select<any[]>("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
       db.select<any[]>("SELECT * FROM task_values ORDER BY task_id, field_id"),
-      db.select<any[]>("SELECT status_options,filter_labels FROM workspace WHERE id='initialized'"),
+      db.select<any[]>("SELECT * FROM task_attachments ORDER BY created_at"),
+      db.select<any[]>("SELECT status_options,filter_labels,list_column_order FROM workspace WHERE id='initialized'"),
     ]);
 
     const valuesByTask = new Map<string, Record<string, string>>();
@@ -801,6 +926,18 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       const values = valuesByTask.get(row.task_id) ?? {};
       values[row.field_id] = row.value;
       valuesByTask.set(row.task_id, values);
+    }
+
+    const attachmentsByTask = new Map<string, TaskAttachment[]>();
+    for (const row of taskAttachments) {
+      const attachments = attachmentsByTask.get(row.task_id) ?? [];
+      attachments.push({
+        id: row.id,
+        name: row.name,
+        mimeType: row.mime_type,
+        data: row.data,
+      });
+      attachmentsByTask.set(row.task_id, attachments);
     }
 
     return {
@@ -827,6 +964,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         overviewFontColor: t.overview_font_color ?? t.font_color,
         sortOrder: t.sort_order,
         subtasks: JSON.parse(t.subtasks),
+        attachments: attachmentsByTask.get(t.id) ?? [],
         customValues: valuesByTask.get(t.id) ?? {},
       })),
       comments,
@@ -856,6 +994,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       filterLabels: JSON.parse(
         String(workspaceSettings[0]?.filter_labels || "{}"),
       ) as FilterLabels,
+      listColumnOrder: JSON.parse(
+        String(workspaceSettings[0]?.list_column_order || "{}"),
+      ) as Record<string, string[]>,
     };
   }
 
@@ -983,11 +1124,28 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     );
 
     await db.execute("DELETE FROM task_values WHERE task_id=?", [t.id]);
+    await db.execute("DELETE FROM task_attachments WHERE task_id=?", [t.id]);
 
     for (const [fieldId, value] of values) {
       await db.execute(
         "INSERT INTO task_values(task_id,field_id,value) VALUES(?,?,?)",
         [t.id, fieldId, value],
+      );
+    }
+
+    for (const attachment of t.attachments ?? []) {
+      await db.execute(
+        `INSERT INTO task_attachments(
+          id,task_id,name,mime_type,data,created_at
+        ) VALUES(?,?,?,?,?,?)`,
+        [
+          attachment.id,
+          t.id,
+          attachment.name,
+          attachment.mimeType,
+          attachment.data,
+          now,
+        ],
       );
     }
 
@@ -1037,6 +1195,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       for (const task of taskRows) {
         await db.execute("DELETE FROM comments WHERE task_id=?", [task.id]);
         await db.execute("DELETE FROM task_values WHERE task_id=?", [task.id]);
+        await db.execute("DELETE FROM task_attachments WHERE task_id=?", [task.id]);
       }
 
       await db.execute("DELETE FROM tasks WHERE project_id=?", [id]);
@@ -1233,9 +1392,15 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         "UPDATE workspace SET filter_labels=? WHERE id='initialized'",
         [JSON.stringify(payload.labels)],
       );
+    } else if (action === "saveListColumnOrder") {
+      await db.execute(
+        "UPDATE workspace SET list_column_order=? WHERE id='initialized'",
+        [JSON.stringify(payload.order)],
+      );
     } else if (action === "deleteTask") {
       await db.execute("DELETE FROM comments WHERE task_id=?", [payload.id]);
       await db.execute("DELETE FROM task_values WHERE task_id=?", [payload.id]);
+      await db.execute("DELETE FROM task_attachments WHERE task_id=?", [payload.id]);
       await db.execute("DELETE FROM tasks WHERE id=?", [payload.id]);
     } else if (action === "comment") {
       const taskRows = await db.select<any[]>(
@@ -1303,11 +1468,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       people: any[];
       statusOptions: ChoiceOption[];
       filterLabels: FilterLabels;
+      listColumnOrder: Record<string, string[]>;
     };
 
     const now = new Date().toISOString();
       await db.execute("DELETE FROM comments");
       await db.execute("DELETE FROM task_values");
+      await db.execute("DELETE FROM task_attachments");
       await db.execute("DELETE FROM tasks");
       await db.execute("DELETE FROM custom_fields");
       await db.execute("DELETE FROM sections");
@@ -1417,6 +1584,22 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             [t.id, fieldId, value],
           );
         }
+
+        for (const attachment of t.attachments ?? []) {
+          await db.execute(
+            `INSERT INTO task_attachments(
+              id,task_id,name,mime_type,data,created_at
+            ) VALUES(?,?,?,?,?,?)`,
+            [
+              attachment.id,
+              t.id,
+              attachment.name,
+              attachment.mimeType,
+              attachment.data,
+              now,
+            ],
+          );
+        }
       }
 
       for (const c of data.comments) {
@@ -1449,11 +1632,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       await db.execute(
         `UPDATE workspace
-         SET status_options=?,filter_labels=?
+         SET status_options=?,filter_labels=?,list_column_order=?
          WHERE id='initialized'`,
         [
           JSON.stringify(data.statusOptions ?? []),
           JSON.stringify(data.filterLabels ?? {}),
+          JSON.stringify(data.listColumnOrder ?? {}),
         ],
       );
     return true;
@@ -1535,6 +1719,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       setPeople(d.people);
       setWorkflowOptions(d.statusOptions);
       setFilterLabels(d.filterLabels);
+      setListColumnOrder(d.listColumnOrder ?? {});
       return d;
     }
 
@@ -1555,6 +1740,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       people: Person[];
       statusOptions: ChoiceOption[];
       filterLabels: FilterLabels;
+      listColumnOrder: Record<string, string[]>;
     };
     if (!r.ok) throw new Error(d.error);
     setProjects(d.projects);
@@ -1565,6 +1751,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setPeople(d.people);
     setWorkflowOptions(d.statusOptions);
     setFilterLabels(d.filterLabels);
+    setListColumnOrder(d.listColumnOrder ?? {});
     return d;
   }
   async function initialize() {
@@ -1889,6 +2076,167 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   const projectFields = project
     ? customFields.filter((f) => f.projectId === project.id)
     : [];
+
+  const availableListColumnIds = [
+    "task-name",
+    ...projectFields.map((field) => `field:${field.id}`),
+  ];
+
+  const savedProjectColumnOrder = project
+    ? listColumnOrder[project.id] ?? []
+    : [];
+
+  const orderedListColumnIds = [
+    ...savedProjectColumnOrder.filter((id) =>
+      availableListColumnIds.includes(id),
+    ),
+    ...availableListColumnIds.filter(
+      (id) => !savedProjectColumnOrder.includes(id),
+    ),
+  ];
+
+  async function moveListColumn(sourceId: string, targetId: string) {
+    if (!project || sourceId === targetId) return;
+
+    const sourceIndex = orderedListColumnIds.indexOf(sourceId);
+    const targetIndex = orderedListColumnIds.indexOf(targetId);
+
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const nextOrder = [...orderedListColumnIds];
+    const [moved] = nextOrder.splice(sourceIndex, 1);
+    nextOrder.splice(targetIndex, 0, moved);
+
+    const previousOrder = listColumnOrder;
+    const nextColumnOrder = {
+      ...listColumnOrder,
+      [project.id]: nextOrder,
+    };
+
+    setListColumnOrder(nextColumnOrder);
+
+    const saved = await mutate(
+      {
+        action: "saveListColumnOrder",
+        order: nextColumnOrder,
+      },
+      "Column order updated",
+    );
+
+    if (!saved) {
+      setListColumnOrder(previousOrder);
+    }
+  }
+
+  function previewListColumnPointerDrag(
+    e: React.PointerEvent<HTMLElement>,
+  ) {
+    const source = listColumnDragSourceRef.current;
+    if (!project || !source) return;
+
+    const targetElement = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest<HTMLElement>("[data-list-column-id]");
+
+    const target = targetElement?.dataset.listColumnId;
+    if (!target || target === source) return;
+
+    const currentOrder =
+      listColumnDragCurrentOrderRef.current ?? [...orderedListColumnIds];
+
+    const sourceIndex = currentOrder.indexOf(source);
+    const targetIndex = currentOrder.indexOf(target);
+
+    if (
+      sourceIndex === -1 ||
+      targetIndex === -1 ||
+      sourceIndex === targetIndex
+    ) {
+      return;
+    }
+
+    const nextOrder = [...currentOrder];
+    const [moved] = nextOrder.splice(sourceIndex, 1);
+    nextOrder.splice(targetIndex, 0, moved);
+
+    listColumnDragCurrentOrderRef.current = nextOrder;
+    listColumnDragMovedRef.current = true;
+
+    setListColumnOrder((current) => ({
+      ...current,
+      [project.id]: nextOrder,
+    }));
+  }
+
+  async function finishListColumnPointerDrag() {
+    const source = listColumnDragSourceRef.current;
+    const startOrder = listColumnDragStartOrderRef.current;
+    const finalOrder = listColumnDragCurrentOrderRef.current;
+
+    listColumnDragSourceRef.current = null;
+    listColumnDragStartOrderRef.current = null;
+    listColumnDragCurrentOrderRef.current = null;
+    setListColumnDragging(null);
+
+    if (!project || !source || !startOrder || !finalOrder) return;
+
+    if (JSON.stringify(startOrder) === JSON.stringify(finalOrder)) {
+      return;
+    }
+
+    const nextColumnOrder = {
+      ...listColumnOrder,
+      [project.id]: finalOrder,
+    };
+
+    const saved = await mutate(
+      {
+        action: "saveListColumnOrder",
+        order: nextColumnOrder,
+      },
+      "Column order updated",
+    );
+
+    if (!saved) {
+      setListColumnOrder((current) => ({
+        ...current,
+        [project.id]: startOrder,
+      }));
+    }
+  }
+
+  function startListColumnPointerDrag(
+    columnId: string,
+    e: React.PointerEvent<HTMLElement>,
+  ) {
+    if (!project || busy) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    listColumnDragSourceRef.current = columnId;
+    listColumnDragStartOrderRef.current = [...orderedListColumnIds];
+    listColumnDragCurrentOrderRef.current = [...orderedListColumnIds];
+    listColumnDragMovedRef.current = false;
+    setListColumnDragging(columnId);
+
+    const handleMove = (event: PointerEvent) => {
+      previewListColumnPointerDrag(event as unknown as React.PointerEvent<HTMLElement>);
+    };
+
+    const handleUp = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
+
+      void finishListColumnPointerDrag();
+    };
+
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
+  }
+
   const scope = tasks.filter(
     (t) =>
       active === "all" ||
@@ -2030,6 +2378,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           t.sectionId === sectionId,
       ).length,
       subtasks: [],
+      attachments: [],
       customValues: {},
     });
   }
@@ -2039,6 +2388,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       recurrenceUnit: task.recurrenceUnit || "none",
       recurrenceInterval: task.recurrenceInterval || 1,
       subtasks: task.subtasks.map((s) => ({ ...s })),
+      attachments: (task.attachments ?? []).map((a) => ({ ...a })),
       customValues: { ...task.customValues },
     });
     setConfirmDelete(false);
@@ -2261,6 +2611,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         ...subtask,
         done: false,
       })),
+    attachments: [],
     };
 
     await mutate(
@@ -2571,7 +2922,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     </article>
   );
   const listGrid = {
-    gridTemplateColumns: `minmax(260px,2.6fr) ${projectFields.map(() => "minmax(145px,1fr)").join(" ")} 105px`,
+    gridTemplateColumns: `${orderedListColumnIds
+      .map((id) =>
+        id === "task-name"
+          ? "minmax(260px,2.6fr)"
+          : "minmax(145px,1fr)",
+      )
+      .join(" ")} 105px`,
   };
   const renderListRow = (t: Task) => (
     <div
@@ -2596,58 +2953,76 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           void moveTaskToSection(data.slice(10), t.sectionId, t.id);
       }}
     >
-      <div className="list-name">
-        <button
-          className={`check-task ${t.status === "Done" ? "checked" : ""}`}
-          disabled={busy}
-          onClick={() =>
-            changeStatus(t, t.status === "Done" ? "To do" : "Done")
-          }
-          aria-label={`Toggle completion of ${t.title}`}
-        >
-          {t.status === "Done" && <Check size={11} />}
-        </button>
-        <button
-          onClick={() => editTask(t)}
-          className={t.status === "Done" ? "struck" : ""}
-          style={taskTextStyle(t, "list")}
-        >
-          {t.title}
-        </button>
-      </div>
-      {projectFields.map((field) =>
-        field.type === "Choice" ? (
-          <ChoiceDropdown
-            key={field.id}
-            label={`${field.name} for ${t.title}`}
-            value={t.customValues[field.id] || ""}
-            options={field.options}
-            disabled={busy}
-            onChange={(value) =>
-              void mutate(
-                {
-                  action: "saveTask",
-                  task: {
-                    ...t,
-                    customValues: { ...t.customValues, [field.id]: value },
+      {orderedListColumnIds.map((columnId) => {
+        if (columnId === "task-name") {
+          return (
+            <div className="list-name" key={columnId}>
+              <button
+                className={`check-task ${t.status === "Done" ? "checked" : ""}`}
+                disabled={busy}
+                onClick={() =>
+                  changeStatus(t, t.status === "Done" ? "To do" : "Done")
+                }
+                aria-label={`Toggle completion of ${t.title}`}
+              >
+                {t.status === "Done" && <Check size={11} />}
+              </button>
+              <button
+                onClick={() => editTask(t)}
+                className={t.status === "Done" ? "struck" : ""}
+                style={taskTextStyle(t, "list")}
+              >
+                {t.title}
+              </button>
+            </div>
+          );
+        }
+
+        const field = projectFields.find(
+          (item) => `field:${item.id}` === columnId,
+        );
+
+        if (!field) return null;
+
+        if (field.type === "Choice") {
+          return (
+            <ChoiceDropdown
+              key={columnId}
+              label={`${field.name} for ${t.title}`}
+              value={t.customValues[field.id] || ""}
+              options={field.options}
+              disabled={busy}
+              onChange={(value) =>
+                void mutate(
+                  {
+                    action: "saveTask",
+                    task: {
+                      ...t,
+                      customValues: {
+                        ...t.customValues,
+                        [field.id]: value,
+                      },
+                    },
                   },
-                },
-                `${field.name} updated`,
-              )
-            }
-            onEdit={() => editField(field)}
-          />
-        ) : (
+                  `${field.name} updated`,
+                )
+              }
+              onEdit={() => editField(field)}
+            />
+          );
+        }
+
+        return (
           <button
             className="custom-value-cell"
-            key={field.id}
+            key={columnId}
             onClick={() => editTask(t)}
             title={fieldValue(t, field)}
           >
             {fieldValue(t, field)}
           </button>
-        ),
-      )}
+        );
+      })}
       <div className="row-actions">
         <button aria-label={`Edit ${t.title}`} onClick={() => editTask(t)}>
           <Pencil size={13} />
@@ -3670,18 +4045,72 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 )}
                 <div className="task-list">
                   <div className="list-head" style={listGrid}>
-                    <span>Task name</span>
-                    {projectFields.map((field) => (
-                      <button
-                        key={field.id}
-                        className="custom-column-head"
-                        onClick={() => editField(field)}
-                        title={`Edit ${field.name}`}
-                      >
-                        <span>{field.name}</span>
-                        <small>{field.type}</small>
-                      </button>
-                    ))}
+                    {orderedListColumnIds.map((columnId) => {
+                      const dragProps = {
+                        "data-list-column-id": columnId,
+                      };
+
+                      if (columnId === "task-name") {
+                        return (
+                          <span
+                            key={columnId}
+                            className={`draggable-column-head ${
+                              listColumnDragging === columnId ? "is-dragging" : ""
+                            }`}
+                            {...dragProps}
+                          >
+                            <span
+                              className="column-drag-handle"
+                              title="Drag to move Task name"
+                              onPointerDown={(e) =>
+                                startListColumnPointerDrag(columnId, e)
+                              }
+                            >
+                              <GripVertical size={14} />
+                            </span>
+                            <span>Task name</span>
+                          </span>
+                        );
+                      }
+
+                      const field = projectFields.find(
+                        (item) =>
+                          `field:${item.id}` === columnId,
+                      );
+
+                      if (!field) return null;
+
+                      return (
+                        <button
+                          key={columnId}
+                          className={`custom-column-head draggable-column-head ${
+                            listColumnDragging === columnId ? "is-dragging" : ""
+                          }`}
+                          onClick={() => {
+                          if (listColumnDragMovedRef.current) {
+                            listColumnDragMovedRef.current = false;
+                            return;
+                          }
+                          editField(field);
+                        }}
+                          title={`Drag to move or click to edit ${field.name}`}
+                          {...dragProps}
+                        >
+                          <span
+                            className="column-drag-handle"
+                            title={`Drag to move ${field.name}`}
+                            onClick={(e) => e.stopPropagation()}
+                            onPointerDown={(e) =>
+                              startListColumnPointerDrag(columnId, e)
+                            }
+                          >
+                            <GripVertical size={14} />
+                          </span>
+                          <span>{field.name}</span>
+                          <small>{field.type}</small>
+                        </button>
+                      );
+                    })}
                     <button
                       className="add-column-head"
                       disabled={!project}
@@ -5005,6 +5434,94 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   }
                 />
               </label>
+              <div className="attachments-editor">
+                <strong>
+                  Attachments / Screenshots{" "}
+                  <small>{draft.attachments.length}/5</small>
+                </strong>
+
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                  hidden
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      void addTaskAttachments(e.target.files);
+                    }
+                    e.target.value = "";
+                  }}
+                />
+
+                <div
+                  className="attachment-dropzone"
+                  onClick={() => attachmentInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files.length) {
+                      void addTaskAttachments(e.dataTransfer.files);
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const images = Array.from(e.clipboardData.files).filter(
+                      (file) => file.type.startsWith("image/"),
+                    );
+
+                    if (images.length) {
+                      e.preventDefault();
+                      void addTaskAttachments(images);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      attachmentInputRef.current?.click();
+                    }
+                  }}
+                >
+                  <Plus size={18} />
+                  <span>
+                    Add screenshot, drag an image here, or paste with Ctrl+V
+                  </span>
+                </div>
+
+                {draft.attachments.length > 0 && (
+                  <div className="attachment-grid">
+                    {draft.attachments.map((attachment) => (
+                      <div className="attachment-item" key={attachment.id}>
+                        <img
+                          src={attachment.data}
+                          alt={attachment.name}
+                          title={attachment.name}
+                        />
+                        <button
+                          type="button"
+                          className="attachment-remove"
+                          title="Remove attachment"
+                          onClick={() =>
+                            setDraft({
+                              ...draft,
+                              attachments: draft.attachments.filter(
+                                (item) => item.id !== attachment.id,
+                              ),
+                            })
+                          }
+                        >
+                          <X size={14} />
+                        </button>
+                        <span>{attachment.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="subtasks-editor">
                 <strong>
                   Subtasks{" "}
@@ -5534,18 +6051,74 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             Add your own information to every task in this project.
           </DialogDescription>
           <div className="column-manager">
-            {projectFields.map((field) => (
-              <button key={field.id} onClick={() => editField(field)}>
-                <span>
-                  <Columns3 size={16} />
-                  <strong>{field.name}</strong>
-                </span>
-                <small>
-                  {field.type}
-                  <ChevronRight size={14} />
-                </small>
-              </button>
-            ))}
+            {orderedListColumnIds.map((columnId) => {
+              const field =
+                columnId === "task-name"
+                  ? null
+                  : projectFields.find(
+                      (item) => `field:${item.id}` === columnId,
+                    );
+
+              if (columnId !== "task-name" && !field) return null;
+
+              return (
+                <button
+                  key={columnId}
+                  className="column-manager-row"
+                  draggable={!!project && !busy}
+                  onDragStart={(e) => {
+                    e.stopPropagation();
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData(
+                      "text/plain",
+                      `column:${columnId}`,
+                    );
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const data =
+                      e.dataTransfer.getData("text/plain");
+
+                    if (data.startsWith("column:")) {
+                      void moveListColumn(
+                        data.slice(7),
+                        columnId,
+                      );
+                    }
+                  }}
+                  onClick={() => {
+                    if (field) editField(field);
+                  }}
+                  title={
+                    field
+                      ? `Drag to move or click to edit ${field.name}`
+                      : "Drag to move Task name"
+                  }
+                >
+                  <span>
+                    <GripVertical size={16} />
+                    <strong>
+                      {columnId === "task-name"
+                        ? "Task name"
+                        : field?.name}
+                    </strong>
+                  </span>
+                  <small>
+                    {columnId === "task-name"
+                      ? "Built-in"
+                      : field?.type}
+                    {field && <ChevronRight size={14} />}
+                  </small>
+                </button>
+              );
+            })}
+
             {!projectFields.length && (
               <div className="empty-field-list">
                 <Columns3 />
