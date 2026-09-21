@@ -48,8 +48,8 @@ export default defineConfig(async () => {
       host: "0.0.0.0",
       allowedHosts: ["terminal.local"],
       ...(isCodexSeatbeltSandbox
-        ? { watch: { useFsEvents: false, usePolling: true } }
-        : {}),
+        ? { watch: { ignored: ["**/src-tauri/target/**"], useFsEvents: false, usePolling: true } }
+        : { watch: { ignored: ["**/src-tauri/target/**"] } }),
     },
     plugins: [
       vinext(),

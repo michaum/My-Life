@@ -7,7 +7,7 @@
   ],
   "remote": {
     "urls": [
-      "https://mylife.michaum.workers.dev/*"
+      "http://localhost:5173/*"
     ]
   },
   "permissions": [
