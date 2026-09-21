@@ -19,7 +19,9 @@ echo "========================================"
 echo "   MY LIFE V2 IS READY FOR DEVELOPMENT"
 echo "========================================"
 echo
-echo "Project: $PROJECT_DIR"
-echo "Branch:  $(git branch --show-current)"
-echo "Commit:  $(git rev-parse --short HEAD)"
+echo "Developer: Marcel Michaud"
+echo
+echo "Project:   $PROJECT_DIR"
+echo "Branch:    $(git branch --show-current)"
+echo "Commit:    $(git rev-parse --short HEAD)"
 echo
