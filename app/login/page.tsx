@@ -95,7 +95,7 @@ export default function LoginPage() {
         }),
       });
 
-      const data = await response.json().catch(() => null);
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
 
       if (response.ok) {
         if (rememberMe) {

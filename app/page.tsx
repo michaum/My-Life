@@ -689,7 +689,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         cache: "no-store",
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { error?: string; users?: AdminUser[] };
 
       if (!response.ok) {
         throw new Error(data.error ?? "Unable to load users.");
@@ -721,7 +721,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { error?: string; users?: AdminUser[] };
 
       if (!response.ok) {
         throw new Error(data.error ?? "Unable to create user.");
@@ -757,7 +757,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         body: JSON.stringify({ id, ...changes }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { error?: string; users?: AdminUser[] };
 
       if (!response.ok) {
         throw new Error(data.error ?? "Unable to update user.");
@@ -823,7 +823,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { error?: string; users?: AdminUser[] };
 
       if (!response.ok) {
         throw new Error(data.error ?? "Unable to change password.");
@@ -859,7 +859,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         body: JSON.stringify({ id: deleteAdminUser.id }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { error?: string; users?: AdminUser[] };
 
       if (!response.ok) {
         throw new Error(data.error ?? "Unable to delete user.");

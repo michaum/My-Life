@@ -1,0 +1,84 @@
+﻿/*
+ * My Life V2.0
+ * Shared visual foundation.
+ *
+ * V2 components use the ml-v2 prefix so the redesign can be developed
+ * alongside the existing V1 interface without CSS collisions.
+ */
+
+.ml-v2 {
+  --ml-v2-bg: #f6f7fb;
+  --ml-v2-surface: rgba(255, 255, 255, 0.88);
+  --ml-v2-surface-solid: #ffffff;
+  --ml-v2-surface-soft: #f9faff;
+
+  --ml-v2-text: #202331;
+  --ml-v2-text-soft: #73788c;
+  --ml-v2-text-faint: #9ca1b2;
+
+  --ml-v2-border: rgba(34, 39, 57, 0.08);
+  --ml-v2-border-strong: rgba(34, 39, 57, 0.13);
+
+  --ml-v2-accent: #7c6ff2;
+  --ml-v2-accent-soft: #eeeaff;
+  --ml-v2-pink: #f58bb5;
+  --ml-v2-blue: #79a9f7;
+  --ml-v2-green: #73c9a3;
+  --ml-v2-orange: #f2b36f;
+
+  --ml-v2-radius-sm: 12px;
+  --ml-v2-radius-md: 18px;
+  --ml-v2-radius-lg: 24px;
+  --ml-v2-radius-xl: 30px;
+
+  --ml-v2-shadow-sm:
+    0 1px 2px rgba(31, 35, 48, 0.03),
+    0 5px 18px rgba(31, 35, 48, 0.04);
+
+  --ml-v2-shadow-md:
+    0 12px 35px rgba(31, 35, 48, 0.07);
+
+  --ml-v2-sidebar-width: 248px;
+  --ml-v2-transition: 180ms ease;
+}
+
+.ml-v2 *,
+.ml-v2 *::before,
+.ml-v2 *::after {
+  box-sizing: border-box;
+}
+
+.ml-v2 {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 78% 2%, rgba(124, 111, 242, 0.07), transparent 28rem),
+    radial-gradient(circle at 20% 100%, rgba(245, 139, 181, 0.05), transparent 30rem),
+    var(--ml-v2-bg);
+  color: var(--ml-v2-text);
+}
+
+.ml-v2-card {
+  border: 1px solid var(--ml-v2-border);
+  border-radius: var(--ml-v2-radius-lg);
+  background: var(--ml-v2-surface);
+  box-shadow: var(--ml-v2-shadow-sm);
+  backdrop-filter: blur(18px);
+}
+
+.ml-v2-muted {
+  color: var(--ml-v2-text-soft);
+}
+
+.ml-v2-section-title {
+  margin: 0;
+  color: var(--ml-v2-text);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+@media (max-width: 900px) {
+  .ml-v2 {
+    --ml-v2-sidebar-width: 0px;
+  }
+}

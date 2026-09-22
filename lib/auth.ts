@@ -1,7 +1,33 @@
-import { promisify } from "node:util";
-import { randomBytes, scrypt as scryptCallback } from "node:crypto";
 
-const scrypt = promisify(scryptCallback);
+import {
+  randomBytes,
+  scrypt as scryptCallback,
+  type ScryptOptions,
+} from "node:crypto";
+
+function scrypt(
+  password: string,
+  salt: Uint8Array,
+  keyLength: number,
+  options: ScryptOptions,
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scryptCallback(
+      password,
+      salt,
+      keyLength,
+      options,
+      (error, derivedKey) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(derivedKey);
+      },
+    );
+  });
+}
 
 const SCRYPT_N = 16384;
 const SCRYPT_R = 8;
