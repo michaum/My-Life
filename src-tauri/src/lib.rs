@@ -1,4 +1,4 @@
-use tauri_plugin_sql::{Migration, MigrationKind};
+﻿use tauri_plugin_sql::{Migration, MigrationKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -99,6 +99,12 @@ pub fn run() {
             sql: include_str!("../migrations/0015_list_column_order.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 17,
+            description: "0016_task_recurrence_exceptions",
+            sql: include_str!("../migrations/0016_task_recurrence_exceptions.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()
@@ -121,3 +127,5 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
+
+

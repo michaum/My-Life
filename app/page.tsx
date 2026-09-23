@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+import "../components/my-life/v2.css";
+import { MyLifeAppShell, MyLifeDashboard } from "../components/my-life";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Database from "@tauri-apps/plugin-sql";
 import { getVersion } from "@tauri-apps/api/app";
@@ -107,6 +109,14 @@ type TaskAttachment = {
   data: string;
 };
 
+type TaskRecurrenceException = {
+  id: string;
+  taskId: string;
+  originalDate: string;
+  movedDate: string;
+  createdAt: string;
+};
+
 type Task = {
   id: string;
   projectId: string;
@@ -199,86 +209,86 @@ const defaultFilterLabels: FilterLabels = {
 const emojis = Array.from(
   new Set([
     "",
-    "⭐",
-    "✅",
-    "📌",
-    "🔥",
-    "💡",
-    "🎯",
-    "📅",
-    "📞",
-    "✉️",
-    "🚀",
-    "❤️",
-    "🏆",
-    "🛒",
-    "🏠",
-    "💼",
-    "🎉",
-    "⚠️",
-    "⚽",
-    "🏀",
-    "🏈",
-    "⚾",
-    "🥎",
-    "🎾",
-    "🏐",
-    "🏉",
-    "🥏",
-    "🎱",
-    "🏓",
-    "🏸",
-    "🥅",
-    "🏒",
-    "🏑",
-    "🥍",
-    "🏏",
-    "⛳",
-    "🏹",
-    "🎣",
-    "🥊",
-    "🥋",
-    "⛸️",
-    "🎿",
-    "🏂",
-    "🏋️",
-    "🤸",
-    "🚴",
-    "🏊",
-    "🏇",
-    "🏆",
-    "🥇",
-    "🏅",
-    "🧹",
-    "🧽",
-    "🧼",
-    "🫧",
-    "🧴",
-    "🪣",
-    "🧺",
-    "🧻",
-    "🚽",
-    "🚿",
-    "🛁",
-    "🪥",
-    "🧯",
-    "🛒",
-    "🍽️",
-    "🧑‍🍳",
-    "🗑️",
-    "♻️",
-    "🪟",
-    "🛏️",
-    "👕",
-    "👚",
-    "🧦",
-    "🧤",
-    "🪴",
-    "🧰",
-    "🔧",
-    "🔨",
-    "🪛",
-    "🧲",
+    "â­",
+    "âœ…",
+    "ðŸ“Œ",
+    "ðŸ”¥",
+    "ðŸ’¡",
+    "ðŸŽ¯",
+    "ðŸ“…",
+    "ðŸ“ž",
+    "âœ‰ï¸",
+    "ðŸš€",
+    "â¤ï¸",
+    "ðŸ†",
+    "ðŸ›’",
+    "ðŸ ",
+    "ðŸ’¼",
+    "ðŸŽ‰",
+    "âš ï¸",
+    "âš½",
+    "ðŸ€",
+    "ðŸˆ",
+    "âš¾",
+    "ðŸ¥Ž",
+    "ðŸŽ¾",
+    "ðŸ",
+    "ðŸ‰",
+    "ðŸ¥",
+    "ðŸŽ±",
+    "ðŸ“",
+    "ðŸ¸",
+    "ðŸ¥…",
+    "ðŸ’",
+    "ðŸ‘",
+    "ðŸ¥",
+    "ðŸ",
+    "â›³",
+    "ðŸ¹",
+    "ðŸŽ£",
+    "ðŸ¥Š",
+    "ðŸ¥‹",
+    "â›¸ï¸",
+    "ðŸŽ¿",
+    "ðŸ‚",
+    "ðŸ‹ï¸",
+    "ðŸ¤¸",
+    "ðŸš´",
+    "ðŸŠ",
+    "ðŸ‡",
+    "ðŸ†",
+    "ðŸ¥‡",
+    "ðŸ…",
+    "ðŸ§¹",
+    "ðŸ§½",
+    "ðŸ§¼",
+    "ðŸ«§",
+    "ðŸ§´",
+    "ðŸª£",
+    "ðŸ§º",
+    "ðŸ§»",
+    "ðŸš½",
+    "ðŸš¿",
+    "ðŸ›",
+    "ðŸª¥",
+    "ðŸ§¯",
+    "ðŸ›’",
+    "ðŸ½ï¸",
+    "ðŸ§‘â€ðŸ³",
+    "ðŸ—‘ï¸",
+    "â™»ï¸",
+    "ðŸªŸ",
+    "ðŸ›ï¸",
+    "ðŸ‘•",
+    "ðŸ‘š",
+    "ðŸ§¦",
+    "ðŸ§¤",
+    "ðŸª´",
+    "ðŸ§°",
+    "ðŸ”§",
+    "ðŸ”¨",
+    "ðŸª›",
+    "ðŸ§²",
   ]),
 );
 const projectIcons = {
@@ -481,6 +491,8 @@ function ShootingStarIcon({ size = 22 }: { size?: number }) {
 export default function Taskflow() {
   const [projects, setProjects] = useState<Project[]>([]),
     [tasks, setTasks] = useState<Task[]>([]),
+    [taskRecurrenceExceptions, setTaskRecurrenceExceptions] =
+      useState<TaskRecurrenceException[]>([]),
     [comments, setComments] = useState<Comment[]>([]),
     [sections, setSections] = useState<Section[]>([]),
     [customFields, setCustomFields] = useState<CustomField[]>([]),
@@ -908,6 +920,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       people,
       taskValues,
       taskAttachments,
+      taskRecurrenceExceptions,
       workspaceSettings,
     ] = await Promise.all([
       db.select<any[]>("SELECT * FROM projects ORDER BY created_at"),
@@ -918,6 +931,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       db.select<any[]>("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
       db.select<any[]>("SELECT * FROM task_values ORDER BY task_id, field_id"),
       db.select<any[]>("SELECT * FROM task_attachments ORDER BY created_at"),
+      db.select<any[]>(
+        "SELECT * FROM task_recurrence_exceptions ORDER BY created_at",
+      ),
       db.select<any[]>("SELECT status_options,filter_labels,list_column_order FROM workspace WHERE id='initialized'"),
     ]);
 
@@ -966,6 +982,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         subtasks: JSON.parse(t.subtasks),
         attachments: attachmentsByTask.get(t.id) ?? [],
         customValues: valuesByTask.get(t.id) ?? {},
+      })),
+      taskRecurrenceExceptions: taskRecurrenceExceptions.map((row: any) => ({
+        id: row.id,
+        taskId: row.task_id,
+        originalDate: row.original_date,
+        movedDate: row.moved_date,
+        createdAt: row.created_at,
       })),
       comments,
       sections: sections.map((s: any) => ({
@@ -1713,6 +1736,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       const d = await loadLocalWorkspace();
       setProjects(d.projects);
       setTasks(d.tasks);
+      setTaskRecurrenceExceptions(d.taskRecurrenceExceptions ?? []);
       setComments(d.comments);
       setSections(d.sections);
       setCustomFields(d.customFields);
@@ -1734,6 +1758,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       error?: string;
       projects: Project[];
       tasks: Task[];
+      taskRecurrenceExceptions: TaskRecurrenceException[];
       comments: Comment[];
       sections: Section[];
       customFields: CustomField[];
@@ -1745,6 +1770,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     if (!r.ok) throw new Error(d.error);
     setProjects(d.projects);
     setTasks(d.tasks);
+    setTaskRecurrenceExceptions(d.taskRecurrenceExceptions ?? []);
     setComments(d.comments);
     setSections(d.sections);
     setCustomFields(d.customFields);
@@ -2647,7 +2673,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   }
   function fieldValue(task: Task, field: CustomField) {
     const value = task.customValues[field.id] || "";
-    if (!value) return "—";
+    if (!value) return "â€”";
     if (field.type === "Date") return dateText(value);
     if (field.type === "Choice")
       return (
@@ -2675,63 +2701,115 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         "completer",
         "complete",
         "done",
-        "terminé",
+        "terminÃ©",
         "termine",
       ].includes(name)
     )
       return "Done";
     if (["active", "in progress", "en cours"].includes(name))
       return "In progress";
-    if (["pending", "to do", "a faire", "à faire", "en attente"].includes(name))
+    if (["pending", "to do", "a faire", "Ã  faire", "en attente"].includes(name))
       return "To do";
-    if (["review", "in review", "révision", "revision"].includes(name))
+    if (["review", "in review", "rÃ©vision", "revision"].includes(name))
       return "In review";
     return current;
   }
   async function moveTaskToSection(
     taskId: string,
     sectionId: string,
-    beforeId?: string,
+    targetId?: string,
   ) {
     if (!project) return;
-    const moved = tasks.find((t) => t.id === taskId);
+
+    const moved = tasks.find(
+      (task) =>
+        task.id === taskId &&
+        task.projectId === project.id,
+    );
+
     if (!moved) return;
-    const projectTasks = tasks.filter(
-      (t) => t.projectId === project.id && t.id !== taskId,
-    );
-    const target = projectTasks
-      .filter((t) => t.sectionId === sectionId)
-      .sort((a, b) => a.sortOrder - b.sortOrder);
-    const at = beforeId
-      ? Math.max(
-          0,
-          target.findIndex((t) => t.id === beforeId),
+
+    const target = targetId
+      ? tasks.find(
+          (task) =>
+            task.id === targetId &&
+            task.projectId === project.id,
         )
-      : target.length;
-    target.splice(at, 0, {
-      ...moved,
-      sectionId,
-      status: statusForSection(sectionId, moved.status),
-    });
-    const bySection = new Map<string, Task[]>();
-    for (const task of projectTasks.filter((t) => t.sectionId !== sectionId)) {
-      const list = bySection.get(task.sectionId) || [];
-      list.push(task);
-      bySection.set(task.sectionId, list);
+      : undefined;
+
+    if (target && target.id !== moved.id) {
+      const movedOriginalSectionId = moved.sectionId;
+      const movedOriginalSortOrder = moved.sortOrder;
+      const movedOriginalStatus = moved.status;
+
+      const targetOriginalSectionId = target.sectionId;
+      const targetOriginalSortOrder = target.sortOrder;
+      const targetOriginalStatus = target.status;
+
+      await mutate(
+        {
+          action: "reorderTasks",
+          projectId: project.id,
+          items: [
+            {
+              id: moved.id,
+              sectionId: targetOriginalSectionId,
+              sortOrder: targetOriginalSortOrder,
+              status:
+                movedOriginalSectionId === targetOriginalSectionId
+                  ? movedOriginalStatus
+                  : statusForSection(
+                      targetOriginalSectionId,
+                      movedOriginalStatus,
+                    ),
+            },
+            {
+              id: target.id,
+              sectionId: movedOriginalSectionId,
+              sortOrder: movedOriginalSortOrder,
+              status:
+                movedOriginalSectionId === targetOriginalSectionId
+                  ? targetOriginalStatus
+                  : statusForSection(
+                      movedOriginalSectionId,
+                      targetOriginalStatus,
+                    ),
+            },
+          ],
+        },
+        "Tasks swapped",
+      );
+
+      return;
     }
-    bySection.set(sectionId, target);
-    const items = Array.from(bySection.values()).flatMap((list) =>
-      list
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((task, index) => ({
-          id: task.id,
-          sectionId: task.sectionId,
-          sortOrder: index,
-          status: task.status,
-        })),
-    );
+
+    const destinationTasks = tasks
+      .filter(
+        (task) =>
+          task.projectId === project.id &&
+          task.sectionId === sectionId &&
+          task.id !== moved.id,
+      )
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    const destinationSortOrder = destinationTasks.length;
+
     await mutate(
-      { action: "reorderTasks", projectId: project.id, items },
+      {
+        action: "reorderTasks",
+        projectId: project.id,
+        items: [
+          {
+            id: moved.id,
+            sectionId,
+            sortOrder: destinationSortOrder,
+            status: statusForSection(
+              sectionId,
+              moved.status,
+            ),
+          },
+        ],
+      },
       "Task moved",
     );
   }
@@ -2889,9 +2967,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           )}
           <CalendarDays size={13} />
           {t.status !== "Done" && t.due && t.due < todayKey()
-            ? `Overdue · ${dateText(t.due)}`
+            ? `Overdue Â· ${dateText(t.due)}`
             : t.status !== "Done" && t.due === todayKey()
-              ? `Today · ${dateText(t.due)}`
+              ? `Today Â· ${dateText(t.due)}`
               : t.status !== "Done" && t.due
                 ? (() => {
                     const start = new Date(`${todayKey()}T00:00:00`);
@@ -2899,7 +2977,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                     end.setDate(end.getDate() + 7);
                     const due = new Date(`${t.due}T00:00:00`);
                     return due > start && due <= end
-                      ? `Upcoming · ${dateText(t.due)}`
+                      ? `Upcoming Â· ${dateText(t.due)}`
                       : dateText(t.due);
                   })()
                 : dateText(t.due)}
@@ -2935,28 +3013,48 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       className="list-row"
       style={listGrid}
       key={t.id}
-      draggable={!busy}
-      onDragStart={(e) => {
-        e.stopPropagation();
-        e.dataTransfer.setData("text/plain", `task-list:${t.id}`);
-        setDragging(t.id);
-      }}
-      onDragEnd={() => setDragging(null)}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes("text/plain")) e.preventDefault();
       }}
       onDrop={(e) => {
         e.preventDefault();
         e.stopPropagation();
+
         const data = e.dataTransfer.getData("text/plain");
-        if (data.startsWith("task-list:"))
-          void moveTaskToSection(data.slice(10), t.sectionId, t.id);
+
+        if (data.startsWith("task-list:")) {
+          const draggedTaskId = data.slice(10);
+
+          if (draggedTaskId === t.id) return;
+
+          void moveTaskToSection(
+            draggedTaskId,
+            t.sectionId,
+            t.id,
+          );
+        }
       }}
     >
       {orderedListColumnIds.map((columnId) => {
         if (columnId === "task-name") {
           return (
             <div className="list-name" key={columnId}>
+              <span
+                className="list-task-drag-handle"
+                draggable={!busy}
+                role="button"
+                aria-label={`Drag ${t.title}`}
+                title="Drag task"
+                onDragStart={(e) => {
+                  e.stopPropagation();
+                  e.dataTransfer.effectAllowed = "move";
+                  e.dataTransfer.setData("text/plain", `task-list:${t.id}`);
+                  setDragging(t.id);
+                }}
+                onDragEnd={() => setDragging(null)}
+              >
+                <GripVertical size={14} />
+              </span>
               <button
                 className={`check-task ${t.status === "Done" ? "checked" : ""}`}
                 disabled={busy}
@@ -3102,7 +3200,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setMonth(next);
   };
   return (
-    <div className="app-shell">
+    <div className="app-shell ml-v2">
       <Dialog
         open={availableUpdate !== null}
         onOpenChange={(open) => {
@@ -3420,215 +3518,88 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         </DialogContent>
       </Dialog>
 
-      {mobile && (
-        <button
-          className="sidebar-backdrop"
-          aria-label="Close navigation"
-          onClick={() => setMobile(false)}
-        />
-      )}
-      <aside className={`sidebar ${mobile ? "open" : ""}`}>
-        <a className="brand" href="/" aria-label="My Life home">
-          <span className="brand-mark">
-            <ShootingStarIcon size={23} />
-          </span>
-          My Life<span className="brand-dot">.</span>
-          {appVersion && (
-            <span
-              style={{
-                marginLeft: "7px",
-                fontSize: "11px",
-                fontWeight: 600,
-                color: "rgba(255,255,255,0.48)",
-                letterSpacing: "0.02em",
-                alignSelf: "center",
-              }}
-            >
-              v{appVersion}
-            </span>
-          )}
-        </a>
-        <div className="workspace-label">
-          <span className="workspace-icon">
-            {currentUser?.name?.charAt(0).toUpperCase() || "M"}
-          </span>
-          <div>
-            <strong>
-              {currentUser ? `${currentUser.name}’s workspace` : "My workspace"}
-            </strong>
-            <small>Personal workspace</small>
-          </div>
-          <LockKeyhole size={12} />
-        </div>
-        <nav aria-label="Main navigation">
-          <button
-            className={active === "home" ? "nav-item selected" : "nav-item"}
-            onClick={() => navigate("home")}
-          >
-            <Home size={17} />
-            Overview
-          </button>
-          <button
-            className={active === "mine" ? "nav-item selected" : "nav-item"}
-            onClick={() => navigate("mine")}
-          >
-            <CircleCheck size={17} />
-            My tasks
-            <span className="nav-count">
-              {
-                tasks.filter(
-                  (t) =>
-                    t.assignee.toLowerCase() ===
-                      currentPersonName.toLowerCase() &&
-                    t.status !== "Done",
-                ).length
-              }
-            </span>
-          </button>
-          <button
-            className={active === "all" ? "nav-item selected" : "nav-item"}
-            onClick={() => navigate("all")}
-          >
-            <LayoutGrid size={17} />
-            All tasks
-          </button>
-          <button className="nav-item" onClick={() => setPeopleOpen(true)}>
-            <Users size={17} />
-            People
-          </button>
-        </nav>
-        <div className="sidebar-section-title">
-          <span>PROJECTS</span>
-          <button aria-label="Create project" onClick={newProject}>
-            <Plus size={16} />
-          </button>
-        </div>
-        <nav className="projects-nav" aria-label="Projects">
-          {projects.map((p) => {
-            const Icon = projectIcons[p.icon || "folder"];
-            return (
-              <button
-                key={p.id}
-                className={active === p.id ? "nav-item selected" : "nav-item"}
-                onClick={() => navigate(p.id)}
-              >
-                <span className="project-nav-icon" style={{ color: p.color }}>
-                  <Icon size={14} />
-                </span>
-                <span className="truncate"><span style={{ color: p.sidebarFontColor ?? "#ffffff" }}>{p.name}</span></span>
-                <span className="nav-count">
-                  {
-                    tasks.filter(
-                      (t) => t.projectId === p.id && t.status !== "Done",
-                    ).length
-                  }
-                </span>
-              </button>
-            );
-          })}
-          <button className="nav-item create-project" onClick={newProject}>
-            <Plus size={15} />
-            Create a project
-          </button>
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="quiet-note">
-            <Sparkles size={18} />
-            <strong>Make room for good work.</strong>
-            <p>
-              One project. One small step.
-              <br />
-              One less thing on your mind.
-            </p>
-          </div>
-          <button
-            className="nav-item"
-            onClick={exportWorkspace}
-            disabled={loading}
-          >
-            <Download size={16} />
-            Export workspace
-          </button>
-          {currentUser?.role === "admin" ? (
-            <button
-              className="nav-item"
-              onClick={() => {
-                setAdminUsersOpen(true);
-                void loadAdminUsers();
-              }}
-            >
-              <Settings2 size={16} />
-              Admin Panel
-            </button>
-          ) : null}
-          <button className="nav-item" onClick={() => setHelp(true)}>
-            <CircleHelp size={16} />
-            Help & getting started
-          </button>
-          <button
-            className="nav-item"
-            onClick={async () => {
-              try {
-                await fetch("/api/auth/logout", {
-                  method: "POST",
-                  credentials: "include",
-                });
-              } finally {
-                window.location.href = "/login";
-              }
-            }}
-          >
-            Log out
-          </button>
-          <div className="profile">
-            <span className="avatar">
-              {currentUser?.name?.charAt(0).toUpperCase() || "M"}
-            </span>
-            <div>
-              <strong>{currentUser?.name ?? "User"}</strong>
-              <small>
-                {currentUser?.role === "admin"
-                  ? "Administrator"
-                  : "Your personal space"}
-              </small>
-            </div>
-            <span className="online-dot" />
-          </div>
-        </div>
-      </aside>
-      <main className="main-content">
-        <header className="topbar">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="menu-toggle"
-            aria-label="Open navigation"
-            onClick={() => setMobile(true)}
-          >
-            <Menu />
-          </Button>
-          <div className="breadcrumb">
-            Workspace <ChevronRight size={12} />
-            <strong>
-              {active === "home" ? "Overview" : project?.name || title}
-            </strong>
-          </div>
-          <div className="topbar-right">
-            <span className="private-label">
-              <LockKeyhole size={12} />
-              Private workspace
-            </span>
-            <button
-              type="button"
-              className="avatar"
-              aria-label="Open account"
-              onClick={() => setAccountOpen(true)}
-            >
-              {currentUser?.name?.charAt(0).toUpperCase() || "M"}
-            </button>
-          </div>
-        </header>
-        <section className="project-header">
+      <div className="main-content ml-v2-compat-main">
+        <MyLifeAppShell
+          activeView={active}
+          navigation={[
+            {
+              id: "home",
+              label: "Overview",
+              icon: Home,
+            },
+            {
+              id: "mine",
+              label: "My tasks",
+              icon: CircleCheck,
+              badge: tasks.filter(
+                (task) =>
+                  task.assignee.toLowerCase() ===
+                    currentPersonName.toLowerCase() &&
+                  task.status !== "Done",
+              ).length,
+            },
+            {
+              id: "all",
+              label: "All tasks",
+              icon: LayoutGrid,
+            },
+            ...projects.map((item) => ({
+              id: item.id,
+              label: item.name,
+              icon: projectIcons[item.icon || "folder"],
+              badge: tasks.filter(
+                (task) =>
+                  task.projectId === item.id &&
+                  task.status !== "Done",
+              ).length,
+              section: "projects" as const,
+              color: item.color,
+              textColor: item.sidebarFontColor ?? undefined,
+            })),
+          ]}
+          title={
+            active === "home"
+              ? "Overview"
+              : project?.name || title
+          }
+          subtitle={
+            project?.description ||
+            (active === "mine"
+              ? "A clear view of the work assigned to you."
+              : active === "home"
+                ? "Everything important, all in one place."
+                : "Keep your projects moving, one small step at a time.")
+          }
+          userName={currentUser?.name}
+          userRole={currentUser?.role}
+          appVersion={appVersion}
+          isDevelopment={packageJson.version !== "2.0.0"}
+          exportDisabled={loading}
+          onNavigate={navigate}
+          onSearch={setQuery}
+          onAccountClick={() => setAccountOpen(true)}
+          onAddTask={() => newTask()}
+          onPeopleClick={() => setPeopleOpen(true)}
+          onCreateProject={newProject}
+          onExport={exportWorkspace}
+          onAdminClick={() => {
+            setAdminUsersOpen(true);
+            void loadAdminUsers();
+          }}
+          onHelpClick={() => setHelp(true)}
+          onLogout={async () => {
+            try {
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+              });
+            } finally {
+              window.location.href = "/login";
+            }
+          }}
+        >
+        {active !== "home" && (
+          <section className="project-header">
           <div className="project-header-art" aria-hidden="true" />
           <div className="project-heading">
             <div
@@ -3718,7 +3689,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   cursor: "pointer",
                 }}
               >
-                ⚠ {overdue} Overdue
+                âš  {overdue} Overdue
               </span>
               <span
                 role="button"
@@ -3756,7 +3727,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   cursor: "pointer",
                 }}
               >
-                📅 {dueToday} Due Today
+                ðŸ“… {dueToday} Due Today
               </span>
               <span
                 role="button"
@@ -3796,14 +3767,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   cursor: "pointer",
                 }}
               >
-                🗓️ {upcoming} Upcoming
+                ðŸ—“ï¸ {upcoming} Upcoming
               </span>
               
             </div>
           )}
           <div className="project-summary">
             <span className="status-label">
-              <span /> {overdue ? "Needs attention" : "Let’s make progress"}
+              <span /> {overdue ? "Needs attention" : "Letâ€™s make progress"}
             </span>
             <span>
               {completed} of {scope.length} tasks completed
@@ -3817,11 +3788,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             </div>
             {active === "welcome-project" && (
               <span className="example-label">
-                Example project · make it yours
+                Example project Â· make it yours
               </span>
             )}
           </div>
         </section>
+        )}
         <div className="viewbar">
           <nav aria-label="Project views">
             {[
@@ -4006,7 +3978,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                             priority !== "All priorities" ||
                             statusFilter !== "All statuses"
                               ? "No matching tasks"
-                              : "A little space for what’s next."}
+                              : "A little space for whatâ€™s next."}
                           </span>
                         </div>
                       )}
@@ -4130,9 +4102,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                         } as Section,
                         ...projectSections,
                       ].map((section) => {
-                        const sectionTasks = filtered.filter(
-                            (t) => t.sectionId === section.id,
-                          ),
+                        const sectionTasks = filtered
+                          .filter((t) => t.sectionId === section.id)
+                          .sort((a, b) => a.sortOrder - b.sortOrder),
                           collapsed = collapsedSections.includes(
                             section.id || "none",
                           );
@@ -4397,140 +4369,84 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   })}
                 </div>
                 <p className="calendar-note">
-                  Drag a task to another day to reschedule it ·{" "}
+                  Drag a task to another day to reschedule it Â·{" "}
                   {filtered.filter((t) => !t.due).length} tasks without a due
                   date.
                 </p>
               </div>
             )}
             {view === "Overview" && (
-              <div className="overview">
-                <div className="overview-stats">
-                  {[
-                    {
-                      label: "Total tasks",
-                      number: scope.length,
-                      icon: FolderKanban,
-                    },
-                    {
-                      label: "In progress",
-                      number: scope.filter((t) => t.status === "In progress")
-                        .length,
-                      icon: ArrowUpRight,
-                    },
-                    {
-                      label: "Completed",
-                      number: completed,
-                      icon: CircleCheck,
-                    },
-                    { label: "Overdue", number: overdue, icon: Flag },
-                  ].map(({ label, number, icon: Icon }) => (
-                    <div className="stat" key={label}>
-                      <div>
-                        <span>{label}</span>
-                        <Icon size={17} />
-                      </div>
-                      <strong>{number}</strong>
-                    </div>
-                  ))}
-                </div>
-                <div className="overview-columns">
-                  <section className="overview-panel">
-                    <div className="panel-title">
-                      <h2>Coming up next</h2>
-                      <span>Your next small steps</span>
-                    </div>
-                    {filtered
-                      .filter((t) => t.status !== "Done")
-                      .sort((a, b) =>
-                        (a.due || "9999").localeCompare(b.due || "9999"),
-                      )
-                      .slice(0, 6)
-                      .map((t) => (
-                        <button
-                          className="upcoming-task"
-                          key={t.id}
-                          onClick={() => editTask(t)}
-                        >
-                          <span
-                            className="column-dot"
-                            style={{
-                              background: workflowOption(t.status).color,
-                            }}
-                          />
-                          <span style={taskTextStyle(t, "overview")}>
-                            {t.title}
-                          </span>
-                          <small
-                            className={
-                              t.due && t.due < todayKey() ? "late" : ""
-                            }
-                          >
-                            {dateText(t.due)}
-                          </small>
-                          <ChevronRight size={14} />
-                        </button>
-                      ))}
-                    {!filtered.some((t) => t.status !== "Done") && (
-                      <div className="empty-state">
-                        <CheckCheck />
-                        <h3>You’re all caught up.</h3>
-                        <p>Add something new when you’re ready.</p>
-                      </div>
-                    )}
-                  </section>
-                  <section className="overview-panel">
-                    <div className="panel-title">
-                      <h2>Project progress</h2>
-                      <button aria-label="Create project" onClick={newProject}>
-                        <Plus size={17} />
-                      </button>
-                    </div>
-                    {(project ? [project] : projects).map((p) => {
-                      const pt = tasks.filter((t) => t.projectId === p.id),
-                        done = pt.filter((t) => t.status === "Done").length;
-                      return (
-                        <button
-                          className="project-progress-row"
-                          key={p.id}
-                          onClick={() => navigate(p.id)}
-                        >
-                          <div>
-                            <span
-                              className="project-dot"
-                              style={{ background: p.color }}
-                            />
-                            <strong>{p.name}</strong>
-                            <small>
-                              {pt.length
-                                ? Math.round((done / pt.length) * 100)
-                                : 0}
-                              %
-                            </small>
-                          </div>
-                          <div className="summary-progress">
-                            <i
-                              style={{
-                                width: `${pt.length ? (done / pt.length) * 100 : 0}%`,
-                                background: p.color,
-                              }}
-                            />
-                          </div>
-                          <small>
-                            {done} of {pt.length} tasks complete
-                          </small>
-                        </button>
-                      );
-                    })}
-                    {!projects.length && (
-                      <div className="empty-state">
-                        <p>Create your first project to get started.</p>
-                        <Button onClick={newProject}>Create project</Button>
-                      </div>
-                    )}
-                  </section>
-                </div>
-              </div>
+              <MyLifeDashboard
+                userName={currentUser?.name}
+                inProgress={
+                  scope.filter((task) => task.status === "In progress").length
+                }
+                dueToday={dueToday}
+                overdue={overdue}
+                completed={completed}
+                onShowInProgress={() => {
+                  setTaskDateFilter("all");
+                  setStatusFilter("In progress");
+                }}
+                onShowDueToday={() => {
+                  setStatusFilter("All statuses");
+                  setTaskDateFilter("today");
+                }}
+                onShowOverdue={() => {
+                  setStatusFilter("All statuses");
+                  setTaskDateFilter("overdue");
+                }}
+                onShowCompleted={() => {
+                  setTaskDateFilter("all");
+                  setStatusFilter("Done");
+                }}
+                comingUpTasks={filtered
+                  .filter((task) => task.status !== "Done")
+                  .sort((a, b) =>
+                    (a.due || "9999").localeCompare(
+                      b.due || "9999",
+                    ),
+                  )
+                  .slice(0, 6)
+                  .map((task) => ({
+                    id: task.id,
+                    title: task.title,
+                    due: task.due,
+                    status: task.status,
+                    statusColor: workflowOption(task.status).color,
+                    textStyle: taskTextStyle(task, "overview"),
+                  }))}
+                projects={(project ? [project] : projects).map(
+                  (item) => {
+                    const projectTasks = tasks.filter(
+                      (task) => task.projectId === item.id,
+                    );
+
+                    const projectCompleted = projectTasks.filter(
+                      (task) => task.status === "Done",
+                    ).length;
+
+                    return {
+                      id: item.id,
+                      name: item.name,
+                      color: item.color,
+                      completed: projectCompleted,
+                      total: projectTasks.length,
+                    };
+                  },
+                )}
+                today={todayKey()}
+                formatDate={dateText}
+                onTaskClick={(taskId) => {
+                  const task = tasks.find(
+                    (item) => item.id === taskId,
+                  );
+
+                  if (task) editTask(task);
+                }}
+                onProjectClick={navigate}
+                onCreateProject={newProject}
+              />
             )}
             <footer className="workspace-footer">
               <span>
@@ -5016,7 +4932,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           </form>
         </DialogContent>
       </Dialog>
-      </main>
+        </MyLifeAppShell>
+      </div>
       {notice && (
         <div className="toast" role="status">
           <CircleCheck size={16} />
@@ -5038,7 +4955,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             <>
               <Button onClick={newPerson}><Plus size={15} /> Add person</Button>
               <div className="people-list">
-                {people.map((person) => <div className="person-row" key={person.id}><div><strong>{person.name}</strong><small>{person.phone} · SMS {person.smsEnabled ? "on" : "off"}</small></div><Button variant="ghost" size="sm" disabled={!person.smsEnabled || busy} onClick={() => void testSms(person)}>Test SMS</Button><Button variant="ghost" size="icon" aria-label={`Edit ${person.name}`} onClick={() => setPersonDraft({ ...person })}><Pencil size={14} /></Button><Button variant="ghost" size="icon" aria-label={`Delete ${person.name}`} onClick={() => void mutate({ action: "deletePerson", id: person.id }, "Person deleted")}><Trash2 size={14} /></Button></div>)}
+                {people.map((person) => <div className="person-row" key={person.id}><div><strong>{person.name}</strong><small>{person.phone} Â· SMS {person.smsEnabled ? "on" : "off"}</small></div><Button variant="ghost" size="sm" disabled={!person.smsEnabled || busy} onClick={() => void testSms(person)}>Test SMS</Button><Button variant="ghost" size="icon" aria-label={`Edit ${person.name}`} onClick={() => setPersonDraft({ ...person })}><Pencil size={14} /></Button><Button variant="ghost" size="icon" aria-label={`Delete ${person.name}`} onClick={() => void mutate({ action: "deletePerson", id: person.id }, "Person deleted")}><Trash2 size={14} /></Button></div>)}
                 {!people.length && <p className="calendar-note">Add a person to assign tasks and optionally notify them by SMS.</p>}
               </div>
             </>
@@ -5623,7 +5540,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                         <span className="avatar">M</span>
                         <div>
                           <small>
-                            Workspace note ·{" "}
+                            Workspace note Â·{" "}
                             {new Date(c.created_at).toLocaleString()}
                           </small>
                           <p>{c.body}</p>
@@ -5708,7 +5625,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               </div>
               {confirmDelete && (
                 <p className="inline-error">
-                  Click “Confirm delete” to permanently remove this task and its
+                  Click â€œConfirm deleteâ€ to permanently remove this task and its
                   comments.
                 </p>
               )}
@@ -5729,7 +5646,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               : "Create a project"}
           </DialogTitle>
           <DialogDescription>
-            A home for everything you’re working toward.
+            A home for everything youâ€™re working toward.
           </DialogDescription>
           {projectDraft && (
             <form onSubmit={saveProject} className="editor-form">
@@ -5957,7 +5874,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               {confirmDelete && (
                 <p className="inline-error">
                   This permanently deletes the project, all its tasks, and
-                  comments. Click “Confirm delete” to continue.
+                  comments. Click â€œConfirm deleteâ€ to continue.
                 </p>
               )}
             </form>
@@ -6036,8 +5953,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               </div>
               {confirmDelete && (
                 <p className="inline-error">
-                  Tasks in this section will move to “No section.” Click
-                  “Confirm delete” to continue.
+                  Tasks in this section will move to â€œNo section.â€ Click
+                  â€œConfirm deleteâ€ to continue.
                 </p>
               )}
             </form>
@@ -6465,7 +6382,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               {confirmDelete && (
                 <p className="inline-error">
                   This permanently removes the field and its saved values. Click
-                  “Confirm delete” to continue.
+                  â€œConfirm deleteâ€ to continue.
                 </p>
               )}
             </form>
@@ -6563,7 +6480,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               a task to change its status.
             </p>
             <p>
-              <strong>Organize your list.</strong> Open a project’s List view to
+              <strong>Organize your list.</strong> Open a projectâ€™s List view to
               add collapsible sections and custom columns for text, numbers,
               dates, or choices.
             </p>
@@ -6582,9 +6499,18 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               collaboration are not included.
             </p>
           </div>
-          <Button onClick={() => setHelp(false)}>Let’s get started</Button>
+          <Button onClick={() => setHelp(false)}>Letâ€™s get started</Button>
         </DialogContent>
       </Dialog>
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

@@ -1,5 +1,7 @@
-﻿/*
- * My Life V2 application components.
- *
- * Components will be exported from here as the V2 redesign is introduced.
- */
+﻿export { MyLifeAppShell } from "./app-shell";
+export {
+  MyLifeSidebar,
+  type MyLifeNavigationItem,
+} from "./sidebar";
+export { MyLifeTopBar } from "./top-bar";
+export * from "./dashboard";
