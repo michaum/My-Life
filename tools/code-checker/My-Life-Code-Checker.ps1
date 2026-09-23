@@ -31,6 +31,20 @@ function Stop-Checker([string]$Reason) {
     exit 1
 }
 
+function Cancel-Checker([string]$Reason) {
+    Write-Host ""
+    Write-Host "==========================================================" -ForegroundColor Yellow
+    Write-Host "              CANCELLED - NOTHING CHANGED" -ForegroundColor Yellow
+    Write-Host "==========================================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host $Reason -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Your existing files remain untouched." -ForegroundColor Green
+    Write-Host ""
+    Read-Host "Press ENTER to close"
+    exit 0
+}
+
 function Success {
     Write-Host ""
     Write-Host "==========================================================" -ForegroundColor Green
@@ -39,6 +53,8 @@ function Success {
     Write-Host "             THIS PC = GITHUB" -ForegroundColor Green
     Write-Host "             AHEAD   : 0" -ForegroundColor Green
     Write-Host "             BEHIND  : 0" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "     >>> RECOMMENDATION: NO ACTION REQUIRED <<<" -ForegroundColor Green
     Write-Host ""
     Write-Host " Safe to start coding." -ForegroundColor Green
     Write-Host " Safe to close this computer." -ForegroundColor Green
@@ -181,16 +197,26 @@ The checker will NOT pull over local work.
     }
 
     Write-Host ""
-    Write-Host "----------------------------------------------------------" -ForegroundColor Yellow
-    Write-Host " GITHUB HAS NEWER CODE" -ForegroundColor Yellow
-    Write-Host " This PC is $behind commit(s) behind." -ForegroundColor Yellow
-    Write-Host "----------------------------------------------------------" -ForegroundColor Yellow
+    Write-Host "==========================================================" -ForegroundColor Yellow
+    Write-Host "                 GITHUB IS NEWER" -ForegroundColor Yellow
+    Write-Host "==========================================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "GitHub is $behind commit(s) newer than this computer."
+    Write-Host ""
+    Write-Host "WHAT THIS MEANS:" -ForegroundColor Cyan
+    Write-Host "You probably worked on the other computer and pushed"
+    Write-Host "those changes to GitHub."
+    Write-Host ""
+    Write-Host "RECOMMENDED ACTION:" -ForegroundColor Green
+    Write-Host "GET the newer files before you start coding." -ForegroundColor Green
+    Write-Host ""
+    Write-Host ">>> RECOMMENDATION: CHOOSE Y <<<" -ForegroundColor Green
     Write-Host ""
 
     $answer = Read-Host "GET newest code from GitHub? (Y/N)"
 
     if ($answer -notmatch '^[Yy]$') {
-        Stop-Checker "GET cancelled by user."
+        Cancel-Checker "GET cancelled by user."
     }
 
     Write-Host ""
@@ -207,16 +233,26 @@ The checker will NOT pull over local work.
 if ($ahead -gt 0 -and $behind -eq 0) {
 
     Write-Host ""
-    Write-Host "----------------------------------------------------------" -ForegroundColor Yellow
-    Write-Host " THIS COMPUTER HAS NEWER COMMITTED CODE" -ForegroundColor Yellow
-    Write-Host " Local is $ahead commit(s) ahead of GitHub." -ForegroundColor Yellow
-    Write-Host "----------------------------------------------------------" -ForegroundColor Yellow
+    Write-Host "==========================================================" -ForegroundColor Yellow
+    Write-Host "              THIS COMPUTER IS NEWER" -ForegroundColor Yellow
+    Write-Host "==========================================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "This computer has $ahead committed change(s)"
+    Write-Host "that GitHub does not have."
+    Write-Host ""
+    Write-Host "WHAT THIS MEANS:" -ForegroundColor Cyan
+    Write-Host "Your committed work has not been uploaded yet."
+    Write-Host ""
+    Write-Host "RECOMMENDED ACTION:" -ForegroundColor Green
+    Write-Host "PUSH it to GitHub before leaving this computer." -ForegroundColor Green
+    Write-Host ""
+    Write-Host ">>> RECOMMENDATION: CHOOSE Y <<<" -ForegroundColor Green
     Write-Host ""
 
     $answer = Read-Host "PUSH committed code to GitHub? (Y/N)"
 
     if ($answer -notmatch '^[Yy]$') {
-        Stop-Checker "PUSH cancelled by user."
+        Cancel-Checker "PUSH cancelled by user."
     }
 
     git push origin $ExpectedBranch
@@ -261,10 +297,19 @@ if ($ahead -eq 0 -and $behind -eq 0 -and
         Write-Host ""
     }
 
+    Write-Host "WHAT THIS MEANS:" -ForegroundColor Cyan
+    Write-Host "This computer contains work that is not yet on GitHub."
+    Write-Host ""
+    Write-Host "RECOMMENDED ACTION:" -ForegroundColor Green
+    Write-Host "If you finished this coding session, PUSH it now." -ForegroundColor Green
+    Write-Host ""
+    Write-Host ">>> RECOMMENDATION: CHOOSE Y IF YOU ARE DONE CODING <<<" -ForegroundColor Green
+    Write-Host ""
+
     $answer = Read-Host "Commit and PUSH this local work to GitHub? (Y/N)"
 
     if ($answer -notmatch '^[Yy]$') {
-        Stop-Checker "PUSH cancelled. Local files were left untouched."
+        Cancel-Checker "PUSH cancelled by user."
     }
 
     # Fetch again immediately before creating a commit.
@@ -352,3 +397,4 @@ if ($finalUnstaged.Count -gt 0 -or $finalStaged.Count -gt 0) {
 }
 
 Success
+
