@@ -238,6 +238,7 @@ export async function GET(request: Request) {
       people,
       taskValues,
       taskAttachments,
+      taskRecurrenceExceptions,
       workspaceSettings,
     ] = await db.batch([
       db.prepare("SELECT * FROM projects ORDER BY created_at"),
@@ -248,6 +249,9 @@ export async function GET(request: Request) {
       db.prepare("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
       db.prepare("SELECT * FROM task_values ORDER BY task_id, field_id"),
       db.prepare("SELECT * FROM task_attachments ORDER BY created_at"),
+      db.prepare(
+        "SELECT * FROM task_recurrence_exceptions ORDER BY created_at",
+      ),
       db.prepare(
         "SELECT status_options,filter_labels,list_column_order FROM workspace WHERE id='initialized'",
       ),
@@ -302,7 +306,16 @@ export async function GET(request: Request) {
           attachments: attachmentsByTask.get(t.id) ?? [],
           customValues: valuesByTask.get(t.id) ?? {},
         })),
-        comments: comments.results,
+        taskRecurrenceExceptions: taskRecurrenceExceptions.results.map(
+        (row: any) => ({
+          id: row.id,
+          taskId: row.task_id,
+          originalDate: row.original_date,
+          movedDate: row.moved_date,
+          createdAt: row.created_at,
+        }),
+      ),
+      comments: comments.results,
         sections: sections.results.map((s: any) => ({
           ...s,
           projectId: s.project_id,
@@ -718,7 +731,32 @@ export async function POST(request: Request) {
         .prepare("UPDATE workspace SET list_column_order=? WHERE id='initialized'")
         .bind(JSON.stringify(order))
         .run();
-    } else if (b.action === "deleteCustomField") {
+    } else if (b.action === "saveRecurrenceException") {
+    const exception = z.object({
+      id: z.string().min(1),
+      taskId: z.string().min(1),
+      originalDate: z.string().min(1),
+      movedDate: z.string().min(1),
+      createdAt: z.string().optional(),
+    }).parse(b.exception);
+
+    await db.prepare(
+      `INSERT INTO task_recurrence_exceptions(
+        id,task_id,original_date,moved_date,created_at
+      ) VALUES(?,?,?,?,?)
+      ON CONFLICT(task_id,original_date) DO UPDATE SET
+        moved_date=excluded.moved_date,
+        created_at=excluded.created_at`,
+    )
+      .bind(
+        exception.id,
+        exception.taskId,
+        exception.originalDate,
+        exception.movedDate,
+        exception.createdAt ?? now,
+      )
+      .run();
+  } else if (b.action === "deleteCustomField") {
       const id = z.string().min(1).parse(b.id);
       await db.batch([
         db.prepare("DELETE FROM task_values WHERE field_id=?").bind(id),

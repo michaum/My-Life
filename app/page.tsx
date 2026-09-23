@@ -1420,7 +1420,23 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         "UPDATE workspace SET list_column_order=? WHERE id='initialized'",
         [JSON.stringify(payload.order)],
       );
-    } else if (action === "deleteTask") {
+    } else if (action === "saveRecurrenceException") {
+    await db.execute(
+      `INSERT INTO task_recurrence_exceptions(
+        id,task_id,original_date,moved_date,created_at
+      ) VALUES(?,?,?,?,?)
+      ON CONFLICT(task_id,original_date) DO UPDATE SET
+        moved_date=excluded.moved_date,
+        created_at=excluded.created_at`,
+      [
+        payload.exception.id,
+        payload.exception.taskId,
+        payload.exception.originalDate,
+        payload.exception.movedDate,
+        payload.exception.createdAt ?? now,
+      ],
+    );
+  } else if (action === "deleteTask") {
       await db.execute("DELETE FROM comments WHERE task_id=?", [payload.id]);
       await db.execute("DELETE FROM task_values WHERE task_id=?", [payload.id]);
       await db.execute("DELETE FROM task_attachments WHERE task_id=?", [payload.id]);
