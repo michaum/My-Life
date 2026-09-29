@@ -3168,3 +3168,216 @@
   }
 }
 
+
+/* ======================================================
+   V2 CALENDAR TIMELINE
+   Day / Work week / Week
+   ====================================================== */
+
+.ml-v2 .calendar-timeline {
+  width: 100%;
+  overflow: auto;
+  background: #ffffff;
+  border-top: 1px solid #eceef2;
+}
+
+.ml-v2 .calendar-timeline-header,
+.ml-v2 .calendar-timeline-body {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+}
+
+.ml-v2 .calendar-timeline-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #ffffff;
+  border-bottom: 1px solid #e7e9ee;
+}
+
+.ml-v2 .calendar-timeline-time-header {
+  position: sticky;
+  left: 0;
+  z-index: 22;
+  min-height: 62px;
+  background: #ffffff;
+  border-right: 1px solid #eceef1;
+}
+
+.ml-v2 .calendar-timeline-date-header {
+  display: flex;
+  min-height: 62px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-right: 1px solid #eceef1;
+  background: #ffffff;
+  color: #747b88;
+  text-align: center;
+}
+
+.ml-v2 .calendar-timeline-date-header span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ml-v2 .calendar-timeline-date-header strong {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #202124;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ml-v2 .calendar-timeline-date-header.today strong {
+  background: #ff1a66;
+  color: #ffffff;
+  box-shadow: 0 3px 9px rgba(255, 26, 102, 0.22);
+}
+
+.ml-v2 .calendar-timeline-hours {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: #ffffff;
+  border-right: 1px solid #eceef1;
+}
+
+.ml-v2 .calendar-timeline-hour-label {
+  box-sizing: border-box;
+  padding: 5px 9px 0 0;
+  border-bottom: 1px solid #f0f1f4;
+  color: #8a909d;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ml-v2 .calendar-timeline-day {
+  position: relative;
+  box-sizing: border-box;
+  border-right: 1px solid #eceef1;
+  background-color: #ffffff;
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(100% - 1px),
+    #eceef1 calc(100% - 1px)
+  );
+}
+
+.ml-v2 .calendar-timeline-day.today {
+  background-color: rgba(255, 26, 102, 0.025);
+}
+
+.ml-v2 .calendar-timeline-day:hover {
+  background-color: #fcfcfd;
+}
+
+.ml-v2 .calendar-timeline--day .calendar-timeline-date-header,
+.ml-v2 .calendar-timeline--day .calendar-timeline-day {
+  min-width: 520px;
+}
+
+.ml-v2 .calendar-timeline--workweek .calendar-timeline-date-header,
+.ml-v2 .calendar-timeline--workweek .calendar-timeline-day {
+  min-width: 150px;
+}
+
+.ml-v2 .calendar-timeline--week .calendar-timeline-date-header,
+.ml-v2 .calendar-timeline--week .calendar-timeline-day {
+  min-width: 140px;
+}
+
+@media (max-width: 900px) {
+  .ml-v2 .calendar-timeline--day .calendar-timeline-date-header,
+  .ml-v2 .calendar-timeline--day .calendar-timeline-day {
+    min-width: 360px;
+  }
+
+  .ml-v2 .calendar-timeline--workweek .calendar-timeline-date-header,
+  .ml-v2 .calendar-timeline--workweek .calendar-timeline-day {
+    min-width: 135px;
+  }
+
+  .ml-v2 .calendar-timeline--week .calendar-timeline-date-header,
+  .ml-v2 .calendar-timeline--week .calendar-timeline-day {
+    min-width: 125px;
+  }
+}
+
+/* ======================================================
+   V2 CALENDAR TIMELINE TASKS
+   ====================================================== */
+
+.ml-v2 .calendar-timeline-task {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  z-index: 5;
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
+  min-height: 28px;
+  overflow: hidden;
+  padding: 5px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 7px;
+  color: #202124;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.ml-v2 .calendar-timeline-task:hover {
+  z-index: 7;
+  filter: brightness(0.98);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ml-v2 .calendar-timeline-task:focus-visible {
+  outline: 2px solid #ff1a66;
+  outline-offset: 1px;
+}
+
+.ml-v2 .calendar-timeline-task-time {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.72;
+}
+
+.ml-v2 .calendar-timeline-task-title {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-v2 .calendar-timeline-task.struck
+  .calendar-timeline-task-title {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+

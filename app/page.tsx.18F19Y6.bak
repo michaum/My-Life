@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import "../components/my-life/v2.css";
 import { MyLifeAppShell, MyLifeDashboard } from "../components/my-life";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -2164,52 +2164,23 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       return;
     }
 
-    if (!task.due) {
-      setError("Recurring task does not have a starting date.");
-      return;
-    }
-
-    const occurrenceDate = new Date(
-      `${choice.occurrenceDate}T12:00:00`,
-    );
-    const targetDate = new Date(
-      `${choice.targetDate}T12:00:00`,
-    );
-    const originalDueDate = new Date(
-      `${task.due}T12:00:00`,
-    );
-
-    const shiftMilliseconds =
-      targetDate.getTime() - occurrenceDate.getTime();
-
-    const shiftedDueDate = new Date(
-      originalDueDate.getTime() + shiftMilliseconds,
-    );
-
-    const shiftedDue =
-      `${shiftedDueDate.getFullYear()}-` +
-      `${String(shiftedDueDate.getMonth() + 1).padStart(2, "0")}-` +
-      `${String(shiftedDueDate.getDate()).padStart(2, "0")}`;
-
     const saved = await mutate(
       {
         action: "saveTask",
         task: {
           ...task,
-          due: shiftedDue,
+          due: choice.targetDate,
         },
       },
-      `Recurring series moved to ${dateText(shiftedDue)}`,
+      `Recurring series moved to ${dateText(choice.targetDate)}`,
     );
 
     if (saved) {
-      setTaskRecurrenceExceptions((current) =>
-        current.filter((item) => item.taskId !== task.id),
-      );
       setCalendarMoveChoice(null);
       setCalendarDragOccurrence(null);
     }
   }
+
   const project = projects.find((p) => p.id === active);
   const projectSections = project
     ? sections
@@ -3273,58 +3244,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     d.setDate(d.getDate() + i);
     return d;
   });
-  const calendarTimelineHours = Array.from({ length: 24 }, (_, hour) => hour);
-  const calendarHourHeight = 64;
-
-  const calendarTimeToMinutes = (value: string) => {
-    if (!value) return null;
-
-    const [hourText, minuteText] = value.split(":");
-    const hour = Number(hourText);
-    const minute = Number(minuteText);
-
-    if (
-      !Number.isInteger(hour) ||
-      !Number.isInteger(minute) ||
-      hour < 0 ||
-      hour > 23 ||
-      minute < 0 ||
-      minute > 59
-    ) {
-      return null;
-    }
-
-    return hour * 60 + minute;
-  };
-
-  const calendarHourLabel = (hour: number) => {
-    const date = new Date(2000, 0, 1, hour, 0);
-
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  };
-
   const taskOccursOnDate = (task: Task, dateKey: string) => {
     if (!task.due) return false;
-    const movedToThisDate = taskRecurrenceExceptions.some(
-      (item) =>
-        item.taskId === task.id &&
-        item.movedDate === dateKey,
-    );
-
-    if (movedToThisDate) return true;
-
-    const movedFromThisDate = taskRecurrenceExceptions.some(
-      (item) =>
-        item.taskId === task.id &&
-        item.originalDate === dateKey &&
-        item.movedDate !== dateKey,
-    );
-
-    if (movedFromThisDate) return false;
-
     if (task.due === dateKey) return true;
 
     // A completed recurring task remains visible on its real due date,
@@ -3894,7 +3815,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   cursor: "pointer",
                 }}
               >
-                … {dueToday} Due Today
+                ðŸ“… {dueToday} Due Today
               </span>
               <span
                 role="button"
@@ -4449,7 +4370,6 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                     </Button>
                   </div>
                 </div>
-                {calendarMode === "month" ? (
                 <div
                   className={`calendar-grid calendar-grid--${calendarMode}`}
                   style={{ gridTemplateColumns: `repeat(${calendarDays === 42 ? 7 : calendarDays}, minmax(0, 1fr))` }}
@@ -4516,12 +4436,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                                 onDragStart={(e) => {
                                   setCalendarDragOccurrence({
                                     taskId: t.id,
-                                    occurrenceDate:
-                                      taskRecurrenceExceptions.find(
-                                        (item) =>
-                                          item.taskId === t.id &&
-                                          item.movedDate === key,
-                                      )?.originalDate ?? key,
+                                    occurrenceDate: key,
                                   });
                                   setDragging(t.id);
                                   e.dataTransfer.setData("text/plain", t.id);
@@ -4556,146 +4471,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                     );
                   })}
                 </div>
-                ) : (
-                  <div className={`calendar-timeline calendar-timeline--${calendarMode}`}>
-                    <div
-                      className="calendar-timeline-header"
-                      style={{
-                        gridTemplateColumns: `72px repeat(${calendarDates.length}, minmax(140px, 1fr))`,
-                      }}
-                    >
-                      <div className="calendar-timeline-time-header" />
-
-                      {calendarDates.map((date) => {
-                        const dateKey = `${date.getFullYear()}-${String(
-                          date.getMonth() + 1,
-                        ).padStart(2, "0")}-${String(date.getDate()).padStart(
-                          2,
-                          "0",
-                        )}`;
-
-                        return (
-                          <div
-                            className={`calendar-timeline-date-header ${
-                              dateKey === todayKey() ? "today" : ""
-                            }`}
-                            key={dateKey}
-                          >
-                            <span>
-                              {date.toLocaleDateString("en-US", {
-                                weekday: "short",
-                              })}
-                            </span>
-                            <strong>{date.getDate()}</strong>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div
-                      className="calendar-timeline-body"
-                      style={{
-                        gridTemplateColumns: `72px repeat(${calendarDates.length}, minmax(140px, 1fr))`,
-                      }}
-                    >
-                      <div className="calendar-timeline-hours">
-                        {calendarTimelineHours.map((hour) => (
-                          <div
-                            className="calendar-timeline-hour-label"
-                            key={hour}
-                            style={{ height: `${calendarHourHeight}px` }}
-                          >
-                            {calendarHourLabel(hour)}
-                          </div>
-                        ))}
-                      </div>
-
-                      {calendarDates.map((date) => {
-                        const dateKey = `${date.getFullYear()}-${String(
-                          date.getMonth() + 1,
-                        ).padStart(2, "0")}-${String(date.getDate()).padStart(
-                          2,
-                          "0",
-                        )}`;
-
-                        const timelineTasks = filtered.filter(
-                          (task) =>
-                            taskOccursOnDate(task, dateKey) &&
-                            Boolean(task.dueTime),
-                        );
-
-                        return (
-                          <div
-                            className={`calendar-timeline-day ${
-                              dateKey === todayKey() ? "today" : ""
-                            }`}
-                            key={dateKey}
-                            style={{
-                              height: `${24 * calendarHourHeight}px`,
-                              backgroundSize: `100% ${calendarHourHeight}px`,
-                            }}
-                          >
-                            {timelineTasks.map((task) => {
-                              const startMinutes =
-                                calendarTimeToMinutes(task.dueTime);
-
-                              if (startMinutes === null) return null;
-
-                              const parsedEndMinutes =
-                                calendarTimeToMinutes(task.endTime);
-
-                              const endMinutes =
-                                parsedEndMinutes !== null &&
-                                parsedEndMinutes > startMinutes
-                                  ? parsedEndMinutes
-                                  : Math.min(startMinutes + 60, 24 * 60);
-
-                              const top =
-                                (startMinutes / 60) * calendarHourHeight;
-
-                              const height = Math.max(
-                                ((endMinutes - startMinutes) / 60) *
-                                  calendarHourHeight,
-                                28,
-                              );
-
-                              return (
-                                <button
-                                  className={`calendar-timeline-task ${
-                                    task.status === "Done" ? "struck" : ""
-                                  }`}
-                                  key={`${task.id}:${dateKey}`}
-                                  style={{
-                                    top: `${top}px`,
-                                    height: `${height}px`,
-                                    background: task.color || "#e5e5e5",
-                                    ...taskTextStyle(task, "calendar"),
-                                  }}
-                                  onClick={() => editTask(task)}
-                                  title={`${task.title} ${task.dueTime}${
-                                    task.endTime ? ` - ${task.endTime}` : ""
-                                  }`}
-                                >
-                                  <span className="calendar-timeline-task-time">
-                                    {task.dueTime}
-                                    {task.endTime && ` - ${task.endTime}`}
-                                  </span>
-
-                                  <span className="calendar-timeline-task-title">
-                                    {task.title}
-                                    {task.emoji && ` ${task.emoji}`}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
                 <p className="calendar-note">
-                  Drag a task to another day to reschedule it -{" "}
+                  Drag a task to another day to reschedule it Â·{" "}
                   {filtered.filter((t) => !t.due).length} tasks without a due
                   date.
                 </p>
