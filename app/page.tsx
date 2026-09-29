@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import "../components/my-life/v2.css";
 import { MyLifeAppShell, MyLifeDashboard } from "../components/my-life";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -689,6 +689,15 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     () => new Date(),
   );
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("month");
+  const [calendarDragOccurrence, setCalendarDragOccurrence] = useState<{
+    taskId: string;
+    occurrenceDate: string;
+  } | null>(null);
+  const [calendarMoveChoice, setCalendarMoveChoice] = useState<{
+    taskId: string;
+    occurrenceDate: string;
+    targetDate: string;
+  } | null>(null);
   const [dragging, setDragging] = useState<string | null>(null),
     [dropTarget, setDropTarget] = useState<Status | null>(null);
   async function loadAdminUsers() {
@@ -2109,6 +2118,98 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       setBusy(false);
     }
   }
+  async function moveCalendarOccurrence() {
+    if (!calendarMoveChoice) return;
+
+    const choice = calendarMoveChoice;
+
+    const existingException = taskRecurrenceExceptions.find(
+      (item) =>
+        item.taskId === choice.taskId &&
+        item.originalDate === choice.occurrenceDate,
+    );
+
+    const exception: TaskRecurrenceException = {
+      id:
+        existingException?.id ??
+        `recurrence-exception-${choice.taskId}-${choice.occurrenceDate}`,
+      taskId: choice.taskId,
+      originalDate: choice.occurrenceDate,
+      movedDate: choice.targetDate,
+      createdAt: existingException?.createdAt ?? new Date().toISOString(),
+    };
+
+    const saved = await mutate(
+      {
+        action: "saveRecurrenceException",
+        exception,
+      },
+      `Occurrence moved to ${dateText(choice.targetDate)}`,
+    );
+
+    if (saved) {
+      setCalendarMoveChoice(null);
+      setCalendarDragOccurrence(null);
+    }
+  }
+
+  async function moveCalendarSeries() {
+    if (!calendarMoveChoice) return;
+
+    const choice = calendarMoveChoice;
+    const task = tasks.find((item) => item.id === choice.taskId);
+
+    if (!task) {
+      setError("Recurring task could not be found.");
+      return;
+    }
+
+    if (!task.due) {
+      setError("Recurring task does not have a starting date.");
+      return;
+    }
+
+    const occurrenceDate = new Date(
+      `${choice.occurrenceDate}T12:00:00`,
+    );
+    const targetDate = new Date(
+      `${choice.targetDate}T12:00:00`,
+    );
+    const originalDueDate = new Date(
+      `${task.due}T12:00:00`,
+    );
+
+    const shiftMilliseconds =
+      targetDate.getTime() - occurrenceDate.getTime();
+
+    const shiftedDueDate = new Date(
+      originalDueDate.getTime() + shiftMilliseconds,
+    );
+
+    const shiftedDue =
+      `${shiftedDueDate.getFullYear()}-` +
+      `${String(shiftedDueDate.getMonth() + 1).padStart(2, "0")}-` +
+      `${String(shiftedDueDate.getDate()).padStart(2, "0")}`;
+
+    const saved = await mutate(
+      {
+        action: "saveTask",
+        task: {
+          ...task,
+          due: shiftedDue,
+        },
+      },
+      `Recurring series moved to ${dateText(shiftedDue)}`,
+    );
+
+    if (saved) {
+      setTaskRecurrenceExceptions((current) =>
+        current.filter((item) => item.taskId !== task.id),
+      );
+      setCalendarMoveChoice(null);
+      setCalendarDragOccurrence(null);
+    }
+  }
   const project = projects.find((p) => p.id === active);
   const projectSections = project
     ? sections
@@ -3174,6 +3275,23 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   });
   const taskOccursOnDate = (task: Task, dateKey: string) => {
     if (!task.due) return false;
+    const movedToThisDate = taskRecurrenceExceptions.some(
+      (item) =>
+        item.taskId === task.id &&
+        item.movedDate === dateKey,
+    );
+
+    if (movedToThisDate) return true;
+
+    const movedFromThisDate = taskRecurrenceExceptions.some(
+      (item) =>
+        item.taskId === task.id &&
+        item.originalDate === dateKey &&
+        item.movedDate !== dateKey,
+    );
+
+    if (movedFromThisDate) return false;
+
     if (task.due === dateKey) return true;
 
     // A completed recurring task remains visible on its real due date,
@@ -3743,7 +3861,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   cursor: "pointer",
                 }}
               >
-                ðŸ“… {dueToday} Due Today
+                … {dueToday} Due Today
               </span>
               <span
                 role="button"
@@ -4322,14 +4440,27 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                             (t) =>
                               t.id === e.dataTransfer.getData("text/plain"),
                           );
-                          if (task && !busy && task.due !== key)
-                            void mutate(
-                              {
-                                action: "saveTask",
-                                task: { ...task, due: key },
-                              },
-                              `Moved to ${dateText(key)}`,
-                            );
+                          if (task && !busy && task.due !== key) {
+                            if (
+                              task.recurrenceUnit !== "none" &&
+                              calendarDragOccurrence?.taskId === task.id
+                            ) {
+                              setCalendarMoveChoice({
+                                taskId: task.id,
+                                occurrenceDate:
+                                  calendarDragOccurrence.occurrenceDate,
+                                targetDate: key,
+                              });
+                            } else {
+                              void mutate(
+                                {
+                                  action: "saveTask",
+                                  task: { ...task, due: key },
+                                },
+                                `Moved to ${dateText(key)}`,
+                              );
+                            }
+                          }
                           setDragging(null);
                         }}
                       >
@@ -4347,19 +4478,26 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                               key={`${t.id}:${key}`}
                             >
                               <button
-                                draggable={!busy && isOriginalOccurrence}
+                                draggable={!busy}
                                 onDragStart={(e) => {
-                                  if (!isOriginalOccurrence) {
-                                    e.preventDefault();
-                                    return;
-                                  }
-
+                                  setCalendarDragOccurrence({
+                                    taskId: t.id,
+                                    occurrenceDate:
+                                      taskRecurrenceExceptions.find(
+                                        (item) =>
+                                          item.taskId === t.id &&
+                                          item.movedDate === key,
+                                      )?.originalDate ?? key,
+                                  });
                                   setDragging(t.id);
                                   e.dataTransfer.setData("text/plain", t.id);
                                   e.dataTransfer.effectAllowed = "move";
                                 }}
-                                onDragEnd={() => setDragging(null)}
-                                className={`calendar-task ${t.status === "Done" ? "struck" : ""} ${dragging === t.id && isOriginalOccurrence ? "dragging" : ""}`}
+                                onDragEnd={() => {
+                                  setCalendarDragOccurrence(null);
+                                  setDragging(null);
+                                }}
+                                className={`calendar-task ${t.status === "Done" ? "struck" : ""} ${dragging === t.id && calendarDragOccurrence?.occurrenceDate === key ? "dragging" : ""}`}
                                 style={{
                                   background: t.color || "#e5e5e5",
                                   ...taskTextStyle(t, "calendar"),
@@ -6479,6 +6617,62 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           )}
         </DialogContent>
       </Dialog>
+      <Dialog
+        open={calendarMoveChoice !== null}
+        onOpenChange={(open) => {
+          if (!open && !busy) {
+            setCalendarMoveChoice(null);
+            setCalendarDragOccurrence(null);
+          }
+        }}
+      >
+        <DialogContent style={{ maxWidth: "480px" }}>
+          <DialogTitle>Move recurring task</DialogTitle>
+          <DialogDescription>
+            This task repeats. What would you like to move?
+          </DialogDescription>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              flexWrap: "wrap",
+              gap: "8px",
+              marginTop: "20px",
+            }}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                setCalendarMoveChoice(null);
+                setCalendarDragOccurrence(null);
+              }}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => void moveCalendarOccurrence()}
+            >
+              This occurrence
+            </Button>
+
+            <Button
+              type="button"
+              disabled={busy}
+              onClick={() => void moveCalendarSeries()}
+            >
+              Entire series
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={help} onOpenChange={setHelp}>
         <DialogContent>
           <DialogTitle>Welcome to Taskflow</DialogTitle>
