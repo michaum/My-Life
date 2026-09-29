@@ -50,3 +50,6 @@ src-tauri/target/
 
 # Local database backups
 backups/
+
+# Local backup files
+*.bak

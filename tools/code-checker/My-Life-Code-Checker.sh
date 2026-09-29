@@ -137,7 +137,7 @@ backup_files=()
 real_untracked=()
 
 for file in "${all_untracked[@]}"; do
-    if [[ "$file" =~ \.before-[^/]+$ ]]; then
+    if [[ "$file" =~ \.before-[^/]+$ || "$file" == *.bak ]]; then
         backup_files+=("$file")
     else
         real_untracked+=("$file")
