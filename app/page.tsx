@@ -114,6 +114,8 @@ type TaskRecurrenceException = {
   taskId: string;
   originalDate: string;
   movedDate: string;
+  movedDueTime?: string | null;
+  movedEndTime?: string | null;
   createdAt: string;
 };
 
@@ -697,6 +699,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     taskId: string;
     occurrenceDate: string;
     targetDate: string;
+    targetDueTime?: string;
+    targetEndTime?: string;
+  } | null>(null);
+  const [calendarTimelineDropTarget, setCalendarTimelineDropTarget] = useState<{
+    date: string;
+    minutes: number;
   } | null>(null);
   const [dragging, setDragging] = useState<string | null>(null),
     [dropTarget, setDropTarget] = useState<Status | null>(null);
@@ -997,6 +1005,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         taskId: row.task_id,
         originalDate: row.original_date,
         movedDate: row.moved_date,
+        movedDueTime: row.moved_due_time,
+        movedEndTime: row.moved_end_time,
         createdAt: row.created_at,
       })),
       comments,
@@ -1432,18 +1442,27 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     } else if (action === "saveRecurrenceException") {
     await db.execute(
       `INSERT INTO task_recurrence_exceptions(
-        id,task_id,original_date,moved_date,created_at
-      ) VALUES(?,?,?,?,?)
+        id,task_id,original_date,moved_date,moved_due_time,moved_end_time,created_at
+      ) VALUES(?,?,?,?,?,?,?)
       ON CONFLICT(task_id,original_date) DO UPDATE SET
         moved_date=excluded.moved_date,
+        moved_due_time=excluded.moved_due_time,
+        moved_end_time=excluded.moved_end_time,
         created_at=excluded.created_at`,
       [
         payload.exception.id,
         payload.exception.taskId,
         payload.exception.originalDate,
         payload.exception.movedDate,
+        payload.exception.movedDueTime ?? null,
+        payload.exception.movedEndTime ?? null,
         payload.exception.createdAt ?? now,
       ],
+    );
+  } else if (action === "deleteRecurrenceExceptionsForTask") {
+    await db.execute(
+      "DELETE FROM task_recurrence_exceptions WHERE task_id=?",
+      [payload.taskId],
     );
   } else if (action === "deleteTask") {
       await db.execute("DELETE FROM comments WHERE task_id=?", [payload.id]);
@@ -2136,6 +2155,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       taskId: choice.taskId,
       originalDate: choice.occurrenceDate,
       movedDate: choice.targetDate,
+      movedDueTime: choice.targetDueTime ?? existingException?.movedDueTime ?? null,
+      movedEndTime: choice.targetEndTime ?? existingException?.movedEndTime ?? null,
       createdAt: existingException?.createdAt ?? new Date().toISOString(),
     };
 
@@ -2197,12 +2218,22 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         task: {
           ...task,
           due: shiftedDue,
+        dueTime: choice.targetDueTime ?? task.dueTime,
+        endTime: choice.targetEndTime ?? task.endTime,
         },
       },
       `Recurring series moved to ${dateText(shiftedDue)}`,
     );
 
     if (saved) {
+      await mutate(
+        {
+          action: "deleteRecurrenceExceptionsForTask",
+          taskId: task.id,
+        },
+        "Recurring series occurrence overrides cleared",
+      );
+
       setTaskRecurrenceExceptions((current) =>
         current.filter((item) => item.taskId !== task.id),
       );
@@ -4506,6 +4537,21 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                           .map((t) => {
                             const isOriginalOccurrence = t.due === key;
 
+                            const occurrenceException =
+                              taskRecurrenceExceptions.find(
+                                (item) =>
+                                  item.taskId === t.id &&
+                                  item.movedDate === key,
+                              );
+
+                            const occurrenceDueTime =
+                              occurrenceException?.movedDueTime ??
+                              t.dueTime;
+
+                            const occurrenceEndTime =
+                              occurrenceException?.movedEndTime ??
+                              t.endTime;
+
                             return (
                             <div
                               className="calendar-entry"
@@ -4538,10 +4584,11 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                                 }}
                                 onClick={() => editTask(t)}
                               >
-                                {t.dueTime && (
+                                {occurrenceDueTime && (
                                   <span className="calendar-entry-time">
-                                    {t.dueTime}
-                                    {t.endTime && `–${t.endTime}`}
+                                    {occurrenceDueTime}
+                                    {occurrenceEndTime &&
+                                      `–${occurrenceEndTime}`}
                                   </span>
                                 )}
                                 <span className="calendar-task-title">
@@ -4630,19 +4677,197 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                               dateKey === todayKey() ? "today" : ""
                             }`}
                             key={dateKey}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+
+                              const bounds =
+                                e.currentTarget.getBoundingClientRect();
+
+                              const dragY = Math.max(
+                                0,
+                                Math.min(
+                                  e.clientY - bounds.top,
+                                  24 * calendarHourHeight,
+                                ),
+                              );
+
+                              const rawTargetMinutes =
+                                (dragY / calendarHourHeight) * 60;
+
+                              const targetMinutes = Math.max(
+                                0,
+                                Math.min(
+                                  Math.round(rawTargetMinutes / 15) * 15,
+                                  23 * 60 + 45,
+                                ),
+                              );
+
+                              setCalendarTimelineDropTarget((current) =>
+                                current?.date === dateKey &&
+                                current.minutes === targetMinutes
+                                  ? current
+                                  : {
+                                      date: dateKey,
+                                      minutes: targetMinutes,
+                                    },
+                              );
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+
+
+                              const task = tasks.find(
+                                (item) =>
+                                  item.id ===
+                                  e.dataTransfer.getData("text/plain"),
+                              );
+
+                              if (task && !busy) {
+                                const bounds =
+                                  e.currentTarget.getBoundingClientRect();
+
+                                const dropY = Math.max(
+                                  0,
+                                  Math.min(
+                                    e.clientY - bounds.top,
+                                    24 * calendarHourHeight,
+                                  ),
+                                );
+
+                                const rawMinutes =
+                                  (dropY / calendarHourHeight) * 60;
+
+                                const snappedMinutes =
+                                  calendarTimelineDropTarget?.date === dateKey
+                                    ? calendarTimelineDropTarget.minutes
+                                    : Math.max(
+                                        0,
+                                        Math.min(
+                                          Math.round(rawMinutes / 15) * 15,
+                                          23 * 60 + 45,
+                                        ),
+                                      );
+
+                                const originalStart =
+                                  calendarTimeToMinutes(task.dueTime) ?? 0;
+
+                                const parsedOriginalEnd =
+                                  calendarTimeToMinutes(task.endTime);
+
+                                const duration =
+                                  parsedOriginalEnd !== null &&
+                                  parsedOriginalEnd > originalStart
+                                    ? parsedOriginalEnd - originalStart
+                                    : 60;
+
+                                const newEndMinutes = Math.min(
+                                  snappedMinutes + duration,
+                                  24 * 60 - 1,
+                                );
+
+                                const minutesToTime = (minutes: number) => {
+                                  const hour = Math.floor(minutes / 60);
+                                  const minute = minutes % 60;
+
+                                  return `${String(hour).padStart(
+                                    2,
+                                    "0",
+                                  )}:${String(minute).padStart(2, "0")}`;
+                                };
+
+                                const newDueTime =
+                                  minutesToTime(snappedMinutes);
+
+                                const newEndTime =
+                                  minutesToTime(newEndMinutes);
+
+                                if (
+                                  task.recurrenceUnit !== "none" &&
+                                  calendarDragOccurrence?.taskId === task.id
+                                ) {
+                                  setCalendarMoveChoice({
+                                    taskId: task.id,
+                                    occurrenceDate:
+                                      calendarDragOccurrence.occurrenceDate,
+                                    targetDate: dateKey,
+                                    targetDueTime: newDueTime,
+                                    targetEndTime: newEndTime,
+                                  });
+                                } else {
+                                  void mutate(
+                                    {
+                                      action: "saveTask",
+                                      task: {
+                                        ...task,
+                                        due: dateKey,
+                                        dueTime: newDueTime,
+                                        endTime: newEndTime,
+                                      },
+                                    },
+                                    `Moved to ${dateText(
+                                      dateKey,
+                                    )} at ${newDueTime}`,
+                                  );
+                                }
+                              }
+
+                              setCalendarTimelineDropTarget(null);
+                              setDragging(null);
+                            }}
                             style={{
                               height: `${24 * calendarHourHeight}px`,
                               backgroundSize: `100% ${calendarHourHeight}px`,
                             }}
                           >
-                            {timelineTasks.map((task) => {
+                            {calendarTimelineDropTarget?.date === dateKey && (
+                            <div
+                              className="calendar-timeline-drop-target"
+                              style={{
+                                top: `${
+                                  (calendarTimelineDropTarget.minutes / 60) *
+                                  calendarHourHeight
+                                }px`,
+                                height: `${calendarHourHeight / 4}px`,
+                              }}
+                            >
+                              <span>
+                                {calendarHourLabel(
+                                  Math.floor(
+                                    calendarTimelineDropTarget.minutes / 60,
+                                  ),
+                                ).replace(
+                                  ":00",
+                                  `:${String(
+                                    calendarTimelineDropTarget.minutes % 60,
+                                  ).padStart(2, "0")}`,
+                                )}
+                              </span>
+                            </div>
+                          )}
+
+                          {timelineTasks.map((task) => {
+                              const occurrenceException =
+                                taskRecurrenceExceptions.find(
+                                  (item) =>
+                                    item.taskId === task.id &&
+                                    item.movedDate === dateKey,
+                                );
+
+                              const occurrenceDueTime =
+                                occurrenceException?.movedDueTime ??
+                                task.dueTime;
+
+                              const occurrenceEndTime =
+                                occurrenceException?.movedEndTime ??
+                                task.endTime;
+
                               const startMinutes =
-                                calendarTimeToMinutes(task.dueTime);
+                                calendarTimeToMinutes(occurrenceDueTime);
 
                               if (startMinutes === null) return null;
 
                               const parsedEndMinutes =
-                                calendarTimeToMinutes(task.endTime);
+                                calendarTimeToMinutes(occurrenceEndTime);
 
                               const endMinutes =
                                 parsedEndMinutes !== null &&
@@ -4661,8 +4886,38 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
                               return (
                                 <button
+                                  draggable={!busy}
+                                  onDragStart={(e) => {
+
+                                    setCalendarDragOccurrence({
+                                      taskId: task.id,
+                                      occurrenceDate:
+                                        taskRecurrenceExceptions.find(
+                                          (item) =>
+                                            item.taskId === task.id &&
+                                            item.movedDate === dateKey,
+                                        )?.originalDate ?? dateKey,
+                                    });
+                                    setDragging(task.id);
+                                    e.dataTransfer.setData(
+                                      "text/plain",
+                                      task.id,
+                                    );
+                                    e.dataTransfer.effectAllowed = "move";
+                                  }}
+                                  onDragEnd={() => {
+                                    setCalendarTimelineDropTarget(null);
+                                    setCalendarDragOccurrence(null);
+                                    setDragging(null);
+                                  }}
                                   className={`calendar-timeline-task ${
                                     task.status === "Done" ? "struck" : ""
+                                  } ${
+                                    dragging === task.id &&
+                                    calendarDragOccurrence?.occurrenceDate ===
+                                      dateKey
+                                      ? "dragging"
+                                      : ""
                                   }`}
                                   key={`${task.id}:${dateKey}`}
                                   style={{
@@ -4672,13 +4927,16 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                                     ...taskTextStyle(task, "calendar"),
                                   }}
                                   onClick={() => editTask(task)}
-                                  title={`${task.title} ${task.dueTime}${
-                                    task.endTime ? ` - ${task.endTime}` : ""
+                                  title={`${task.title} ${occurrenceDueTime}${
+                                    occurrenceEndTime
+                                      ? ` - ${occurrenceEndTime}`
+                                      : ""
                                   }`}
                                 >
                                   <span className="calendar-timeline-task-time">
-                                    {task.dueTime}
-                                    {task.endTime && ` - ${task.endTime}`}
+                                    {occurrenceDueTime}
+                                    {occurrenceEndTime &&
+                                      ` - ${occurrenceEndTime}`}
                                   </span>
 
                                   <span className="calendar-timeline-task-title">
@@ -5395,6 +5653,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   Time
                   <Input
                     type="time"
+                    step={900}
                     value={draft.dueTime}
                     onChange={(e) =>
                       setDraft({ ...draft, dueTime: e.target.value })
@@ -5405,6 +5664,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   End time
                   <Input
                     type="time"
+                    step={900}
                     value={draft.endTime}
                     min={draft.dueTime || undefined}
                     onChange={(e) =>

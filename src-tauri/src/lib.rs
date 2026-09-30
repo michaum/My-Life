@@ -105,6 +105,12 @@ pub fn run() {
             sql: include_str!("../migrations/0016_task_recurrence_exceptions.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 18,
+            description: "0017_task_recurrence_exception_times",
+            sql: include_str!("../migrations/0017_task_recurrence_exception_times.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

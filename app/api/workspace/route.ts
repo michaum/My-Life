@@ -312,6 +312,8 @@ export async function GET(request: Request) {
           taskId: row.task_id,
           originalDate: row.original_date,
           movedDate: row.moved_date,
+          movedDueTime: row.moved_due_time,
+          movedEndTime: row.moved_end_time,
           createdAt: row.created_at,
         }),
       ),
@@ -737,15 +739,19 @@ export async function POST(request: Request) {
       taskId: z.string().min(1),
       originalDate: z.string().min(1),
       movedDate: z.string().min(1),
+      movedDueTime: z.string().nullable().optional(),
+      movedEndTime: z.string().nullable().optional(),
       createdAt: z.string().optional(),
     }).parse(b.exception);
 
     await db.prepare(
       `INSERT INTO task_recurrence_exceptions(
-        id,task_id,original_date,moved_date,created_at
-      ) VALUES(?,?,?,?,?)
+        id,task_id,original_date,moved_date,moved_due_time,moved_end_time,created_at
+      ) VALUES(?,?,?,?,?,?,?)
       ON CONFLICT(task_id,original_date) DO UPDATE SET
         moved_date=excluded.moved_date,
+        moved_due_time=excluded.moved_due_time,
+        moved_end_time=excluded.moved_end_time,
         created_at=excluded.created_at`,
     )
       .bind(
@@ -753,8 +759,16 @@ export async function POST(request: Request) {
         exception.taskId,
         exception.originalDate,
         exception.movedDate,
+        exception.movedDueTime ?? null,
+        exception.movedEndTime ?? null,
         exception.createdAt ?? now,
       )
+      .run();
+  } else if (b.action === "deleteRecurrenceExceptionsForTask") {
+    const taskId = z.string().min(1).parse(b.taskId);
+    await db
+      .prepare("DELETE FROM task_recurrence_exceptions WHERE task_id=?")
+      .bind(taskId)
       .run();
   } else if (b.action === "deleteCustomField") {
       const id = z.string().min(1).parse(b.id);
