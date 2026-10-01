@@ -40,6 +40,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Settings,
   Settings2,
   Sparkles,
   Trash2,
@@ -211,88 +212,72 @@ const defaultFilterLabels: FilterLabels = {
 const emojis = Array.from(
   new Set([
     "",
-    "â­",
-    "âœ…",
-    "ðŸ“Œ",
-    "ðŸ”¥",
-    "ðŸ’¡",
-    "ðŸŽ¯",
-    "ðŸ“…",
-    "ðŸ“ž",
-    "âœ‰ï¸",
-    "ðŸš€",
-    "â¤ï¸",
-    "ðŸ†",
-    "ðŸ›’",
-    "ðŸ ",
-    "ðŸ’¼",
-    "ðŸŽ‰",
-    "âš ï¸",
-    "âš½",
-    "ðŸ€",
-    "ðŸˆ",
-    "âš¾",
-    "ðŸ¥Ž",
-    "ðŸŽ¾",
-    "ðŸ",
-    "ðŸ‰",
-    "ðŸ¥",
-    "ðŸŽ±",
-    "ðŸ“",
-    "ðŸ¸",
-    "ðŸ¥…",
-    "ðŸ’",
-    "ðŸ‘",
-    "ðŸ¥",
-    "ðŸ",
-    "â›³",
-    "ðŸ¹",
-    "ðŸŽ£",
-    "ðŸ¥Š",
-    "ðŸ¥‹",
-    "â›¸ï¸",
-    "ðŸŽ¿",
-    "ðŸ‚",
-    "ðŸ‹ï¸",
-    "ðŸ¤¸",
-    "ðŸš´",
-    "ðŸŠ",
-    "ðŸ‡",
-    "ðŸ†",
-    "ðŸ¥‡",
-    "ðŸ…",
-    "ðŸ§¹",
-    "ðŸ§½",
-    "ðŸ§¼",
-    "ðŸ«§",
-    "ðŸ§´",
-    "ðŸª£",
-    "ðŸ§º",
-    "ðŸ§»",
-    "ðŸš½",
-    "ðŸš¿",
-    "ðŸ›",
-    "ðŸª¥",
-    "ðŸ§¯",
-    "ðŸ›’",
-    "ðŸ½ï¸",
-    "ðŸ§‘â€ðŸ³",
-    "ðŸ—‘ï¸",
-    "â™»ï¸",
-    "ðŸªŸ",
-    "ðŸ›ï¸",
-    "ðŸ‘•",
-    "ðŸ‘š",
-    "ðŸ§¦",
-    "ðŸ§¤",
-    "ðŸª´",
-    "ðŸ§°",
-    "ðŸ”§",
-    "ðŸ”¨",
-    "ðŸª›",
-    "ðŸ§²",
+    "📌",
+    "🔥",
+    "💡",
+    "🎯",
+    "📅",
+    "📞",
+    "🚀",
+    "⭐",
+    "🏆",
+    "🛒",
+    "🛠️",
+    "💼",
+    "🎉",
+    "❤️",
+    "🏠",
+    "🚗",
+    "✈️",
+    "🍎",
+    "🍕",
+    "☕",
+    "🥗",
+    "🎾",
+    "⚽",
+    "🏀",
+    "🏈",
+    "⚾",
+    "🏒",
+    "🏅",
+    "🏋️",
+    "🏃",
+    "🚶",
+    "⛳",
+    "🏊",
+    "🎣",
+    "🥊",
+    "🥋",
+    "⛸️",
+    "🎿",
+    "🏂",
+    "🤸",
+    "🚴",
+    "🧹",
+    "🧽",
+    "🧼",
+    "🧴",
+    "🧺",
+    "🧻",
+    "🚽",
+    "🚿",
+    "🪥",
+    "🛒",
+    "🗑️",
+    "♻️",
+    "🪟",
+    "👕",
+    "👚",
+    "🧦",
+    "🪴",
+    "🧰",
+    "🔧",
+    "🔨",
+    "🪛",
+    "🧲",
   ]),
 );
+
 const projectIcons = {
   folder: FolderKanban,
   home: House,
@@ -2821,7 +2806,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   }
   function fieldValue(task: Task, field: CustomField) {
     const value = task.customValues[field.id] || "";
-    if (!value) return "â€”";
+    if (!value) return "—";
     if (field.type === "Date") return dateText(value);
     if (field.type === "Choice")
       return (
@@ -2849,16 +2834,16 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         "completer",
         "complete",
         "done",
-        "terminÃ©",
+        "terminé",
         "termine",
       ].includes(name)
     )
       return "Done";
     if (["active", "in progress", "en cours"].includes(name))
       return "In progress";
-    if (["pending", "to do", "a faire", "Ã  faire", "en attente"].includes(name))
+    if (["pending", "to do", "a faire", "à faire", "en attente"].includes(name))
       return "To do";
-    if (["review", "in review", "rÃ©vision", "revision"].includes(name))
+    if (["review", "in review", "révision", "revision"].includes(name))
       return "In review";
     return current;
   }
@@ -3115,9 +3100,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           )}
           <CalendarDays size={13} />
           {t.status !== "Done" && t.due && t.due < todayKey()
-            ? `Overdue Â· ${dateText(t.due)}`
+            ? `Overdue · ${dateText(t.due)}`
             : t.status !== "Done" && t.due === todayKey()
-              ? `Today Â· ${dateText(t.due)}`
+              ? `Today · ${dateText(t.due)}`
               : t.status !== "Done" && t.due
                 ? (() => {
                     const start = new Date(`${todayKey()}T00:00:00`);
@@ -3125,7 +3110,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                     end.setDate(end.getDate() + 7);
                     const due = new Date(`${t.due}T00:00:00`);
                     return due > start && due <= end
-                      ? `Upcoming Â· ${dateText(t.due)}`
+                      ? `Upcoming · ${dateText(t.due)}`
                       : dateText(t.due);
                   })()
                 : dateText(t.due)}
@@ -3797,9 +3782,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           }}
         >
         {active !== "home" && (
-          <section className="project-header">
-          <div className="project-header-art" aria-hidden="true" />
-          <div className="project-heading">
+          <section className={`project-header${project ? " project-header--project" : ""}`}>
+            <div className="project-heading">
             <div
               className="project-symbol"
               style={{ background: project?.color || "#727272" }}
@@ -3965,14 +3949,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   cursor: "pointer",
                 }}
               >
-                ðŸ—“ï¸ {upcoming} Upcoming
+                🗓️ {upcoming} Upcoming
               </span>
               
             </div>
           )}
           <div className="project-summary">
             <span className="status-label">
-              <span /> {overdue ? "Needs attention" : "Letâ€™s make progress"}
+              <span /> {overdue ? "Needs attention" : "Let’s make progress"}
             </span>
             <span>
               {completed} of {scope.length} tasks completed
@@ -3986,7 +3970,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             </div>
             {active === "welcome-project" && (
               <span className="example-label">
-                Example project Â· make it yours
+                Example project · make it yours
               </span>
             )}
           </div>
@@ -4106,6 +4090,24 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                     ),
                   )}
                 </NativeSelect>
+                {project && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="Edit project"
+                    title="Edit project"
+                    onClick={() => {
+                      setProjectDraft({
+                        ...project,
+                        sidebarFontColor:
+                          project.sidebarFontColor ?? "#ffffff",
+                      });
+                      setConfirmDelete(false);
+                    }}
+                  >
+                    <Settings size={14} />
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="icon"
@@ -4176,7 +4178,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                             priority !== "All priorities" ||
                             statusFilter !== "All statuses"
                               ? "No matching tasks"
-                              : "A little space for whatâ€™s next."}
+                              : "A little space for what’s next."}
                           </span>
                         </div>
                       )}
@@ -4314,17 +4316,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                           <section
                             className="list-section"
                             key={section.id || "none"}
-                            draggable={!!section.id && !busy}
-                            onDragStart={(e) => {
-                              if (!section.id) return;
-                              e.dataTransfer.setData(
-                                "text/plain",
-                                `section:${section.id}`,
-                              );
-                              setDragging(section.id);
-                            }}
-                            onDragEnd={() => setDragging(null)}
-                            onDragOver={(e) => e.preventDefault()}
+onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -4340,10 +4332,25 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                           >
                             <div className="list-section-head">
                               {section.id && (
-                                <GripVertical
-                                  size={15}
+                                <span
                                   className="section-grip"
-                                />
+                                  draggable={!busy}
+                                  role="button"
+                                  aria-label={`Drag ${section.name} section`}
+                                  title="Drag section"
+                                  onDragStart={(e) => {
+                                    e.stopPropagation();
+                                    e.dataTransfer.effectAllowed = "move";
+                                    e.dataTransfer.setData(
+                                      "text/plain",
+                                      `section:${section.id}`,
+                                    );
+                                    setDragging(section.id);
+                                  }}
+                                  onDragEnd={() => setDragging(null)}
+                                >
+                                  <GripVertical size={15} />
+                                </span>
                               )}
                               <button
                                 aria-label={
@@ -5539,7 +5546,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             <>
               <Button onClick={newPerson}><Plus size={15} /> Add person</Button>
               <div className="people-list">
-                {people.map((person) => <div className="person-row" key={person.id}><div><strong>{person.name}</strong><small>{person.phone} Â· SMS {person.smsEnabled ? "on" : "off"}</small></div><Button variant="ghost" size="sm" disabled={!person.smsEnabled || busy} onClick={() => void testSms(person)}>Test SMS</Button><Button variant="ghost" size="icon" aria-label={`Edit ${person.name}`} onClick={() => setPersonDraft({ ...person })}><Pencil size={14} /></Button><Button variant="ghost" size="icon" aria-label={`Delete ${person.name}`} onClick={() => void mutate({ action: "deletePerson", id: person.id }, "Person deleted")}><Trash2 size={14} /></Button></div>)}
+                {people.map((person) => <div className="person-row" key={person.id}><div><strong>{person.name}</strong><small>{person.phone} · SMS {person.smsEnabled ? "on" : "off"}</small></div><Button variant="ghost" size="sm" disabled={!person.smsEnabled || busy} onClick={() => void testSms(person)}>Test SMS</Button><Button variant="ghost" size="icon" aria-label={`Edit ${person.name}`} onClick={() => setPersonDraft({ ...person })}><Pencil size={14} /></Button><Button variant="ghost" size="icon" aria-label={`Delete ${person.name}`} onClick={() => void mutate({ action: "deletePerson", id: person.id }, "Person deleted")}><Trash2 size={14} /></Button></div>)}
                 {!people.length && <p className="calendar-note">Add a person to assign tasks and optionally notify them by SMS.</p>}
               </div>
             </>
@@ -6126,7 +6133,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                         <span className="avatar">M</span>
                         <div>
                           <small>
-                            Workspace note Â·{" "}
+                            Workspace note ·{" "}
                             {new Date(c.created_at).toLocaleString()}
                           </small>
                           <p>{c.body}</p>
@@ -6211,7 +6218,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               </div>
               {confirmDelete && (
                 <p className="inline-error">
-                  Click â€œConfirm deleteâ€ to permanently remove this task and its
+                  Click “Confirm delete” to permanently remove this task and its
                   comments.
                 </p>
               )}
@@ -6232,7 +6239,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               : "Create a project"}
           </DialogTitle>
           <DialogDescription>
-            A home for everything youâ€™re working toward.
+            A home for everything you’re working toward.
           </DialogDescription>
           {projectDraft && (
             <form onSubmit={saveProject} className="editor-form">
@@ -6460,7 +6467,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               {confirmDelete && (
                 <p className="inline-error">
                   This permanently deletes the project, all its tasks, and
-                  comments. Click â€œConfirm deleteâ€ to continue.
+                  comments. Click “Confirm delete” to continue.
                 </p>
               )}
             </form>
@@ -6539,8 +6546,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               </div>
               {confirmDelete && (
                 <p className="inline-error">
-                  Tasks in this section will move to â€œNo section.â€ Click
-                  â€œConfirm deleteâ€ to continue.
+                  Tasks in this section will move to “No section.” Click
+                  “Confirm delete” to continue.
                 </p>
               )}
             </form>
@@ -6968,7 +6975,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               {confirmDelete && (
                 <p className="inline-error">
                   This permanently removes the field and its saved values. Click
-                  â€œConfirm deleteâ€ to continue.
+                  “Confirm delete” to continue.
                 </p>
               )}
             </form>
@@ -7122,7 +7129,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               a task to change its status.
             </p>
             <p>
-              <strong>Organize your list.</strong> Open a projectâ€™s List view to
+              <strong>Organize your list.</strong> Open a project’s List view to
               add collapsible sections and custom columns for text, numbers,
               dates, or choices.
             </p>
@@ -7141,7 +7148,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               collaboration are not included.
             </p>
           </div>
-          <Button onClick={() => setHelp(false)}>Letâ€™s get started</Button>
+          <Button onClick={() => setHelp(false)}>Let’s get started</Button>
         </DialogContent>
       </Dialog>
     </div>

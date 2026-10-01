@@ -3423,3 +3423,340 @@
   line-height: 1.2;
   white-space: nowrap;
 }
+
+
+/* ======================================================
+   STEP 18F.20L.4 - CALENDAR V2 VISUAL POLISH
+   Presentation only.
+   Calendar behavior remains unchanged.
+   ====================================================== */
+
+.ml-v2 .calendar-wrap {
+  margin: 0 28px 32px;
+  border: 1px solid #e5e7ee;
+  border-radius: 20px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.025),
+    0 10px 30px rgba(78, 70, 120, 0.035);
+}
+
+/* Header */
+
+.ml-v2 .calendar-heading {
+  min-height: 78px;
+  padding: 18px 22px;
+  gap: 24px;
+  border-bottom: 1px solid #eceef3;
+  background:
+    linear-gradient(
+      110deg,
+      rgba(248, 247, 255, 0.72) 0%,
+      rgba(255, 255, 255, 1) 42%
+    );
+}
+
+.ml-v2 .calendar-heading h2 {
+  color: #202231;
+  font-size: 21px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+/* View selector */
+
+.ml-v2 .calendar-heading .calendar-view-switcher {
+  gap: 2px;
+  margin-right: 10px;
+  padding: 4px;
+  border: 1px solid #e3e4eb;
+  border-radius: 12px;
+  background: #f5f6f8;
+  box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.025);
+}
+
+.ml-v2 .calendar-heading .calendar-view-switcher button {
+  min-height: 32px;
+  padding-left: 13px;
+  padding-right: 13px;
+  border-color: transparent;
+  border-radius: 9px;
+  color: #606779;
+  font-weight: 650;
+  box-shadow: none;
+}
+
+.ml-v2 .calendar-heading .calendar-view-switcher button[data-variant="default"] {
+  background: #7567f8;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(117, 103, 248, 0.22);
+}
+
+/* Today + navigation */
+
+.ml-v2 .calendar-heading > div > button {
+  min-height: 32px;
+  border-color: #dde1e8;
+  color: #4f5668;
+  background: #f8fafb;
+}
+
+.ml-v2 .calendar-heading > div > button:hover {
+  border-color: #d4d0fb;
+  background: #f3f1ff;
+  color: #6658e8;
+}
+
+/* Month weekday header */
+
+.ml-v2 .weekday {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e9ebf0;
+  border-right: 1px solid #eff0f4;
+  background: #fafafe;
+  color: #858b9d;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.075em;
+}
+
+/* Month cells */
+
+.ml-v2 .calendar-grid--month .calendar-day {
+  min-height: 112px;
+}
+
+.ml-v2 .calendar-day {
+  padding: 9px 10px;
+  border-right-color: #eef0f4;
+  border-bottom-color: #eef0f4;
+}
+
+.ml-v2 .calendar-day:hover {
+  background: #fbfaff;
+  box-shadow: inset 0 0 0 1px rgba(117, 103, 248, 0.09);
+}
+
+.ml-v2 .calendar-day.other-month {
+  background: #fafbfc;
+}
+
+.ml-v2 .calendar-day.other-month > span {
+  color: #a6abba;
+  opacity: 0.7;
+}
+
+.ml-v2 .calendar-day > span {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 3px;
+  color: #62697a;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+/* Use V2 purple for today instead of legacy pink */
+
+.ml-v2 .calendar-day > span.today {
+  background: #7567f8;
+  color: #ffffff;
+  box-shadow: 0 4px 11px rgba(117, 103, 248, 0.24);
+}
+
+/* Month task cards */
+
+.ml-v2 .calendar-entry {
+  margin-top: 5px;
+}
+
+.ml-v2 .calendar-task {
+  gap: 3px;
+  padding: 7px 8px;
+  border-color: rgba(31, 35, 48, 0.07);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.035);
+}
+
+.ml-v2 .calendar-task:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 2px 4px rgba(16, 24, 40, 0.05),
+    0 5px 12px rgba(16, 24, 40, 0.07);
+}
+
+.ml-v2 .calendar-entry-time {
+  font-size: 0.76em;
+  font-weight: 700;
+  opacity: 0.68;
+}
+
+.ml-v2 .calendar-task .calendar-task-title {
+  font-weight: 650;
+}
+
+/* Timeline */
+
+.ml-v2 .calendar-timeline {
+  border-top: 0;
+  background: #ffffff;
+}
+
+.ml-v2 .calendar-timeline-header {
+  background: #fbfbfe;
+  border-bottom-color: #e9ebf0;
+}
+
+.ml-v2 .calendar-timeline-time-header {
+  min-height: 66px;
+  background: #fbfbfe;
+  border-right-color: #eceef3;
+}
+
+.ml-v2 .calendar-timeline-date-header {
+  min-height: 66px;
+  gap: 3px;
+  border-right-color: #eceef3;
+  background: #fbfbfe;
+  color: #818798;
+}
+
+.ml-v2 .calendar-timeline-date-header span {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.065em;
+}
+
+.ml-v2 .calendar-timeline-date-header strong {
+  width: 31px;
+  height: 31px;
+  color: #282b38;
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.ml-v2 .calendar-timeline-date-header.today strong {
+  background: #7567f8;
+  color: #ffffff;
+  box-shadow: 0 4px 11px rgba(117, 103, 248, 0.24);
+}
+
+/* Timeline hour rail */
+
+.ml-v2 .calendar-timeline-hours {
+  background: #fcfcfe;
+  border-right-color: #eceef3;
+}
+
+.ml-v2 .calendar-timeline-hour-label {
+  padding: 6px 10px 0 0;
+  border-bottom-color: #f0f1f5;
+  color: #9298a8;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+/* Timeline day columns */
+
+.ml-v2 .calendar-timeline-day {
+  border-right-color: #eceef3;
+  background-color: #ffffff;
+}
+
+.ml-v2 .calendar-timeline-day.today {
+  background-color: rgba(117, 103, 248, 0.025);
+}
+
+.ml-v2 .calendar-timeline-day:hover {
+  background-color: rgba(117, 103, 248, 0.018);
+}
+
+/* Timeline event cards */
+
+.ml-v2 .calendar-timeline-task {
+  left: 7px;
+  right: 7px;
+  padding: 6px 9px;
+  border-color: rgba(31, 35, 48, 0.08);
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 3px 8px rgba(16, 24, 40, 0.035);
+}
+
+.ml-v2 .calendar-timeline-task:hover {
+  z-index: 7;
+  filter: brightness(0.985);
+  box-shadow:
+    0 2px 4px rgba(16, 24, 40, 0.06),
+    0 6px 14px rgba(16, 24, 40, 0.08);
+}
+
+.ml-v2 .calendar-timeline-task:focus-visible {
+  outline: 2px solid #7567f8;
+  outline-offset: 2px;
+}
+
+.ml-v2 .calendar-timeline-task-time {
+  font-size: 10px;
+  font-weight: 650;
+  opacity: 0.68;
+}
+
+.ml-v2 .calendar-timeline-task-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Preserve the working purple 15-minute drop target */
+
+.ml-v2 .calendar-timeline-drop-target {
+  background: rgba(117, 103, 248, 0.18);
+  border-top-color: rgba(117, 103, 248, 0.88);
+  border-bottom-color: rgba(117, 103, 248, 0.88);
+  box-shadow: inset 0 0 0 1px rgba(117, 103, 248, 0.18);
+}
+
+.ml-v2 .calendar-timeline-drop-target span {
+  background: #6658e8;
+  box-shadow: 0 2px 6px rgba(102, 88, 232, 0.22);
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .ml-v2 .calendar-wrap {
+    margin: 0 18px 24px;
+    border-radius: 16px;
+  }
+
+  .ml-v2 .calendar-heading {
+    min-height: auto;
+    gap: 14px;
+    padding: 17px;
+  }
+
+  .ml-v2 .calendar-heading h2 {
+    font-size: 19px;
+  }
+
+  .ml-v2 .calendar-heading .calendar-view-switcher {
+    margin-right: 4px;
+  }
+
+  .ml-v2 .calendar-grid--month .calendar-day {
+    min-height: 100px;
+  }
+}
+
+
+/* ======================================================
+   STEP 18F.20L.8C - HIDE LEGACY PROJECT HERO
+   The V2 shell already renders project title/subtitle.
+   Keep the legacy header available for non-project views.
+   ====================================================== */
+
+.ml-v2 .project-header.project-header--project {
+  display: none;
+}
