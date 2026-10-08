@@ -1286,6 +1286,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           [index, payload.ids[index], payload.projectId],
         );
       }
+    } else if (action === "reorderListTasks") {
+      for (const item of payload.items) {
+        await db.execute(
+          "UPDATE tasks SET section_id=?,sort_order=? WHERE id=? AND project_id=?",
+          [item.sectionId, item.sortOrder, item.id, payload.projectId],
+        );
+      }
     } else if (action === "reorderTasks") {
       const sectionRows = await db.select<any[]>(
         "SELECT id,name FROM sections WHERE project_id=?",
@@ -2854,96 +2861,84 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   ) {
     if (!project) return;
 
-    const moved = tasks.find(
-      (task) =>
-        task.id === taskId &&
-        task.projectId === project.id,
+    const projectTasks = tasks.filter(
+      (task) => task.projectId === project.id,
     );
-
+    const moved = projectTasks.find((task) => task.id === taskId);
     if (!moved) return;
 
     const target = targetId
-      ? tasks.find(
-          (task) =>
-            task.id === targetId &&
-            task.projectId === project.id,
-        )
+      ? projectTasks.find((task) => task.id === targetId)
       : undefined;
 
-    if (target && target.id !== moved.id) {
-      const movedOriginalSectionId = moved.sectionId;
-      const movedOriginalSortOrder = moved.sortOrder;
-      const movedOriginalStatus = moved.status;
+    if (targetId && !target) return;
+    if (target && target.id === moved.id) return;
+    if (target && target.sectionId !== sectionId) return;
 
-      const targetOriginalSectionId = target.sectionId;
-      const targetOriginalSortOrder = target.sortOrder;
-      const targetOriginalStatus = target.status;
+    const sourceSectionId = moved.sectionId;
 
-      await mutate(
-        {
-          action: "reorderTasks",
-          projectId: project.id,
-          items: [
-            {
-              id: moved.id,
-              sectionId: targetOriginalSectionId,
-              sortOrder: targetOriginalSortOrder,
-              status:
-                movedOriginalSectionId === targetOriginalSectionId
-                  ? movedOriginalStatus
-                  : statusForSection(
-                      targetOriginalSectionId,
-                      movedOriginalStatus,
-                    ),
-            },
-            {
-              id: target.id,
-              sectionId: movedOriginalSectionId,
-              sortOrder: movedOriginalSortOrder,
-              status:
-                movedOriginalSectionId === targetOriginalSectionId
-                  ? targetOriginalStatus
-                  : statusForSection(
-                      movedOriginalSectionId,
-                      targetOriginalStatus,
-                    ),
-            },
-          ],
-        },
-        "Tasks swapped",
-      );
+    const ordered = (id: string) =>
+      projectTasks
+        .filter((task) => task.sectionId === id && task.id !== moved.id)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
 
-      return;
+    const destination = ordered(sectionId);
+    const targetIndex = target
+      ? destination.findIndex((task) => task.id === target.id)
+      : destination.length;
+
+    const movingDown =
+      target &&
+      sourceSectionId === sectionId &&
+      moved.sortOrder < target.sortOrder;
+
+    const insertionIndex = targetIndex + (movingDown ? 1 : 0);
+
+    if (insertionIndex < 0) return;
+
+    destination.splice(insertionIndex, 0, moved);
+    const items: Array<{
+      id: string;
+      sectionId: string;
+      sortOrder: number;
+    }> = [];
+
+    if (sourceSectionId !== sectionId) {
+      ordered(sourceSectionId).forEach((task, index) => {
+        items.push({
+          id: task.id,
+          sectionId: sourceSectionId,
+          sortOrder: index,
+        });
+      });
     }
 
-    const destinationTasks = tasks
-      .filter(
-        (task) =>
-          task.projectId === project.id &&
-          task.sectionId === sectionId &&
-          task.id !== moved.id,
-      )
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+    destination.forEach((task, index) => {
+      items.push({
+        id: task.id,
+        sectionId,
+        sortOrder: index,
+      });
+    });
 
-    const destinationSortOrder = destinationTasks.length;
+    const changed = items.filter((item) => {
+      const previous = projectTasks.find((task) => task.id === item.id);
+      return (
+        previous &&
+        (previous.sectionId !== item.sectionId ||
+          previous.sortOrder !== item.sortOrder)
+      );
+    });
+
+    if (!changed.length) return;
 
     await mutate(
       {
-        action: "reorderTasks",
+        action: "reorderListTasks",
         projectId: project.id,
-        items: [
-          {
-            id: moved.id,
-            sectionId,
-            sortOrder: destinationSortOrder,
-            status: statusForSection(
-              sectionId,
-              moved.status,
-            ),
-          },
-        ],
+        items: changed,
       },
-      "Task moved",
+      "Task reordered",
     );
   }
   async function reorderSection(dragId: string, targetId: string) {
@@ -3146,6 +3141,17 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       className="list-row"
       style={listGrid}
       key={t.id}
+      draggable={!busy}
+      onDragStart={(e) => {
+        if ((e.target as HTMLElement).closest("button, input, select, textarea, [role='combobox']")) {
+          e.preventDefault();
+          return;
+        }
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", `task-list:${t.id}`);
+        setDragging(t.id);
+      }}
+      onDragEnd={() => setDragging(null)}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes("text/plain")) e.preventDefault();
       }}

@@ -598,6 +598,31 @@ export async function POST(request: Request) {
             .bind(index, id, data.projectId),
         ),
       );
+    } else if (b.action === "reorderListTasks") {
+      const data = z
+        .object({
+          projectId: z.string().min(1),
+          items: z
+            .array(
+              z.object({
+                id: z.string().min(1),
+                sectionId: z.string(),
+                sortOrder: z.number().int().min(0),
+              }),
+            )
+            .max(1000),
+        })
+        .parse(b);
+
+      await db.batch(
+        data.items.map((item) =>
+          db
+            .prepare(
+              "UPDATE tasks SET section_id=?,sort_order=? WHERE id=? AND project_id=?",
+            )
+            .bind(item.sectionId, item.sortOrder, item.id, data.projectId),
+        ),
+      );
     } else if (b.action === "reorderTasks") {
       const data = z
         .object({
