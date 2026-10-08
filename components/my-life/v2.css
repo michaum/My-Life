@@ -1,4 +1,4 @@
-﻿/*
+/*
  * My Life V2.0
  * Shared visual foundation.
  *
@@ -3760,3 +3760,288 @@
 .ml-v2 .project-header.project-header--project {
   display: none;
 }
+
+/* STEP 18F.20L.40U - OPAQUE REFERENCE DASHBOARD */
+.ml-v2 .ml-v2-dashboard-reference {
+  gap: 12px;
+  background: #f8f9fd;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-welcome {
+  min-height: 100px;
+  padding: 18px 22px;
+  border: 1px solid #ececf4;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(39, 39, 70, .04);
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-welcome::before,
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-welcome::after {
+  content: none;
+  display: none;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget {
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff;
+  opacity: 1;
+  border: 1px solid #e9eaf2;
+  border-radius: 15px;
+  box-shadow: 0 3px 12px rgba(38, 37, 69, .05);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-small {
+  grid-column: span 3;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-large {
+  grid-column: span 6;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-header {
+  background: #ffffff;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-content {
+  background: #ffffff;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-stat {
+  min-height: 76px;
+  background: #ffffff;
+}
+
+@media (max-width: 1050px) {
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-small {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 650px) {
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-grid {
+    gap: 10px;
+  }
+
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-small,
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-large {
+    grid-column: span 12;
+  }
+}
+/* STEP 18F.20L.40Y.4 - WHITE CARDS COLORFUL CONTENT */
+
+/* Soft colorful dashboard surface */
+.ml-v2 .ml-v2-dashboard-reference {
+  background: #ffffff;
+  gap: 12px;
+}
+
+/* Solid pastel summary cards */
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card {
+  min-height: 86px;
+  padding: 13px 17px;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  opacity: 1;
+  box-shadow: 0 3px 9px rgba(92, 62, 157, .07);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(1) {
+  background: #ffffff;
+  border-color: #d5c3ff;
+  border-top: 1px solid #d5c3ff;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(2) {
+  background: #ffffff;
+  border-color: #ffc0da;
+  border-top: 1px solid #ffc0da;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(3) {
+  background: #ffffff;
+  border-color: #bcd8ff;
+  border-top: 1px solid #bcd8ff;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(4) {
+  background: #ffffff;
+  border-color: #b6e8d0;
+  border-top: 1px solid #b6e8d0;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(1) span,
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(1) strong {
+  color: #5830b4;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(2) span,
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(2) strong {
+  color: #b92366;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(3) span,
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(3) strong {
+  color: #2568c2;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(4) span,
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(4) strong {
+  color: #137d57;
+}
+
+/* Colorful movable widgets, fully opaque */
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget {
+  background: #ffffff;
+  border: 1px solid #dfceff;
+  box-shadow: 0 3px 10px rgba(92, 62, 157, .07);
+  opacity: 1;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget:nth-child(4n+2) {
+  background: #ffffff;
+  border-color: #c8dfff;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget:nth-child(4n+3) {
+  background: #ffffff;
+  border-color: #ffc9de;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget:nth-child(4n+4) {
+  background: #ffffff;
+  border-color: #bdebd7;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-header,
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-content,
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-stat {
+  background: transparent;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget-header h2 {
+  color: #52339b;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget:nth-child(4n+2) .ml-v2-dashboard-widget-header h2 {
+  color: #2465b7;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget:nth-child(4n+3) .ml-v2-dashboard-widget-header h2 {
+  color: #bd326f;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-widget:nth-child(4n+4) .ml-v2-dashboard-widget-header h2 {
+  color: #16805d;
+}
+/* STEP 18F.20L.40Y.6C - FIVE CARD SUMMARY */
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 14px;
+}
+
+@media (max-width: 1050px) {
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* STEP 18F.20L.40Y.6E.10 - HOME DASHBOARD LAYOUT */
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-panel {
+  min-width: 0;
+  display: flex;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-panel > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar {
+  background: #ffffff;
+  border: 1px solid #e9eaf2;
+  border-radius: 15px;
+  padding: 18px;
+  box-shadow: 0 3px 12px rgba(38, 37, 69, .05);
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-secondary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-secondary-grid > * {
+  grid-column: auto;
+}
+
+@media (max-width: 1100px) {
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-secondary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-layout,
+  .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-secondary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* WEEKLY CALENDAR COMPACT */
+.ml-v2 .ml-v2-weekly-calendar{display:flex;flex-direction:column;gap:16px;color:#302b47;font-size:13px}
+.ml-v2 .ml-v2-weekly-calendar-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.ml-v2 .ml-v2-weekly-calendar-heading>span{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700}
+.ml-v2 .ml-v2-weekly-calendar-heading svg{color:#8052db}
+.ml-v2 .ml-v2-weekly-calendar-heading nav{display:flex;align-items:center;gap:5px}
+.ml-v2 .ml-v2-weekly-calendar-heading nav button{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:4px 7px;border:0;border-radius:8px;background:transparent;color:#6d568f;cursor:pointer}
+.ml-v2 .ml-v2-weekly-calendar-heading nav button:last-child{background:#f0e9ff;color:#7546d6;font-weight:700}
+.ml-v2 .ml-v2-weekly-calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.ml-v2 .ml-v2-weekly-calendar-days button{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;padding:6px 0;border:0;border-radius:10px;background:transparent;cursor:pointer}
+.ml-v2 .ml-v2-weekly-calendar-days button span{font-size:10px;color:#817990}
+.ml-v2 .ml-v2-weekly-calendar-days button strong{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;font-size:13px;color:#38304f}
+.ml-v2 .ml-v2-weekly-calendar-days button[aria-pressed="true"] strong{background:#7845dc;color:white;box-shadow:0 4px 12px rgba(120,69,220,.25)}
+.ml-v2 .ml-v2-weekly-calendar-days button:hover{background:#f5f0ff}
+.ml-v2 .ml-v2-weekly-calendar-events{display:flex;flex-direction:column;gap:8px}
+.ml-v2 .ml-v2-weekly-calendar-events>button{display:grid;grid-template-columns:65px minmax(0,1fr);gap:10px;align-items:center;width:100%;padding:11px;border-top:0;border-right:0;border-bottom:1px solid #eee9f7;border-radius:8px;background:#faf9fe;text-align:left;cursor:pointer}
+.ml-v2 .ml-v2-weekly-calendar-events>button span{font-size:11px;font-weight:700;color:#7845dc}
+.ml-v2 .ml-v2-weekly-calendar-events>button strong{font-size:12px;color:#302b47;overflow-wrap:anywhere}
+.ml-v2 .ml-v2-weekly-calendar-events>button:hover{background:#f0eaff}

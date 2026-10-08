@@ -3982,7 +3982,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           </div>
         </section>
         )}
-        <div className="viewbar">
+        {active !== "home" && <div className="viewbar">
           <nav aria-label="Project views">
             {[
               { name: "Overview", icon: Home },
@@ -4017,7 +4017,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               </>
             )}
           </span>
-        </div>
+        </div>}
         {error && (
           <div className="error-banner" role="alert">
             {error}
@@ -4040,6 +4040,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           </div>
         ) : (
           <>
+            {/* 18F.20L.40N */}
+            {active !== "home" && (
             <div className="toolbar">
               <div className="search-box">
                 <Search size={16} />
@@ -4130,6 +4132,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 </Button>
               </div>
             </div>
+            )}
             {view === "Board" && (
               <div className="board">
                 {statuses.map((status) => (
@@ -4997,6 +5000,31 @@ onDragOver={(e) => e.preventDefault()}
                   setTaskDateFilter("all");
                   setStatusFilter("Done");
                 }}
+                calendarTaskOccursOnDate={(taskId, date) => {
+                  const task = tasks.find((item) => item.id === taskId);
+                  return task ? taskOccursOnDate(task, date) : false;
+                }}
+                calendarTaskTimeForDate={(taskId, date) => {
+                  const exception = taskRecurrenceExceptions.find(
+                    (item) => item.taskId === taskId && item.movedDate === date,
+                  );
+                  return {
+                    dueTime: exception?.movedDueTime ?? undefined,
+                    endTime: exception?.movedEndTime ?? undefined,
+                  };
+                }}
+                calendarTasks={filtered
+                  .filter((task) => !!task.due)
+                  .map((task) => ({
+                    id: task.id,
+                    title: task.title,
+                    due: task.due,
+                    dueTime: task.dueTime,
+                    endTime: task.endTime,
+                    status: task.status,
+                    statusColor: workflowOption(task.status).color,
+                    textStyle: taskTextStyle(task, "overview"),
+                  }))}
                 comingUpTasks={filtered
                   .filter((task) => task.status !== "Done")
                   .sort((a, b) =>
@@ -5666,7 +5694,7 @@ onDragOver={(e) => e.preventDefault()}
                   Time
                   <Input
                     type="time"
-                    step={900}
+                    step={60}
                     value={draft.dueTime}
                     onChange={(e) =>
                       setDraft({ ...draft, dueTime: e.target.value })
@@ -5677,7 +5705,7 @@ onDragOver={(e) => e.preventDefault()}
                   End time
                   <Input
                     type="time"
-                    step={900}
+                    step={60}
                     value={draft.endTime}
                     min={draft.dueTime || undefined}
                     onChange={(e) =>

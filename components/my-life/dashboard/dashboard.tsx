@@ -1,4 +1,6 @@
-﻿"use client";
+"use client";
+
+import { WeeklyCalendar } from "./weekly-calendar";
 
 import {
   useEffect,
@@ -57,6 +59,9 @@ export type DashboardTask = {
   id: string;
   title: string;
   due: string;
+  dueTime?: string;
+  endTime?: string;
+  occurrenceDate?: string;
   status: string;
   statusColor: string;
   textStyle?: CSSProperties;
@@ -77,6 +82,9 @@ export type MyLifeDashboardProps = {
   overdue: number;
   completed: number;
   comingUpTasks: DashboardTask[];
+  calendarTasks?: DashboardTask[];
+  calendarTaskOccursOnDate?: (taskId: string, date: string) => boolean;
+  calendarTaskTimeForDate?: (taskId: string, date: string) => { dueTime?: string; endTime?: string };
   projects: DashboardProject[];
   today: string;
   formatDate: (date: string) => string;
@@ -146,6 +154,9 @@ export function MyLifeDashboard({
   overdue,
   completed,
   comingUpTasks,
+  calendarTasks,
+  calendarTaskOccursOnDate,
+  calendarTaskTimeForDate,
   projects,
   today,
   formatDate,
@@ -369,7 +380,7 @@ export function MyLifeDashboard({
   }
 
   return (
-    <div className="ml-v2-dashboard">
+    <div className="ml-v2-dashboard ml-v2-dashboard-reference">
       <section className="ml-v2-dashboard-welcome">
         <div>
           <span className="ml-v2-dashboard-eyebrow">
@@ -387,11 +398,52 @@ export function MyLifeDashboard({
         </div>
       </section>
 
+      <section className="ml-v2-dashboard-summary" aria-label="Dashboard summary">
+        <div className="ml-v2-dashboard-summary-card">
+          <span>Today's Tasks</span>
+          <strong>{dueToday}</strong>
+        </div>
+        <div className="ml-v2-dashboard-summary-card">
+          <span>Overdue</span>
+          <strong>{overdue}</strong>
+        </div>
+        <div className="ml-v2-dashboard-summary-card">
+          <span>Upcoming</span>
+          <strong>{comingUpTasks.length}</strong>
+        </div>
+        <div className="ml-v2-dashboard-summary-card">
+          <span>Active Projects</span>
+          <strong>{projects.length}</strong>
+        </div>
+        <div className="ml-v2-dashboard-summary-card">
+          <span>People</span>
+          <strong>—</strong>
+        </div>
+      </section>
+      <section className="ml-v2-dashboard-main-layout" aria-label="Dashboard overview">
+        <div className="ml-v2-dashboard-main-panel">
+          {renderWidget("coming-up")}
+        </div>
+        <div className="ml-v2-dashboard-main-panel ml-v2-dashboard-calendar-panel">
+          <WeeklyCalendar
+            today={today}
+            tasks={calendarTasks ?? []}
+            occursOnDate={calendarTaskOccursOnDate ?? (() => false)}
+            timeForDate={calendarTaskTimeForDate}
+            onTaskClick={onTaskClick}
+          />
+        </div>
+        <div className="ml-v2-dashboard-main-panel">
+          {renderWidget("project-progress")}
+        </div>
+      </section>
       <div
-        className="ml-v2-dashboard-grid"
+        className="ml-v2-dashboard-grid ml-v2-dashboard-secondary-grid"
         aria-label="Movable dashboard widgets"
       >
-        {widgetOrder.map(renderWidget)}
+        {widgetOrder
+          .filter((id) => id !== "coming-up" && id !== "project-progress")
+          .map(renderWidget)}
       </div>
     </div>
   );
