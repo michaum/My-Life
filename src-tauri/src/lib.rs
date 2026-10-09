@@ -111,6 +111,19 @@ pub fn run() {
             sql: include_str!("../migrations/0017_task_recurrence_exception_times.sql"),
             kind: MigrationKind::Up,
         },
+      Migration {
+            version: 19,
+            description: "0018_people_profile_picture",
+            sql: include_str!("../migrations/0018_people_profile_picture.sql"),
+            kind: MigrationKind::Up,
+        },
+        // STEP 18F.23I.32F - NOTES FOUNDATION
+        Migration {
+            version: 20,
+            description: "0019_notes_foundation",
+            sql: include_str!("../migrations/0019_notes_foundation.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

@@ -14,6 +14,11 @@ import {
   CircleDotDashed,
   Clock3,
   Flag,
+  CalendarDays,
+  Folder,
+  Users,
+  ChevronRight,
+  NotebookPen,
   type LucideIcon,
 } from "lucide-react";
 import { ComingUpWidget } from "./coming-up-widget";
@@ -27,24 +32,21 @@ type MovableWidgetId =
   | "tasks-in-progress"
   | "due-today"
   | "overdue"
-  | "completed"
+  | "notes"
   | "coming-up"
   | "project-progress";
 
 const defaultWidgetOrder: MovableWidgetId[] = [
-  "tasks-in-progress",
   "due-today",
   "overdue",
-  "completed",
+  "notes",
   "coming-up",
   "project-progress",
 ];
 
 type StatWidgetId =
-  | "tasks-in-progress"
   | "due-today"
-  | "overdue"
-  | "completed";
+  | "overdue";
 
 type StatDefinition = {
   id: StatWidgetId;
@@ -59,7 +61,10 @@ export type DashboardTask = {
   id: string;
   title: string;
   due: string;
+  emoji?: string;
   dueTime?: string;
+  assignee?: string;
+  avatarData?: string | null;
   endTime?: string;
   occurrenceDate?: string;
   status: string;
@@ -81,6 +86,14 @@ export type MyLifeDashboardProps = {
   dueToday: number;
   overdue: number;
   completed: number;
+  upcomingCount: number;
+  peopleNames: string[];
+  peopleAvatars?: { id: string; name: string; avatarData?: string | null }[];
+  onShowUpcoming: () => void;
+  onShowProjects: () => void;
+  onShowPeople: () => void;
+  onOpenCalendarToday: () => void;
+  onCompleteTodayTask: (id: string) => Promise<void>;
   comingUpTasks: DashboardTask[];
   calendarTasks?: DashboardTask[];
   calendarTaskOccursOnDate?: (taskId: string, date: string) => boolean;
@@ -95,6 +108,10 @@ export type MyLifeDashboardProps = {
   onShowDueToday?: () => void;
   onShowOverdue?: () => void;
   onShowCompleted?: () => void;
+  onShowNotes?: () => void;
+  onOpenNote?: (noteId: string) => void;
+  // STEP 18F.23I.40F - Calendar navigation for appointments.
+  onShowAppointments?: () => void;
 };
 
 function isMovableWidgetId(
@@ -109,12 +126,7 @@ function isMovableWidgetId(
 function isStatWidgetId(
   value: MovableWidgetId,
 ): value is StatWidgetId {
-  return (
-    value === "tasks-in-progress" ||
-    value === "due-today" ||
-    value === "overdue" ||
-    value === "completed"
-  );
+  return value === "due-today" || value === "overdue";
 }
 
 function loadWidgetOrder(): MovableWidgetId[] {
@@ -131,7 +143,13 @@ function loadWidgetOrder(): MovableWidgetId[] {
       return defaultWidgetOrder;
     }
 
-    const valid = saved.filter(isMovableWidgetId);
+    // STEP 18F.23I.39C-R5B - Migrate legacy cards to Notes.
+    const migrated = saved.map((id: unknown) =>
+      id === "tasks-in-progress" || id === "completed"
+        ? "notes"
+        : id
+    );
+    const valid = migrated.filter(isMovableWidgetId);
 
     const unique = valid.filter(
       (id, index) => valid.indexOf(id) === index,
@@ -153,6 +171,14 @@ export function MyLifeDashboard({
   dueToday,
   overdue,
   completed,
+  upcomingCount,
+  peopleNames = [],
+  peopleAvatars = [],
+  onShowUpcoming,
+  onShowProjects,
+  onShowPeople,
+  onOpenCalendarToday,
+  onCompleteTodayTask,
   comingUpTasks,
   calendarTasks,
   calendarTaskOccursOnDate,
@@ -167,6 +193,9 @@ export function MyLifeDashboard({
   onShowDueToday,
   onShowOverdue,
   onShowCompleted,
+  onShowNotes,
+  onOpenNote,
+  onShowAppointments,
 }: MyLifeDashboardProps) {
   const [widgetOrder, setWidgetOrder] =
     useState<MovableWidgetId[]>(defaultWidgetOrder);
@@ -181,15 +210,158 @@ export function MyLifeDashboard({
     setWidgetOrder(loadWidgetOrder());
   }, []);
 
+
+  // STEP 18F.23I.39C-R5B - Read-only web Notes preview.
+  type PreviewNote = {
+    id: string;
+    title: string;
+    updatedAt: string;
+  };
+
+  const [latestNotes, setLatestNotes] = useState<PreviewNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(true);
+  const [notesError, setNotesError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshNotes() {
+      setNotesLoading(true);
+      setNotesError(false);
+
+      try {
+        // Desktop V2 database access is intentionally disabled
+        // until its storage is isolated from live V1.1.9.
+        if (
+          typeof window !== "undefined" &&
+          ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
+        ) {
+          if (!cancelled) {
+            setLatestNotes([]);
+            setNotesError(true);
+          }
+          return;
+        }
+
+        const response = await fetch("/api/notes", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Could not load Notes");
+        }
+
+        const result = (await response.json()) as {
+          notes: PreviewNote[];
+        };
+
+        if (!Array.isArray(result.notes)) {
+          throw new Error("Invalid Notes response");
+        }
+
+        if (!cancelled) {
+          setLatestNotes(
+            [...result.notes]
+              .sort((a, b) =>
+                b.updatedAt.localeCompare(a.updatedAt)
+              )
+              .slice(0, 5)
+          );
+        }
+      } catch {
+        if (!cancelled) setNotesError(true);
+      } finally {
+        if (!cancelled) setNotesLoading(false);
+      }
+    }
+
+    void refreshNotes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // STEP 18F.23I.40F - Next five scheduled Calendar occurrences.
+  // Scan future dates through the existing recurrence callback.
+  const upcomingAppointments: {
+    id: string;
+    title: string;
+    emoji?: string;
+    date: string;
+    time: string;
+    timestamp: number;
+  }[] = [];
+
+  const now = new Date();
+  const appointmentHorizon = 366;
+  const appointmentTasks = calendarTasks ?? [];
+
+  for (let offset = 0; offset < appointmentHorizon; offset += 1) {
+    const date = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + offset,
+    );
+
+    const dateKey = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+
+    for (const task of appointmentTasks) {
+      if (task.status === "Done") continue;
+
+      const occurs = calendarTaskOccursOnDate
+        ? calendarTaskOccursOnDate(task.id, dateKey)
+        : task.due === dateKey;
+
+      if (!occurs) continue;
+
+      const override = calendarTaskTimeForDate?.(task.id, dateKey);
+      const startTime = override?.dueTime ?? task.dueTime;
+
+      if (!startTime) continue;
+
+      const match = /^(\d{1,2}):(\d{2})$/.exec(startTime);
+      if (!match) continue;
+
+      const hour = Number(match[1]);
+      const minute = Number(match[2]);
+
+      if (hour > 23 || minute > 59) continue;
+
+      const startsAt = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        hour,
+        minute,
+      );
+
+      if (startsAt.getTime() < now.getTime()) continue;
+
+      upcomingAppointments.push({
+        id: task.id,
+        title: task.title,
+        emoji: task.emoji,
+        date: dateKey,
+        time: startTime,
+        timestamp: startsAt.getTime(),
+      });
+    }
+
+    if (upcomingAppointments.length >= 5) break;
+  }
+
+  upcomingAppointments.sort(
+    (a, b) => a.timestamp - b.timestamp || a.title.localeCompare(b.title),
+  );
+
+  const nextFiveAppointments = upcomingAppointments.slice(0, 5);
+
   const definitions: Record<StatWidgetId, StatDefinition> = {
-    "tasks-in-progress": {
-      id: "tasks-in-progress",
-      label: "In progress",
-      value: inProgress,
-      icon: CircleDotDashed,
-      detail: "Tasks currently moving",
-      onClick: onShowInProgress,
-    },
     "due-today": {
       id: "due-today",
       label: "Due today",
@@ -205,14 +377,6 @@ export function MyLifeDashboard({
       icon: Flag,
       detail: "Tasks needing attention",
       onClick: onShowOverdue,
-    },
-    completed: {
-      id: "completed",
-      label: "Completed",
-      value: completed,
-      icon: CheckCircle2,
-      detail: "Tasks completed",
-      onClick: onShowCompleted,
     },
   };
 
@@ -303,6 +467,85 @@ export function MyLifeDashboard({
       onDragEnd: handleDragEnd,
     };
 
+    if (id === "due-today") {
+      return (
+        <DashboardWidget
+          key={id}
+          id={id}
+          title="Upcoming Appointments"
+          size="small"
+          className="ml-v2-dashboard-appointments-card"
+          {...commonProps}
+        >
+          <div className="ml-v2-dashboard-appointments">
+            <div className="ml-v2-dashboard-appointments-heading">
+              <span>
+                <CalendarDays size={17} aria-hidden="true" />
+                Next 5 appointments
+              </span>
+              <button
+                type="button"
+                className="ml-v2-dashboard-appointments-view-all ml-v2-standard-button"
+                onClick={onShowAppointments ?? onOpenCalendarToday}
+              >
+                View All
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </button>
+            </div>
+
+            {nextFiveAppointments.length === 0 ? (
+              <p className="ml-v2-dashboard-appointments-empty">
+                No upcoming appointments.
+              </p>
+            ) : (
+              <ul className="ml-v2-dashboard-appointments-list">
+                {nextFiveAppointments.map((appointment) => {
+                  const [year, month, day] = appointment.date
+                    .split("-")
+                    .map(Number);
+                  const [hour, minute] = appointment.time
+                    .split(":")
+                    .map(Number);
+
+                  const date = new Date(year, month - 1, day, hour, minute);
+
+                  return (
+                    <li key={`${appointment.id}-${appointment.date}`}>
+                      <button
+                        type="button"
+                        className="ml-v2-dashboard-appointment-link ml-v2-standard-button"
+                        onClick={() => onTaskClick(appointment.id)}
+                      >
+                        <span className="ml-v2-dashboard-appointment-title">
+                          {appointment.emoji && (
+                          <span className="ml-v2-dashboard-appointment-emoji" aria-hidden="true">
+                            {appointment.emoji}
+                          </span>
+                        )}
+                        {appointment.title}
+                        </span>
+                      <span className="ml-v2-dashboard-appointment-date">
+                          {date.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                          {" · "}
+                          {date.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </DashboardWidget>
+      );
+    }
+
     if (isStatWidgetId(id)) {
       const widget = definitions[id];
       const Icon = widget.icon;
@@ -343,17 +586,82 @@ export function MyLifeDashboard({
       );
     }
 
+
+    if (id === "notes") {
+      return (
+        <DashboardWidget
+          key={id}
+          id={id}
+          title="Notes"
+          size="small"
+          className="ml-v2-dashboard-notes-card"
+          {...commonProps}
+        >
+          <div className="ml-v2-dashboard-notes-preview">
+            <div className="ml-v2-dashboard-notes-top">
+              <span className="ml-v2-dashboard-notes-heading">
+                <NotebookPen size={16} aria-hidden="true" />
+                Latest Notes
+              </span>
+              <button
+                type="button"
+                className="ml-v2-dashboard-notes-view-all ml-v2-standard-button"
+                onClick={onShowNotes}
+              >
+                View All
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </button>
+            </div>
+
+            {notesLoading ? (
+              <p className="ml-v2-dashboard-notes-empty">
+                Loading notes...
+              </p>
+            ) : notesError ? (
+              <p className="ml-v2-dashboard-notes-empty">
+                Notes preview unavailable.
+              </p>
+            ) : latestNotes.length === 0 ? (
+              <p className="ml-v2-dashboard-notes-empty">
+                No notes yet.
+              </p>
+            ) : (
+              <ul className="ml-v2-dashboard-notes-list">
+                {latestNotes.map((note) => (
+                  <li key={note.id}>
+                    <button
+                      type="button"
+                      className="ml-v2-dashboard-note-link ml-v2-standard-button"
+                      onClick={() => onOpenNote?.(note.id)}
+                      title={`Open ${note.title.trim() || "Untitled note"}`}
+                    >
+                      <NotebookPen size={13} aria-hidden="true" />
+                      <span>
+                        {note.title.trim() || "Untitled note"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </DashboardWidget>
+      );
+    }
+
     if (id === "coming-up") {
       return (
         <DashboardWidget
           key={id}
           id={id}
-          title="Coming up next"
+          title="Today's Tasks"
           size="large"
-          {...commonProps}
+          className="ml-v2-dashboard-widget-fixed"
+          draggable={false}
         >
           <ComingUpWidget
             tasks={comingUpTasks}
+            onCompleteTask={onCompleteTodayTask}
             today={today}
             formatDate={formatDate}
             onTaskClick={onTaskClick}
@@ -366,9 +674,10 @@ export function MyLifeDashboard({
       <DashboardWidget
         key={id}
         id={id}
-        title="Project progress"
+        title="My Projects"
         size="large"
-        {...commonProps}
+        className="ml-v2-dashboard-widget-fixed"
+        draggable={false}
       >
         <ProjectProgressWidget
           projects={projects}
@@ -381,45 +690,6 @@ export function MyLifeDashboard({
 
   return (
     <div className="ml-v2-dashboard ml-v2-dashboard-reference">
-      <section className="ml-v2-dashboard-welcome">
-        <div>
-          <span className="ml-v2-dashboard-eyebrow">
-            YOUR DAY AT A GLANCE
-          </span>
-
-          <h1>
-            Welcome back{userName ? `, ${userName}` : ""}.
-          </h1>
-
-          <p>
-            Here is what needs your attention and what is
-            already moving forward.
-          </p>
-        </div>
-      </section>
-
-      <section className="ml-v2-dashboard-summary" aria-label="Dashboard summary">
-        <div className="ml-v2-dashboard-summary-card">
-          <span>Today's Tasks</span>
-          <strong>{dueToday}</strong>
-        </div>
-        <div className="ml-v2-dashboard-summary-card">
-          <span>Overdue</span>
-          <strong>{overdue}</strong>
-        </div>
-        <div className="ml-v2-dashboard-summary-card">
-          <span>Upcoming</span>
-          <strong>{comingUpTasks.length}</strong>
-        </div>
-        <div className="ml-v2-dashboard-summary-card">
-          <span>Active Projects</span>
-          <strong>{projects.length}</strong>
-        </div>
-        <div className="ml-v2-dashboard-summary-card">
-          <span>People</span>
-          <strong>—</strong>
-        </div>
-      </section>
       <section className="ml-v2-dashboard-main-layout" aria-label="Dashboard overview">
         <div className="ml-v2-dashboard-main-panel">
           {renderWidget("coming-up")}
@@ -427,6 +697,7 @@ export function MyLifeDashboard({
         <div className="ml-v2-dashboard-main-panel ml-v2-dashboard-calendar-panel">
           <WeeklyCalendar
             today={today}
+            onOpenToday={onOpenCalendarToday}
             tasks={calendarTasks ?? []}
             occursOnDate={calendarTaskOccursOnDate ?? (() => false)}
             timeForDate={calendarTaskTimeForDate}

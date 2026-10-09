@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   Bell,
@@ -68,14 +68,6 @@ export function MyLifeTopBar({
           <Bell size={18} />
         </button>
 
-        <button
-          type="button"
-          className="ml-v2-add-button"
-          onClick={onAddTask}
-        >
-          <Plus size={18} />
-          <span>New task</span>
-        </button>
 
         <button
           type="button"

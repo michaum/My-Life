@@ -5,12 +5,14 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {
   today: string;
+  onOpenToday: () => void;
   tasks: {
     id: string;
     title: string;
     due: string;
     dueTime?: string;
     statusColor: string;
+    status?: string;
   }[];
   occursOnDate: (id: string, date: string) => boolean;
   timeForDate?: (id: string, date: string) => { dueTime?: string; endTime?: string };
@@ -30,7 +32,7 @@ function dateKey(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTaskClick }: Props) {
+export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTaskClick, onOpenToday }: Props) {
   const [selected, setSelected] = useState(today);
   const [year, month, day] = selected.split("-").map(Number);
   const date = new Date(year, month - 1, day);
@@ -56,7 +58,7 @@ export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTask
             onClick={() => setSelected(dateKey(addDays(date, 7)))}>
             <ChevronRight size={18} />
           </button>
-          <button type="button" onClick={() => setSelected(today)}>
+          <button type="button" onClick={() => { setSelected(today); onOpenToday(); }}>
             Today
           </button>
         </nav>
@@ -80,6 +82,11 @@ export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTask
             style={{ borderLeft: `4px solid ${task.statusColor || "#7045d9"}` }}>
             <span>{timeForDate?.(task.id, selected)?.dueTime ?? task.dueTime ?? "All day"}</span>
             <strong>{task.title}</strong>
+            {task.status === "Done" && (
+              <span className="ml-v2-calendar-task-done">
+                <span aria-hidden="true">✓</span> Task Done
+              </span>
+            )}
           </button>
         ))}
       </div>

@@ -36,6 +36,7 @@ import {
   LockKeyhole,
   Menu,
   MessageCircle,
+  NotebookPen,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -62,6 +63,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { TaskCompletionCelebration } from "@/components/my-life/task-completion-celebration";
+import { MyLifeNotesWorkspace } from "@/components/my-life/notes/notes-workspace";
 
 type Status = "To do" | "In progress" | "In review" | "Done";
 type CalendarMode = "day" | "workweek" | "week" | "month";
@@ -84,7 +87,7 @@ type Project = {
   sidebarFontColor: string;
   icon: ProjectIcon;
 };
-type Person = { id: string; name: string; phone: string; smsEnabled: boolean };
+type Person = { id: string; name: string; phone: string; smsEnabled: boolean; avatarData?: string | null };
 type CurrentUser = {
   id: string;
   name: string;
@@ -476,6 +479,11 @@ function ShootingStarIcon({ size = 22 }: { size?: number }) {
 }
 
 export default function Taskflow() {
+  const [celebrationId, setCelebrationId] = useState(0);
+  function celebrateTaskCompletion() {
+    setCelebrationId((value) => value + 1);
+  }
+
   const [projects, setProjects] = useState<Project[]>([]),
     [tasks, setTasks] = useState<Task[]>([]),
     [taskRecurrenceExceptions, setTaskRecurrenceExceptions] =
@@ -495,8 +503,9 @@ export default function Taskflow() {
   const listColumnDragCurrentOrderRef = useRef<string[] | null>(null);
   const listColumnDragMovedRef = useRef(false);
   const [listColumnDragging, setListColumnDragging] = useState<string | null>(null);
-  const [active, setActive] = useState("welcome-project"),
-    [view, setView] = useState("Board"),
+  // STEP 18F.23I.40J-R1 - Default landing page is Overview.
+  const [active, setActive] = useState("home"),
+    [view, setView] = useState("Overview"),
     [query, setQuery] = useState(""),
     [priority, setPriority] = useState("All priorities"),
     [statusFilter, setStatusFilter] = useState("All statuses"),
@@ -930,7 +939,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       db.select<any[]>("SELECT * FROM comments ORDER BY created_at"),
       db.select<any[]>("SELECT * FROM sections ORDER BY sort_order, created_at"),
       db.select<any[]>("SELECT * FROM custom_fields ORDER BY created_at"),
-      db.select<any[]>("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
+      db.select<any[]>("SELECT id,name,phone,sms_enabled,avatar_data FROM people ORDER BY name COLLATE NOCASE"),
       db.select<any[]>("SELECT * FROM task_values ORDER BY task_id, field_id"),
       db.select<any[]>("SELECT * FROM task_attachments ORDER BY created_at"),
       db.select<any[]>(
@@ -1014,6 +1023,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       people: people.map((person: any) => ({
         ...person,
         smsEnabled: Boolean(person.sms_enabled),
+        avatarData: person.avatarData ?? person.avatar_data ?? null,
       })),
       statusOptions: JSON.parse(
         String(workspaceSettings[0]?.status_options || "[]"),
@@ -1243,17 +1253,19 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       const person = payload.person;
 
       await db.execute(
-        `INSERT INTO people(id,name,phone,sms_enabled,created_at)
-         VALUES(?,?,?,?,?)
+        `INSERT INTO people(id,name,phone,sms_enabled,avatar_data,created_at)
+         VALUES(?,?,?,?,?,?)
          ON CONFLICT(id) DO UPDATE SET
            name=excluded.name,
            phone=excluded.phone,
-           sms_enabled=excluded.sms_enabled`,
+           sms_enabled=excluded.sms_enabled,
+           avatar_data=excluded.avatar_data`,
         [
           person.id,
           person.name,
           person.phone,
           person.smsEnabled ? 1 : 0,
+          person.avatarData ?? null,
           now,
         ],
       );
@@ -1677,13 +1689,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       for (const person of data.people) {
         await db.execute(
           `INSERT INTO people(
-             id,name,phone,sms_enabled,created_at
-           ) VALUES(?,?,?,?,?)`,
+             id,name,phone,sms_enabled,avatar_data,created_at
+           ) VALUES(?,?,?,?,?,?)`,
           [
             person.id,
             person.name,
             person.phone ?? "",
             person.smsEnabled ? 1 : 0,
+            person.avatarData ?? person.avatar_data ?? null,
             person.created_at ?? now,
           ],
         );
@@ -1827,8 +1840,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       if (isDesktop) {
         const d = await refresh();
 
-        if (!d.projects.some((p: Project) => p.id === active)) {
-          setActive(d.projects[0]?.id || "all");
+        if (
+          active !== "home" &&
+          !d.projects.some((p: Project) => p.id === active)
+        ) {
+          setActive("home");
+          setView("Overview");
         }
 
         return;
@@ -1846,8 +1863,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       const d = await refresh();
 
-      if (!d.projects.some((p: Project) => p.id === active)) {
-        setActive(d.projects[0]?.id || "all");
+      if (
+        active !== "home" &&
+        !d.projects.some((p: Project) => p.id === active)
+      ) {
+        setActive("home");
+        setView("Overview");
       }
     } catch (e) {
       setError((e as Error).message);
@@ -2406,6 +2427,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   const scope = tasks.filter(
     (t) =>
       active === "all" ||
+      active === "calendar" ||
       active === "home" ||
       (active === "mine"
         ? t.assignee.toLowerCase() ===
@@ -2496,6 +2518,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       const due = new Date(`${t.due}T00:00:00`);
       return due > start && due <= end;
     }).length;
+  // STEP 18F.23I.39G-R2 - Direct Overview note navigation.
+  const overviewNoteIdRef = useRef<string | null>(null);
+
+  function openOverviewNote(noteId: string) {
+    overviewNoteIdRef.current = noteId;
+    navigate("notes");
+  }
+
   function navigate(id: string) {
     setActive(id);
     setQuery("");
@@ -2504,7 +2534,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setTaskDateFilter("all");
     setMobile(false);
     if (id === "home") setView("Overview");
-    else if (view === "Overview") setView("Board");
+    else if (id === "calendar") {
+      setView("Calendar");
+      setCalendarMode("month");
+    } else if (view === "Overview" || active === "calendar") {
+      setView("Board");
+    }
   }
   function newTask(status: Status = "To do", sectionId = "") {
     if (!projects.length) {
@@ -2572,7 +2607,122 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     });
     setConfirmDelete(false);
   }
-  function newPerson() {
+  // STEP 18F.23H.6 - PHONE DISPLAY FORMAT
+function formatPersonPhone(value: string): string {
+  let digits = value.replace(/\D/g, "");
+
+  if (digits.length === 11 && digits.startsWith("1")) {
+    digits = digits.slice(1);
+  }
+
+  digits = digits.slice(0, 10);
+
+  if (digits.length === 0) return "";
+  if (digits.length < 4) return `(${digits}`;
+  if (digits.length < 7) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+
+  // STEP 18F.23I.17A - PERSON PROFILE PICTURE
+  async function selectPersonPhoto(file?: File) {
+    if (!file || !personDraft) return;
+
+    const personId = personDraft.id;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Choose a JPEG, PNG, or WebP profile picture.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Profile pictures must be smaller than 10 MB.");
+      return;
+    }
+
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onerror = () =>
+          reject(new Error("Could not read the picture."));
+
+        reader.onload = () => {
+          if (typeof reader.result !== "string") {
+            reject(new Error("Could not read the picture."));
+            return;
+          }
+
+          const image = new Image();
+
+          image.onerror = () =>
+            reject(new Error("Could not open the picture."));
+
+          image.onload = () => {
+            const crop = Math.min(image.width, image.height);
+
+            if (!crop) {
+              reject(new Error("Invalid picture dimensions."));
+              return;
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = 256;
+            canvas.height = 256;
+
+            const context = canvas.getContext("2d");
+
+            if (!context) {
+              reject(new Error("Could not process the picture."));
+              return;
+            }
+
+            context.drawImage(
+              image,
+              (image.width - crop) / 2,
+              (image.height - crop) / 2,
+              crop,
+              crop,
+              0,
+              0,
+              256,
+              256,
+            );
+
+            const result = canvas.toDataURL("image/webp", 0.8);
+
+            if (result.length > 300000) {
+              reject(new Error("The processed picture is too large."));
+              return;
+            }
+
+            resolve(result);
+          };
+
+          image.src = reader.result;
+        };
+
+        reader.readAsDataURL(file);
+      });
+
+      setPersonDraft((current) =>
+        current?.id === personId
+          ? { ...current, avatarData: data }
+          : current
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Could not process the picture."
+      );
+    }
+  }
+
+function newPerson() {
     setPersonDraft({ id: crypto.randomUUID(), name: "", phone: "", smsEnabled: true });
   }
   async function savePerson(e: FormEvent) {
@@ -2762,6 +2912,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       status === "Done" ? "Nice work. Task completed!" : "Task moved",
     );
 
+    if (saved && status === "Done" && t.status !== "Done") {
+      celebrateTaskCompletion();
+    }
     if (!saved || !completingRecurringTask) return;
 
     const nextTask: Task = {
@@ -2859,10 +3012,17 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     sectionId: string,
     targetId?: string,
   ) {
-    if (!project) return;
+    // STEP 18F.23I.37E - Resolve the task's own project in global List.
+    const movedTask = tasks.find((task) => task.id === taskId);
+    if (!movedTask) return;
+
+    const reorderProjectId = project?.id ?? movedTask.projectId;
+
+    // Never reorder a task outside the currently selected project.
+    if (project && movedTask.projectId !== project.id) return;
 
     const projectTasks = tasks.filter(
-      (task) => task.projectId === project.id,
+      (task) => task.projectId === reorderProjectId,
     );
     const moved = projectTasks.find((task) => task.id === taskId);
     if (!moved) return;
@@ -2935,7 +3095,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     await mutate(
       {
         action: "reorderListTasks",
-        projectId: project.id,
+        projectId: reorderProjectId,
         items: changed,
       },
       "Task reordered",
@@ -3390,6 +3550,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   };
   return (
     <div className="app-shell ml-v2">
+      <TaskCompletionCelebration trigger={celebrationId} />
       <Dialog
         open={availableUpdate !== null}
         onOpenChange={(open) => {
@@ -3709,7 +3870,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       <div className="main-content ml-v2-compat-main">
         <MyLifeAppShell
-          activeView={active}
+          activeView={active === "all" && view === "List" ? "list" : active}
           navigation={[
             {
               id: "home",
@@ -3732,6 +3893,18 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
               label: "All tasks",
               icon: LayoutGrid,
             },
+            // STEP 18F.23I.34C-R2 - LIST SIDEBAR
+            {
+              id: "list",
+              label: "List",
+              icon: List,
+            },
+            // STEP 18F.23I.31C.6S - CALENDAR SIDEBAR
+            {
+              id: "calendar",
+              label: "Calendar",
+              icon: CalendarDays,
+            },
             ...projects.map((item) => ({
               id: item.id,
               label: item.name,
@@ -3749,11 +3922,17 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           title={
             active === "home"
               ? "Overview"
-              : project?.name || title
+              : active === "notes"
+                ? "Notes"
+                : active === "calendar"
+                  ? "Calendar"
+                  : project?.name || title
           }
           subtitle={
             project?.description ||
-            (active === "mine"
+            (active === "calendar"
+              ? "Your tasks and schedule in one place."
+              : active === "mine"
               ? "A clear view of the work assigned to you."
               : active === "home"
                 ? "Everything important, all in one place."
@@ -3764,12 +3943,81 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           appVersion={appVersion}
           isDevelopment={packageJson.version !== "2.0.0"}
           exportDisabled={loading}
-          onNavigate={navigate}
+
+          summaryTiles={{
+            dueToday: dueToday,
+            overdue: overdue,
+            upcomingCount: upcoming,
+            projectsCount: projects.length,
+            peopleNames: people.map((person) => person.name),
+            peopleAvatars: people.map((person) => ({
+              id: person.id,
+              name: person.name,
+              avatarData: person.avatarData ?? null,
+            })),
+            onShowDueToday: () => {
+              navigate("all");
+              setView("List");
+              setStatusFilter("All statuses");
+              setTaskDateFilter("today");
+            },
+            onShowOverdue: () => {
+              navigate("all");
+              setView("List");
+              setStatusFilter("All statuses");
+              setTaskDateFilter("overdue");
+            },
+            onShowUpcoming: () => {
+              navigate("all");
+              setView("List");
+              setTaskDateFilter("upcoming");
+            },
+            onShowProjects: () => {
+              navigate("all");
+              setView("Board");
+            },
+            onShowPeople: () => {
+              setPersonDraft(null);
+              setPeopleOpen(true);
+            },
+          }}
+          onNavigate={(id) => {
+            // STEP 18F.23I.38D - Restore List sidebar navigation.
+            if (id === "list") {
+              navigate("all");
+              setView("List");
+              setTaskDateFilter("all");
+              setStatusFilter("All statuses");
+              return;
+            }
+            // STEP 18F.23I.38E - All Tasks opens its Board view.
+            if (id === "all") {
+              navigate("all");
+              setView("Board");
+              setTaskDateFilter("all");
+              setStatusFilter("All statuses");
+              return;
+            }
+            navigate(id);
+          }}
           onSearch={setQuery}
           onAccountClick={() => setAccountOpen(true)}
           onAddTask={() => newTask()}
-          onPeopleClick={() => setPeopleOpen(true)}
+          onPeopleClick={() => {
+            setPersonDraft(null);
+            setPeopleOpen(true);
+          }}
           onCreateProject={newProject}
+          onRenameProject={(id) => {
+            const selectedProject = projects.find((p) => p.id === id);
+            if (!selectedProject) return;
+            setProjectDraft({
+              ...selectedProject,
+              sidebarFontColor:
+                selectedProject.sidebarFontColor ?? "#ffffff",
+            });
+            setConfirmDelete(false);
+          }}
           onExport={exportWorkspace}
           onAdminClick={() => {
             setAdminUsersOpen(true);
@@ -3787,7 +4035,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             }
           }}
         >
-        {active !== "home" && (
+        {/* STEP 18F.23I.31C.2B - NOTES ROUTING */}
+        {active === "notes" ? (
+          <MyLifeNotesWorkspace
+            initialNoteId={overviewNoteIdRef.current}
+          />
+        ) : (
+          <>
+        {active !== "home" && active !== "calendar" && (
           <section className={`project-header${project ? " project-header--project" : ""}`}>
             <div className="project-heading">
             <div
@@ -3982,7 +4237,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           </div>
         </section>
         )}
-        {active !== "home" && <div className="viewbar">
+        {active !== "home" && active !== "calendar" && <div className="viewbar">
           <nav aria-label="Project views">
             {[
               { name: "Overview", icon: Home },
@@ -4126,10 +4381,44 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                 >
                   <Pencil size={14} />
                 </Button>
-                <Button onClick={() => newTask()} disabled={busy}>
-                  <Plus size={15} />
-                  Add task
-                </Button>
+                {/* STEP 18F.23I.41F-R1 - List top actions */}
+                {view === "List" ? (
+                  <>
+                    <Button
+                      className="ml-v2-standard-button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => newTask()}
+                      disabled={busy}
+                    >
+                      <Plus size={15} />
+                      Add Task
+                    </Button>
+                    <span
+                      title={
+                        project
+                          ? "Add a section to this project"
+                          : "Select a project to add a section"
+                      }
+                    >
+                      <Button
+                        className="ml-v2-standard-button"
+                        variant="outline"
+                        size="sm"
+                        onClick={newSection}
+                        disabled={busy || !project}
+                      >
+                        <Plus size={15} />
+                        Add Section
+                      </Button>
+                    </span>
+                  </>
+                ) : (
+                  <Button onClick={() => newTask()} disabled={busy}>
+                    <Plus size={15} />
+                    Add task
+                  </Button>
+                )}
               </div>
             </div>
             )}
@@ -4210,11 +4499,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                     <span>
                       Organize this list with sections and your own columns.
                     </span>
-                    <Button variant="outline" size="sm" onClick={newSection}>
+                    <Button className="ml-v2-standard-button" variant="outline" size="sm" onClick={newSection}>
                       <Plus size={14} />
                       Add section
                     </Button>
                     <Button
+                      className="ml-v2-standard-button"
                       variant="outline"
                       size="sm"
                       onClick={() => setColumnsOpen(true)}
@@ -4225,6 +4515,38 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                   </div>
                 )}
                 <div className="task-list">
+                  {/* STEP 18F.23I.41P - Actions outside draggable grid */}
+                  <div className="ml-v2-list-action-bar">
+                    {/* STEP 18F.23I.41J - List header task and section actions */}
+                    <div className="ml-v2-list-header-actions">
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        disabled={busy}
+                        onClick={() => newTask()}
+                      >
+                        <Plus size={13} />
+                        Add Task
+                      </button>
+                      <span
+                        title={
+                          project
+                            ? "Add a section to this project"
+                            : "Select a project to add a section"
+                        }
+                      >
+                        <button
+                          type="button"
+                          className="ml-v2-standard-button"
+                          disabled={busy || !project}
+                          onClick={newSection}
+                        >
+                          <Plus size={13} />
+                          Add Section
+                        </button>
+                      </span>
+                    </div>
+                  </div>
                   <div className="list-head" style={listGrid}>
                     {orderedListColumnIds.map((columnId) => {
                       const dragProps = {
@@ -4292,14 +4614,6 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
                         </button>
                       );
                     })}
-                    <button
-                      className="add-column-head"
-                      disabled={!project}
-                      onClick={newField}
-                    >
-                      <Plus size={13} />
-                      {project ? "Add column" : "Open a project"}
-                    </button>
                   </div>
                   {project ? (
                     <>
@@ -4387,7 +4701,7 @@ onDragOver={(e) => e.preventDefault()}
                               <strong>{section.name}</strong>
                               <span>{sectionTasks.length}</span>
                               <button
-                                className="section-add-task"
+                                className="section-add-task ml-v2-standard-button"
                                 onClick={() => newTask("To do", section.id)}
                               >
                                 <Plus size={13} />
@@ -4423,14 +4737,14 @@ onDragOver={(e) => e.preventDefault()}
                   )}
                   <div className="list-bottom-actions">
                     <button
-                      className="add-column-task"
+                      className="add-column-task ml-v2-standard-button"
                       onClick={() => newTask()}
                     >
                       <Plus size={14} />
                       Add task
                     </button>
                     {project && (
-                      <button className="add-column-task" onClick={newSection}>
+                      <button className="add-column-task ml-v2-standard-button" onClick={newSection}>
                         <Plus size={14} />
                         Add section
                       </button>
@@ -4473,6 +4787,17 @@ onDragOver={(e) => e.preventDefault()}
                       }
                     >
                       Today
+                    </Button>
+                    {/* STEP 18F.23I.40Q - Calendar Add Task, right of Today. */}
+                    <Button
+                      className="ml-v2-standard-button"
+                      variant="outline"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => newTask()}
+                    >
+                      <Plus size={15} />
+                      Add Task
                     </Button>
                     <Button
                       variant="ghost"
@@ -4984,18 +5309,54 @@ onDragOver={(e) => e.preventDefault()}
                 dueToday={dueToday}
                 overdue={overdue}
                 completed={completed}
+                upcomingCount={upcoming}
+                peopleNames={people.map((person) => person.name)}
+                peopleAvatars={people.map((person) => ({
+                  id: person.id,
+                  name: person.name,
+                  avatarData: person.avatarData ?? null,
+                }))}
+                onShowUpcoming={() => {
+                  navigate("all");
+                  setView("List");
+                  setTaskDateFilter("upcoming");
+                }}
+                onShowProjects={() => {
+                  navigate("all");
+                  setView("Board");
+                }}
+                // STEP 18F.23I.21C - DASHBOARD TODAY TO FULL CALENDAR
+                onOpenCalendarToday={() => {
+                  // STEP 18F.23I.40H - Keep Calendar sidebar selection in sync.
+                  navigate("calendar");
+                  setMonth(new Date());
+                  setView("Calendar");
+                }}
+                onShowPeople={() => {
+                  setPersonDraft(null);
+                  setPeopleOpen(true);
+                }}
                 onShowInProgress={() => {
                   setTaskDateFilter("all");
                   setStatusFilter("In progress");
                 }}
                 onShowDueToday={() => {
+                  navigate("all");
+                  setView("List");
                   setStatusFilter("All statuses");
                   setTaskDateFilter("today");
                 }}
                 onShowOverdue={() => {
+                  navigate("all");
+                  setView("List");
                   setStatusFilter("All statuses");
                   setTaskDateFilter("overdue");
                 }}
+                onShowNotes={() => {
+                  overviewNoteIdRef.current = null;
+                  navigate("notes");
+                }}
+                onOpenNote={openOverviewNote}
                 onShowCompleted={() => {
                   setTaskDateFilter("all");
                   setStatusFilter("Done");
@@ -5013,11 +5374,12 @@ onDragOver={(e) => e.preventDefault()}
                     endTime: exception?.movedEndTime ?? undefined,
                   };
                 }}
-                calendarTasks={filtered
+                calendarTasks={tasks
                   .filter((task) => !!task.due)
                   .map((task) => ({
                     id: task.id,
                     title: task.title,
+                    emoji: task.emoji,
                     due: task.due,
                     dueTime: task.dueTime,
                     endTime: task.endTime,
@@ -5025,8 +5387,17 @@ onDragOver={(e) => e.preventDefault()}
                     statusColor: workflowOption(task.status).color,
                     textStyle: taskTextStyle(task, "overview"),
                   }))}
+                onCompleteTodayTask={async (id) => {
+                  const task = tasks.find((item) => item.id === id);
+                  if (!task || task.status === "Done" || busy) return;
+                  await changeStatus(task, "Done");
+                }}
                 comingUpTasks={filtered
-                  .filter((task) => task.status !== "Done")
+                  .filter(
+                    (task) =>
+                      task.status !== "Done" &&
+                      taskOccursOnDate(task, todayKey()),
+                  )
                   .sort((a, b) =>
                     (a.due || "9999").localeCompare(
                       b.due || "9999",
@@ -5035,6 +5406,22 @@ onDragOver={(e) => e.preventDefault()}
                   .slice(0, 6)
                   .map((task) => ({
                     id: task.id,
+                    assignee: people.find(
+                      (person) =>
+                        person.id === task.assignee ||
+                        person.name === task.assignee,
+                    )?.name ?? task.assignee,
+                    avatarData: people.find(
+                      (person) =>
+                        person.id === task.assignee ||
+                        person.name === task.assignee,
+                    )?.avatarData ?? null,
+                    dueTime:
+                      taskRecurrenceExceptions.find(
+                        (item) =>
+                          item.taskId === task.id &&
+                          item.movedDate === todayKey(),
+                      )?.movedDueTime ?? task.dueTime,
                     title: task.title,
                     due: task.due,
                     status: task.status,
@@ -5557,7 +5944,9 @@ onDragOver={(e) => e.preventDefault()}
           </form>
         </DialogContent>
       </Dialog>
-        </MyLifeAppShell>
+            </>
+        )}
+      </MyLifeAppShell>
       </div>
       {notice && (
         <div className="toast" role="status">
@@ -5565,22 +5954,81 @@ onDragOver={(e) => e.preventDefault()}
           {notice}
         </div>
       )}
-      <Dialog open={peopleOpen} onOpenChange={setPeopleOpen}>
-        <DialogContent>
+      <Dialog
+        open={peopleOpen}
+        onOpenChange={(open) => {
+          // STEP 18F.23H.9 - RESET PEOPLE EDITOR
+          setPeopleOpen(open);
+          if (!open) setPersonDraft(null);
+        }}
+      >
+        <DialogContent className="ml-v2-people-dialog">
           <DialogTitle>People</DialogTitle>
           <DialogDescription>Add people you assign tasks to. SMS is sent only when an assignee changes and their notifications are enabled.</DialogDescription>
           {personDraft ? (
             <form onSubmit={savePerson} className="editor-form">
+              <div className="ml-person-photo-editor">
+                <div className="ml-person-photo-preview">
+                  {personDraft.avatarData ? (
+                    <img
+                      src={personDraft.avatarData}
+                      alt="Profile picture preview"
+                    />
+                  ) : (
+                    <span>
+                      {personDraft.name.trim().charAt(0).toUpperCase() || "?"}
+                    </span>
+                  )}
+                </div>
+
+                <div className="ml-person-photo-actions">
+                  <strong>Profile picture</strong>
+
+                  <label className="ml-person-photo-browse ml-v2-standard-button">
+                    {personDraft.avatarData ? "Replace photo" : "Browse photo"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        void selectPersonPhoto(file);
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
+
+                  {personDraft.avatarData && (
+                    <button
+                      type="button"
+                      className="ml-person-photo-remove ml-v2-standard-button"
+                      onClick={() =>
+                        setPersonDraft({
+                          ...personDraft,
+                          avatarData: null,
+                        })
+                      }
+                    >
+                      Remove photo
+                    </button>
+                  )}
+
+                  <small>
+                    JPEG, PNG or WebP. Automatically resized.
+                  </small>
+                </div>
+              </div>
+
               <label>Name<Input autoFocus required maxLength={100} value={personDraft.name} onChange={(e) => setPersonDraft({ ...personDraft, name: e.target.value })} /></label>
-              <label>Mobile phone number<Input required placeholder="+18195550123" value={personDraft.phone} onChange={(e) => setPersonDraft({ ...personDraft, phone: e.target.value })} /></label>
+              <label>Mobile phone number<Input required type="tel" value={formatPersonPhone(personDraft.phone)} onChange={(e) => setPersonDraft({ ...personDraft, phone: formatPersonPhone(e.target.value) })} /></label>
               <label className="checkbox-row"><input type="checkbox" checked={personDraft.smsEnabled} onChange={(e) => setPersonDraft({ ...personDraft, smsEnabled: e.target.checked })} /> Send SMS notifications for new assignments</label>
-              <div className="editor-footer"><Button type="button" variant="ghost" onClick={() => setPersonDraft(null)}>Cancel</Button><Button type="submit" disabled={busy}>Save person</Button></div>
+              <div className="editor-footer"><Button className="ml-v2-standard-button" type="button" variant="ghost" onClick={() => setPersonDraft(null)}>Cancel</Button><Button className="ml-v2-standard-button" type="submit" disabled={busy}>Save person</Button></div>
             </form>
           ) : (
             <>
-              <Button onClick={newPerson}><Plus size={15} /> Add person</Button>
+              <Button className="ml-v2-standard-button ml-v2-people-add-button" onClick={newPerson}><Plus size={15} /> Add person</Button>
               <div className="people-list">
-                {people.map((person) => <div className="person-row" key={person.id}><div><strong>{person.name}</strong><small>{person.phone} · SMS {person.smsEnabled ? "on" : "off"}</small></div><Button variant="ghost" size="sm" disabled={!person.smsEnabled || busy} onClick={() => void testSms(person)}>Test SMS</Button><Button variant="ghost" size="icon" aria-label={`Edit ${person.name}`} onClick={() => setPersonDraft({ ...person })}><Pencil size={14} /></Button><Button variant="ghost" size="icon" aria-label={`Delete ${person.name}`} onClick={() => void mutate({ action: "deletePerson", id: person.id }, "Person deleted")}><Trash2 size={14} /></Button></div>)}
+                {/* STEP 18F.23I.19B - PEOPLE LIST AVATARS */}
+                {people.map((person) => <div className="person-row" key={person.id}><span className="ml-person-list-avatar" aria-hidden="true">{person.avatarData ? <img src={person.avatarData} alt="" /> : (person.name.trim().charAt(0).toUpperCase() || "?")}</span><div><strong>{person.name}</strong><small>{formatPersonPhone(person.phone)} · SMS {person.smsEnabled ? "on" : "off"}</small></div><Button variant="ghost" size="sm" disabled={!person.smsEnabled || busy} onClick={() => void testSms(person)}>Test SMS</Button><Button variant="ghost" size="icon" aria-label={`Edit ${person.name}`} onClick={() => setPersonDraft({ ...person })}><Pencil size={14} /></Button><Button variant="ghost" size="icon" aria-label={`Delete ${person.name}`} onClick={() => void mutate({ action: "deletePerson", id: person.id }, "Person deleted")}><Trash2 size={14} /></Button></div>)}
                 {!people.length && <p className="calendar-note">Add a person to assign tasks and optionally notify them by SMS.</p>}
               </div>
             </>

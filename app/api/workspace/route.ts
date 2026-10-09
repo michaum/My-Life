@@ -71,15 +71,44 @@ const taskSchema = z.object({
     .refine((v) => Object.keys(v).length <= 50, "Too many custom values")
     .default({}),
 });
+// STEP 18F.23H.3 - FLEXIBLE PHONE FORMATS
+function normalizeNorthAmericanPhone(value: string): string | null {
+  const trimmed = value.trim();
+
+  if (!/^[+()\d\s-]+$/.test(trimmed)) return null;
+  if ((trimmed.match(/\+/g) ?? []).length > 1) return null;
+  if (trimmed.includes("+") && !trimmed.startsWith("+")) return null;
+
+  const digits = trimmed.replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+${digits}`;
+  }
+
+  return null;
+}
+
 const personSchema = z.object({
   id: z.string().min(1).max(100),
   name: z.string().trim().min(1).max(100),
-  phone: z.string().regex(/^\+[1-9]\d{7,14}$/, "Use a full phone number, for example +18195550123."),
+  phone: z.string().trim().refine(
+    (value) => normalizeNorthAmericanPhone(value) !== null,
+    "Enter a valid 10-digit phone number, with or without dashes.",
+  ),
   smsEnabled: z.boolean(),
+  avatarData: z.string().max(300000).nullable().optional(),
 });
 type SmsContact = { name: string; phone: string; sms_enabled: number };
 class SmsDeliveryError extends Error {}
 async function sendSmsMessage(phone: string, text: string) {
+  const normalizedPhone = normalizeNorthAmericanPhone(phone);
+  if (!normalizedPhone) {
+    throw new SmsDeliveryError("Invalid SMS recipient phone number.");
+  }
   const settings = env as unknown as Record<string, string | undefined>;
   const required = ["SINCH_ACCESS_KEY", "SINCH_KEY_SECRET", "SINCH_PROJECT_ID", "SINCH_CONVERSATION_APP_ID", "SINCH_SENDER"];
   if (required.some((key) => !settings[key])) throw new SmsDeliveryError("SMS notifications are not configured.");
@@ -91,7 +120,7 @@ async function sendSmsMessage(phone: string, text: string) {
     },
     body: JSON.stringify({
       app_id: settings.SINCH_CONVERSATION_APP_ID,
-      recipient: { identified_by: { channel_identities: [{ channel: "SMS", identity: phone }] } },
+      recipient: { identified_by: { channel_identities: [{ channel: "SMS", identity: normalizedPhone }] } },
       message: { text_message: { text } },
       channel_priority_order: ["SMS"],
       channel_properties: { SMS_SENDER: settings.SINCH_SENDER },
@@ -246,7 +275,7 @@ export async function GET(request: Request) {
       db.prepare("SELECT * FROM comments ORDER BY created_at"),
       db.prepare("SELECT * FROM sections ORDER BY sort_order, created_at"),
       db.prepare("SELECT * FROM custom_fields ORDER BY created_at"),
-      db.prepare("SELECT id,name,phone,sms_enabled FROM people ORDER BY name COLLATE NOCASE"),
+      db.prepare("SELECT id,name,phone,sms_enabled,avatar_data FROM people ORDER BY name COLLATE NOCASE"),
       db.prepare("SELECT * FROM task_values ORDER BY task_id, field_id"),
       db.prepare("SELECT * FROM task_attachments ORDER BY created_at"),
       db.prepare(
@@ -334,7 +363,7 @@ export async function GET(request: Request) {
             options: normalizeOptions(parsed),
           };
         }),
-        people: people.results.map((person: any) => ({ ...person, smsEnabled: Boolean(person.sms_enabled) })),
+        people: people.results.map((person: any) => ({ ...person, smsEnabled: Boolean(person.sms_enabled), avatarData: person.avatar_data ?? null })),
         statusOptions: statusOptionsSchema
           .catch(
             statuses.map((label, index) => ({
@@ -526,8 +555,8 @@ export async function POST(request: Request) {
         .run();
     } else if (b.action === "savePerson") {
       const person = personSchema.parse(b.person);
-      await db.prepare("INSERT INTO people(id,name,phone,sms_enabled,created_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,phone=excluded.phone,sms_enabled=excluded.sms_enabled")
-        .bind(person.id, person.name, person.phone, person.smsEnabled ? 1 : 0, now).run();
+      await db.prepare("INSERT INTO people(id,name,phone,sms_enabled,avatar_data,created_at) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,phone=excluded.phone,sms_enabled=excluded.sms_enabled,avatar_data=excluded.avatar_data")
+        .bind(person.id, person.name, person.phone, person.smsEnabled ? 1 : 0, person.avatarData ?? null, now).run();
     } else if (b.action === "deletePerson") {
       const id = z.string().min(1).parse(b.id);
       await db.prepare("DELETE FROM people WHERE id=?").bind(id).run();

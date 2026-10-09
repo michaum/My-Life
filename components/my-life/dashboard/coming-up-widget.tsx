@@ -1,15 +1,16 @@
-﻿"use client";
+"use client";
 
-import {
-  CheckCheck,
-  ChevronRight,
-} from "lucide-react";
+import { useState } from "react";
+import { Check, CheckCheck, ChevronRight, Clock3 } from "lucide-react";
 import type { CSSProperties } from "react";
 
 export type DashboardUpcomingTask = {
   id: string;
   title: string;
   due: string;
+  dueTime?: string;
+  assignee?: string;
+  avatarData?: string | null;
   statusColor: string;
   textStyle?: CSSProperties;
 };
@@ -19,77 +20,142 @@ export type ComingUpWidgetProps = {
   today: string;
   formatDate: (date: string) => string;
   onTaskClick: (id: string) => void;
+  onCompleteTask: (id: string) => Promise<void>;
 };
+
+function displayTime(value?: string) {
+  if (!value) return "All day";
+  const match = /^(\\d{1,2}):(\\d{2})/.exec(value);
+  if (!match) return value;
+  const hour = Number(match[1]);
+  const minute = match[2];
+  return `${hour % 12 || 12}:${minute} ${hour >= 12 ? "PM" : "AM"}`;
+}
 
 export function ComingUpWidget({
   tasks,
-  today,
-  formatDate,
   onTaskClick,
+  onCompleteTask,
 }: ComingUpWidgetProps) {
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const selected = tasks.find((task) => task.id === confirmId);
+
+  async function confirmComplete() {
+    if (!confirmId || saving) return;
+    setSaving(true);
+    try {
+      await onCompleteTask(confirmId);
+      setConfirmId(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="ml-v2-coming-up">
-      <div className="ml-v2-widget-copy">
-        <span>YOUR NEXT SMALL STEPS</span>
-        <p>
-          The next unfinished tasks that need your attention.
-        </p>
-      </div>
-
       {tasks.length ? (
         <div className="ml-v2-coming-up-list">
-          {tasks.map((task) => {
-            const late = Boolean(
-              task.due &&
-                task.due < today,
-            );
-
-            return (
+          {tasks.map((task) => (
+            <div className="ml-v2-today-task-row" key={task.id}>
               <button
-                key={task.id}
                 type="button"
-                className="ml-v2-coming-up-row"
+                className="ml-v2-today-check"
+                aria-label={`Mark ${task.title} complete`}
+                title="Mark task complete"
+                onClick={() => setConfirmId(task.id)}
+              >
+                <Check size={14} aria-hidden="true" />
+              </button>
+
+              <button
+                type="button"
+                className="ml-v2-today-task-main"
                 onClick={() => onTaskClick(task.id)}
               >
-                <span
-                  className="ml-v2-coming-up-dot"
-                  style={{
-                    background: task.statusColor,
-                  }}
-                />
-
-                <span
-                  className="ml-v2-coming-up-title"
-                  style={task.textStyle}
-                >
-                  {task.title}
+                <span className="ml-v2-today-task-text">
+                  <span
+                    className="ml-v2-coming-up-title"
+                    style={task.textStyle}
+                  >
+                    {task.title}
+                  </span>
+                  <span className="ml-v2-today-assignee">
+                    {task.avatarData ? (
+                      <img src={task.avatarData} alt="" />
+                    ) : (
+                      <span className="ml-v2-today-person-icon">
+                        {(task.assignee || "?").slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                    {task.assignee || "Unassigned"}
+                  </span>
                 </span>
-
-                <span
-                  className={
-                    late
-                      ? "ml-v2-coming-up-date is-late"
-                      : "ml-v2-coming-up-date"
-                  }
-                >
-                  {formatDate(task.due)}
+                <span className="ml-v2-today-time">
+                  <Clock3 size={12} aria-hidden="true" />
+                  {displayTime(task.dueTime)}
                 </span>
-
                 <ChevronRight
                   className="ml-v2-coming-up-chevron"
                   size={15}
+                  aria-hidden="true"
                 />
               </button>
-            );
-          })}
+            </div>
+          ))}
         </div>
       ) : (
         <div className="ml-v2-dashboard-empty">
           <CheckCheck size={24} />
           <strong>You’re all caught up.</strong>
-          <span>
-            Add something new when you’re ready.
-          </span>
+          <span>There are no unfinished tasks for today.</span>
+        </div>
+      )}
+
+      {selected && (
+        <div
+          className="ml-v2-today-confirm-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !saving) {
+              setConfirmId(null);
+            }
+          }}
+        >
+          <div
+            className="ml-v2-today-confirm"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="ml-v2-today-confirm-title"
+            aria-describedby="ml-v2-today-confirm-description"
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !saving) {
+                setConfirmId(null);
+              }
+            }}
+          >
+            <h3 id="ml-v2-today-confirm-title">Complete this task?</h3>
+            <p id="ml-v2-today-confirm-description">
+              Are you sure you want to mark “{selected.title}” as
+              completed? It will be moved to Completed.
+            </p>
+            <div className="ml-v2-today-confirm-actions">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setConfirmId(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void confirmComplete()}
+              >
+                {saving ? "Completing..." : "Complete Task"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

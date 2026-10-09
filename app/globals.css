@@ -1909,3 +1909,28 @@ h1 {
 .list-head > * {
   transition: transform 160ms ease;
 }
+
+/* STEP 18F.23I.19B - PEOPLE LIST AVATARS */
+.person-row > .ml-person-list-avatar {
+  display: grid;
+  flex: 0 0 40px;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8174d8, #ef72a7);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+.person-row > .ml-person-list-avatar > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.person-row > div {
+  min-width: 0;
+}

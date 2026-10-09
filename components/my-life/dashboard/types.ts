@@ -8,6 +8,7 @@ export type DashboardWidgetId =
   | "due-today"
   | "overdue"
   | "completed"
+  | "notes"
   | "coming-up"
   | "project-progress";
 

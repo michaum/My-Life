@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   FolderKanban,
@@ -19,6 +19,32 @@ export type ProjectProgressWidgetProps = {
   onCreateProject?: () => void;
 };
 
+const PROJECT_PROGRESS_COLORS = [
+  "#8247ED",
+  "#FF4FA3",
+  "#00BCE8",
+  "#26BE80",
+  "#FFB82E",
+  "#4488F5",
+  "#E66B47",
+  "#A54FD8",
+] as const;
+
+/**
+ * Stable color derived from the project ID.
+ * Does not modify the project's saved color.
+ */
+function projectProgressColor(id: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < id.length; i += 1) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return PROJECT_PROGRESS_COLORS[
+    (hash >>> 0) % PROJECT_PROGRESS_COLORS.length
+  ];
+}
+
 export function ProjectProgressWidget({
   projects,
   onProjectClick,
@@ -27,12 +53,7 @@ export function ProjectProgressWidget({
   return (
     <div className="ml-v2-project-progress">
       <div className="ml-v2-project-progress-intro">
-        <div className="ml-v2-widget-copy">
-          <span>PROJECT HEALTH</span>
-          <p>
-            A quick look at how your projects are moving.
-          </p>
-        </div>
+
 
         {onCreateProject ? (
           <button
@@ -55,6 +76,7 @@ export function ProjectProgressWidget({
                   (project.completed / project.total) * 100,
                 )
               : 0;
+            const progressColor = projectProgressColor(project.id);
 
             return (
               <button
@@ -82,7 +104,7 @@ export function ProjectProgressWidget({
                     <i
                       style={{
                         width: `${percentage}%`,
-                        background: project.color,
+                        background: progressColor,
                       }}
                     />
                   </span>

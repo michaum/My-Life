@@ -74,6 +74,7 @@ export function DashboardWidget({
       <header className="ml-v2-dashboard-widget-header">
         <h2>{title}</h2>
 
+        {draggable ? (
         <button
           type="button"
           className="ml-v2-dashboard-widget-handle"
@@ -89,6 +90,7 @@ export function DashboardWidget({
         >
           <GripVertical size={17} />
         </button>
+        ) : null}
       </header>
 
       <div className="ml-v2-dashboard-widget-content">

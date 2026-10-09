@@ -8,8 +8,10 @@ import {
   CircleHelp,
   Download,
   LayoutDashboard,
+  NotebookPen,
   LogOut,
   Plus,
+  Pencil,
   Settings2,
   Sparkles,
   Users,
@@ -36,6 +38,7 @@ type MyLifeSidebarProps = {
   onNavigate: (id: string) => void;
   onPeopleClick?: () => void;
   onCreateProject?: () => void;
+  onRenameProject?: (id: string) => void;
   onExport?: () => void;
   onAdminClick?: () => void;
   onHelpClick?: () => void;
@@ -84,7 +87,14 @@ function NavigationButton({
 
       <span
         className="ml-v2-nav-text"
-        style={item.textColor ? { color: item.textColor } : undefined}
+        style={
+          item.section === "projects" &&
+          (selected || item.textColor?.toLowerCase() === "#ffffff")
+            ? undefined
+            : item.textColor
+              ? { color: item.textColor }
+              : undefined
+        }
       >
         {item.label}
       </span>
@@ -107,6 +117,7 @@ export function MyLifeSidebar({
   onNavigate,
   onPeopleClick,
   onCreateProject,
+  onRenameProject,
   onExport,
   onAdminClick,
   onHelpClick,
@@ -198,6 +209,17 @@ export function MyLifeSidebar({
             </span>
           </button>
         ) : null}
+
+        {/* STEP 18F.23I.31C.2B - NOTES NAVIGATION */}
+        <NavigationButton
+          item={{
+            id: "notes",
+            label: "Notes",
+            icon: NotebookPen,
+          }}
+          selected={activeView === "notes"}
+          onClick={() => onNavigate("notes")}
+        />
       </nav>
 
       <div className="ml-v2-project-heading">
@@ -223,12 +245,24 @@ export function MyLifeSidebar({
         aria-label="Projects"
       >
         {projectItems.map((item) => (
-          <NavigationButton
-            key={item.id}
-            item={item}
-            selected={activeView === item.id}
-            onClick={() => onNavigate(item.id)}
-          />
+          <div className="ml-v2-project-nav-row" key={item.id}>
+            <NavigationButton
+              item={item}
+              selected={activeView === item.id}
+              onClick={() => onNavigate(item.id)}
+            />
+            {onRenameProject ? (
+              <button
+                type="button"
+                className="ml-v2-project-rename-button"
+                aria-label={`Rename ${item.label}`}
+                title={`Rename ${item.label}`}
+                onClick={() => onRenameProject(item.id)}
+              >
+                <Pencil size={14} strokeWidth={2} />
+              </button>
+            ) : null}
+          </div>
         ))}
 
         {onCreateProject ? (
