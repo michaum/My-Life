@@ -1,6 +1,7 @@
 "use client";
 
 import { WeeklyCalendar } from "./weekly-calendar";
+import { getClassificationColor } from "../classification-colors";
 
 import {
   useEffect,
@@ -18,6 +19,7 @@ import {
   Folder,
   Users,
   ChevronRight,
+  ChevronLeft,
   NotebookPen,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +29,17 @@ import { ProjectProgressWidget } from "./project-progress-widget";
 import type { DashboardWidgetId } from "./types";
 
 const DASHBOARD_ORDER_KEY = "my-life-v2-dashboard-widget-order";
+
+// STEP 18F.23I.43F - Project To Do List preference.
+const PROJECT_TODO_KEY = "my-life-v2-project-todo-selection";
+
+type ProjectTodoTask = {
+  id: string;
+  projectId: string;
+  title: string;
+  status: string;
+  emoji?: string;
+};
 
 type MovableWidgetId =
   | "tasks-in-progress"
@@ -57,9 +70,16 @@ type StatDefinition = {
   onClick?: () => void;
 };
 
+
+// P36C.1K.17C - Use saved Classification colors.
+function classificationPastelColor(name: string): string {
+  return getClassificationColor(name);
+}
+
 export type DashboardTask = {
   id: string;
   title: string;
+  classification?: string;
   due: string;
   emoji?: string;
   dueTime?: string;
@@ -99,6 +119,9 @@ export type MyLifeDashboardProps = {
   calendarTaskOccursOnDate?: (taskId: string, date: string) => boolean;
   calendarTaskTimeForDate?: (taskId: string, date: string) => { dueTime?: string; endTime?: string };
   projects: DashboardProject[];
+  projectTodoTasks?: ProjectTodoTask[];
+  onOpenProjectList?: (projectId: string) => void;
+  onOpenProjectTask?: (taskId: string, projectId: string) => void;
   today: string;
   formatDate: (date: string) => string;
   onTaskClick: (id: string) => void;
@@ -184,6 +207,9 @@ export function MyLifeDashboard({
   calendarTaskOccursOnDate,
   calendarTaskTimeForDate,
   projects,
+  projectTodoTasks = [],
+  onOpenProjectList,
+  onOpenProjectTask,
   today,
   formatDate,
   onTaskClick,
@@ -199,6 +225,71 @@ export function MyLifeDashboard({
 }: MyLifeDashboardProps) {
   const [widgetOrder, setWidgetOrder] =
     useState<MovableWidgetId[]>(defaultWidgetOrder);
+
+  // STEP 18F.23I.43F - Selected project, saved locally.
+  const [todoProjectId, setTodoProjectId] = useState("");
+
+  // STEP 18F.23I.43I-P34B.2 - Daily task navigation.
+  const [selectedTaskDate, setSelectedTaskDate] = useState(today);
+
+  const moveTaskDate = (direction: -1 | 1) => {
+    setSelectedTaskDate((current) => {
+      const date = new Date(`${current}T12:00:00`);
+      date.setDate(date.getDate() + direction);
+      return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+      ].join("-");
+    });
+  };
+
+  const selectedTaskDateLabel = new Date(
+    `${selectedTaskDate}T12:00:00`,
+  ).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const displayedDailyTasks = comingUpTasks
+    .filter((task) =>
+      calendarTaskOccursOnDate?.(task.id, selectedTaskDate)
+        ?? task.due === selectedTaskDate,
+    )
+    .sort((a, b) =>
+      (a.dueTime ?? "").localeCompare(b.dueTime ?? ""),
+    )
+    .slice(0, 6)
+    .map((task) => ({
+      ...task,
+      dueTime:
+        calendarTaskTimeForDate?.(task.id, selectedTaskDate)?.dueTime
+        ?? task.dueTime,
+    }));
+
+  useEffect(() => {
+    try {
+      setTodoProjectId(
+        window.localStorage.getItem(PROJECT_TODO_KEY) ?? ""
+      );
+    } catch {
+      // Dashboard remains usable without local storage.
+    }
+  }, []);
+
+  const selectedTodoProject =
+    projects.find((item) => item.id === todoProjectId)
+    ?? projects[0];
+
+  const topFiveProjectTodos = (projectTodoTasks ?? [])
+    .filter(
+      (task) =>
+        task.projectId === selectedTodoProject?.id &&
+        task.status !== "Done"
+    )
+    .slice(0, 5);
 
   const [draggingWidget, setDraggingWidget] =
     useState<MovableWidgetId | null>(null);
@@ -287,6 +378,7 @@ export function MyLifeDashboard({
   const upcomingAppointments: {
     id: string;
     title: string;
+    classification?: string;
     emoji?: string;
     date: string;
     time: string;
@@ -345,6 +437,7 @@ export function MyLifeDashboard({
       upcomingAppointments.push({
         id: task.id,
         title: task.title,
+        classification: task.classification || "Task",
         emoji: task.emoji,
         date: dateKey,
         time: startTime,
@@ -516,13 +609,22 @@ export function MyLifeDashboard({
                         className="ml-v2-dashboard-appointment-link ml-v2-standard-button"
                         onClick={() => onTaskClick(appointment.id)}
                       >
-                        <span className="ml-v2-dashboard-appointment-title">
+                        <span className="ml-v2-dashboard-appointment-main">
+                          <span className="ml-v2-dashboard-appointment-title">
                           {appointment.emoji && (
                           <span className="ml-v2-dashboard-appointment-emoji" aria-hidden="true">
                             {appointment.emoji}
                           </span>
                         )}
                         {appointment.title}
+
+                        </span>
+                        </span>
+                        <span
+                          className="ml-v2-appointment-classification"
+                          style={{ color: classificationPastelColor(appointment.classification || "Task") }}
+                        >
+                          {appointment.classification || "Task"}
                         </span>
                       <span className="ml-v2-dashboard-appointment-date">
                           {date.toLocaleDateString("en-US", {
@@ -546,46 +648,96 @@ export function MyLifeDashboard({
       );
     }
 
-    if (isStatWidgetId(id)) {
-      const widget = definitions[id];
-      const Icon = widget.icon;
-
+    // STEP 18F.23I.43F - Dynamic Project To Do List.
+    if (id === "overdue") {
       return (
         <DashboardWidget
-          key={widget.id}
-          id={widget.id}
-          title={widget.label}
+          key={id}
+          id={id}
+          title={
+            selectedTodoProject
+              ? `${selectedTodoProject.name} Tasks`
+              : "Project Tasks"
+          }
           size="small"
+          className="ml-v2-dashboard-project-todo-card"
           {...commonProps}
         >
-          <button
-            type="button"
-            className="ml-v2-dashboard-stat"
-            onClick={widget.onClick}
-            disabled={!widget.onClick}
-          >
-            <span className="ml-v2-dashboard-stat-icon">
-              <Icon size={18} />
-            </span>
+          <div className="ml-v2-dashboard-project-todo">
+            <div className="ml-v2-dashboard-project-todo-toolbar">
+              <select
+                aria-label="Select project for To Do List"
+                className="ml-v2-dashboard-project-todo-select"
+                value={selectedTodoProject?.id ?? ""}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setTodoProjectId(nextId);
+                  try {
+                    window.localStorage.setItem(
+                      PROJECT_TODO_KEY,
+                      nextId
+                    );
+                  } catch {
+                    // Local storage is optional.
+                  }
+                }}
+              >
+                {projects.length === 0 ? (
+                  <option value="">No projects available</option>
+                ) : (
+                  projects.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))
+                )}
+              </select>
 
-            <strong>{widget.value}</strong>
+              <button
+                type="button"
+                className="ml-v2-standard-button ml-v2-dashboard-project-todo-view-all"
+                disabled={!selectedTodoProject || !onOpenProjectList}
+                onClick={() => {
+                  if (selectedTodoProject) {
+                    onOpenProjectList?.(selectedTodoProject.id);
+                  }
+                }}
+              >
+                View All
+                <ArrowUpRight size={14} aria-hidden="true" />
+              </button>
+            </div>
 
-            <span className="ml-v2-dashboard-stat-detail">
-              {widget.detail}
-            </span>
-
-            {widget.onClick ? (
-              <ArrowUpRight
-                className="ml-v2-dashboard-stat-arrow"
-                size={16}
-                aria-hidden="true"
-              />
-            ) : null}
-          </button>
+            {topFiveProjectTodos.length === 0 ? (
+              <p className="ml-v2-dashboard-project-todo-empty">
+                {selectedTodoProject
+                  ? "No unfinished tasks in this project."
+                  : "Create a project to see its To Do List."}
+              </p>
+            ) : (
+              <ul className="ml-v2-dashboard-project-todo-list">
+                {topFiveProjectTodos.map((task) => (
+                  <li key={task.id}>
+                    <button
+                      type="button"
+                      className="ml-v2-standard-button ml-v2-dashboard-project-todo-task"
+                      onClick={() =>
+                        onOpenProjectTask?.(task.id, task.projectId)
+                      }
+                    >
+                      <span>
+                        {task.emoji ? `${task.emoji} ` : ""}
+                        {task.title}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </DashboardWidget>
       );
     }
-
 
     if (id === "notes") {
       return (
@@ -655,12 +807,55 @@ export function MyLifeDashboard({
           key={id}
           id={id}
           title="Today's Tasks"
+          headerActions={
+            <>
+              <button
+                type="button"
+                className="ml-v2-standard-button"
+                aria-label="Previous day"
+                title="Previous day"
+                onClick={() => moveTaskDate(-1)}
+                style={{ padding: "5px 7px" }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                className="ml-v2-standard-button"
+                aria-label="Next day"
+                title="Next day"
+                onClick={() => moveTaskDate(1)}
+                style={{ padding: "5px 7px" }}
+              >
+                <ChevronRight size={16} />
+              </button>
+              <button
+                type="button"
+                className="ml-v2-standard-button"
+                title="Return to today"
+                onClick={() => setSelectedTaskDate(today)}
+                style={{ padding: "5px 10px" }}
+              >
+                Today
+              </button>
+            </>
+          }
           size="large"
           className="ml-v2-dashboard-widget-fixed"
           draggable={false}
         >
+          <div
+            style={{
+              fontSize: 12,
+              color: "#665b80",
+              marginBottom: 10,
+              fontWeight: 500,
+            }}
+          >
+            {selectedTaskDateLabel}
+          </div>
           <ComingUpWidget
-            tasks={comingUpTasks}
+            tasks={displayedDailyTasks}
             onCompleteTask={onCompleteTodayTask}
             today={today}
             formatDate={formatDate}

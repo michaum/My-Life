@@ -23,6 +23,26 @@ export type ComingUpWidgetProps = {
   onCompleteTask: (id: string) => Promise<void>;
 };
 
+// STEP P36C.1O.1D - Stable pastel title color per task.
+const TASK_PASTELS = [
+  "#B17AC6", // Lavender
+  "#D47D9E", // Rose
+  "#58A69B", // Mint
+  "#C58B61", // Peach
+  "#679AC9", // Sky blue
+  "#A38BCB", // Lilac
+  "#BD8AAB", // Mauve
+  "#6B9B84", // Sage
+];
+
+function pastelForTask(id: string): string {
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    hash = (hash * 31 + id.charCodeAt(index)) >>> 0;
+  }
+  return TASK_PASTELS[hash % TASK_PASTELS.length];
+}
+
 function displayTime(value?: string) {
   if (!value) return "All day";
   const match = /^(\\d{1,2}):(\\d{2})/.exec(value);
@@ -76,7 +96,13 @@ export function ComingUpWidget({
                 <span className="ml-v2-today-task-text">
                   <span
                     className="ml-v2-coming-up-title"
-                    style={task.textStyle}
+                    style={{
+                      ...task.textStyle,
+                      // STEP P36C.1O.1H - Match Upcoming Appointments.
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: pastelForTask(task.id),
+                    }}
                   >
                     {task.title}
                   </span>

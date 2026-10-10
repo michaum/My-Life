@@ -80,6 +80,7 @@ export const tasks = sqliteTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     sectionId: text("section_id").notNull().default(""),
     title: text("title").notNull(),
+    classification: text("classification").notNull().default("Task"),
     description: text("description").notNull().default(""),
     status: text("status").notNull().default("To do"),
     color: text("color").notNull().default("#e5e5e5"),

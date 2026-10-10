@@ -65,6 +65,14 @@ import {
 } from "@/components/ui/popover";
 import { TaskCompletionCelebration } from "@/components/my-life/task-completion-celebration";
 import { MyLifeNotesWorkspace } from "@/components/my-life/notes/notes-workspace";
+import type { GlobalSearchResult } from "@/components/my-life/top-bar";
+import {
+  CLASSIFICATION_COLOR_KEY,
+  readClassificationColors,
+  legacyClassificationColor,
+  nextClassificationColor,
+  type ClassificationColors,
+} from "@/components/my-life/classification-colors";
 
 type Status = "To do" | "In progress" | "In review" | "Done";
 type CalendarMode = "day" | "workweek" | "week" | "month";
@@ -124,6 +132,8 @@ type TaskRecurrenceException = {
 };
 
 type Task = {
+  // STEP 18F.23I.43I-P36C.1D - Classification.
+  classification?: string;
   id: string;
   projectId: string;
   sectionId: string;
@@ -392,7 +402,7 @@ function ChoiceDropdown({
           <ChevronDown size={15} />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="choice-menu">
+      <PopoverContent align="start" className={`choice-menu ${label === "Status" ? "ml-v2-status-choice-menu" : ""}`}>
         <div className="choice-menu-list">
           {options.map((option) => (
             <button
@@ -521,6 +531,28 @@ export default function Taskflow() {
   const [draft, setDraft] = useState<Task | null>(null),
     [projectDraft, setProjectDraft] = useState<Project | null>(null),
     [sectionDraft, setSectionDraft] = useState<Section | null>(null),
+    // STEP 18F.23I.43I-P35C - Inline section creation.
+    [taskSectionName, setTaskSectionName] = useState(""),
+    [taskSectionCreating, setTaskSectionCreating] = useState(false),
+    // P36C.1G - Section management.
+    [taskSectionsManaging, setTaskSectionsManaging] = useState(false),
+    [taskSectionRenameId, setTaskSectionRenameId] = useState(""),
+    [taskSectionRenameName, setTaskSectionRenameName] = useState(""),
+    // P36C.1H.1 - Classification management.
+    [classificationOptions, setClassificationOptions] = useState<string[]>([
+      "Task",
+      "Appointment",
+    ]),
+    [classificationColors, setClassificationColors] = useState<ClassificationColors>({}),
+    [newClassificationName, setNewClassificationName] = useState(""),
+    [classificationsManaging, setClassificationsManaging] = useState(false),
+    [classificationRenameOld, setClassificationRenameOld] = useState(""),
+    [classificationRenameName, setClassificationRenameName] = useState(""),
+    // P36C.1I.1 - Project management.
+    [newTaskProjectName, setNewTaskProjectName] = useState(""),
+    [taskProjectsManaging, setTaskProjectsManaging] = useState(false),
+    [taskProjectRenameId, setTaskProjectRenameId] = useState(""),
+    [taskProjectRenameName, setTaskProjectRenameName] = useState(""),
     [fieldDraft, setFieldDraft] = useState<CustomField | null>(null),
     [statusDraft, setStatusDraft] = useState<ChoiceOption[] | null>(null),
     [filterDraft, setFilterDraft] = useState<FilterLabels | null>(null),
@@ -531,6 +563,52 @@ export default function Taskflow() {
     [subtask, setSubtask] = useState("");
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(
+        window.localStorage.getItem(
+          "my-life-v2-classification-options"
+        ) || '["Task","Appointment"]'
+      );
+
+      if (
+        Array.isArray(saved) &&
+        saved.length > 0 &&
+        saved.every(
+          (item) =>
+            typeof item === "string" &&
+            item.trim().length > 0
+        )
+      ) {
+        setClassificationOptions(
+          Array.from(new Set(saved)) as string[]
+        );
+      }
+    } catch {
+      // Retain the default classification options.
+    }
+  }, []);
+
+  // P36C.1K.17C - Load saved colors without replacing existing names.
+  useEffect(() => {
+    const saved = readClassificationColors();
+    setClassificationColors(saved);
+  }, []);
+
+  function persistClassificationColors(colors: ClassificationColors) {
+    try {
+      window.localStorage.setItem(
+        CLASSIFICATION_COLOR_KEY,
+        JSON.stringify(colors)
+      );
+      setClassificationColors(colors);
+      return true;
+    } catch {
+      setError("Could not save Classification colors in this browser.");
+      return false;
+    }
+  }
+
   const desktopSyncInProgressRef = useRef(false);
   const desktopSyncRequestedRef = useRef(false);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
@@ -2520,6 +2598,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }).length;
   // STEP 18F.23I.39G-R2 - Direct Overview note navigation.
   const overviewNoteIdRef = useRef<string | null>(null);
+  const [globalNoteSelection, setGlobalNoteSelection] = useState(0);
 
   function openOverviewNote(noteId: string) {
     overviewNoteIdRef.current = noteId;
@@ -2541,6 +2620,77 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       setView("Board");
     }
   }
+
+  // STEP P36C.1M.2B - Global Search is separate from task-list filters.
+  const globalSearchItems: GlobalSearchResult[] = [
+    ...tasks.map((task) => ({
+      id: task.id,
+      type: "task" as const,
+      title: task.title || "Untitled task",
+      detail: `${task.classification || "Task"} · ${
+        projects.find((p) => p.id === task.projectId)?.name || "Project"
+      }`,
+      searchable: [
+        task.description,
+        task.assignee,
+        task.status,
+        task.priority,
+        task.classification,
+        ...task.subtasks.map((subtask) => subtask.title),
+      ].join(" "),
+    })),
+    ...projects.map((item) => ({
+      id: item.id,
+      type: "project" as const,
+      title: item.name,
+      detail: "Project",
+      searchable: item.description,
+    })),
+    ...sections.map((item) => ({
+      id: item.id,
+      type: "section" as const,
+      title: item.name,
+      detail: `Section · ${
+        projects.find((p) => p.id === item.projectId)?.name || "Project"
+      }`,
+      searchable: projects.find((p) => p.id === item.projectId)?.name,
+    })),
+    ...people.map((item) => ({
+      id: item.id,
+      type: "person" as const,
+      title: item.name,
+      detail: "Person",
+      searchable: item.phone,
+    })),
+  ];
+
+  function openGlobalSearchResult(item: GlobalSearchResult) {
+    if (item.type === "task") {
+      const selected = tasks.find((task) => task.id === item.id);
+      if (selected) editTask(selected);
+    } else if (item.type === "project") {
+      if (projects.some((project) => project.id === item.id)) {
+        navigate(item.id);
+        setView("Board");
+      }
+    } else if (item.type === "section") {
+      const selected = sections.find((section) => section.id === item.id);
+      if (selected) {
+        navigate(selected.projectId);
+        setView("Board");
+      }
+    } else if (item.type === "person") {
+      const selected = people.find((person) => person.id === item.id);
+      if (selected) {
+        setPeopleOpen(true);
+        setPersonDraft({ ...selected });
+      }
+    } else if (item.type === "note") {
+      openOverviewNote(item.id);
+      setGlobalNoteSelection((value) => value + 1);
+    }
+  }
+
   function newTask(status: Status = "To do", sectionId = "") {
     if (!projects.length) {
       newProject();
@@ -2553,6 +2703,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       id: crypto.randomUUID(),
       projectId: project?.id || projects[0].id,
       sectionId,
+      classification: "Task",
       title: "",
       description: "",
       status,
@@ -2596,6 +2747,134 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setComment("");
     setSubtask("");
   }
+  // P36C.1I.1 - Project management functions.
+  async function addTaskEditorProject() {
+    if (!draft || busy) return;
+    const name = newTaskProjectName.trim();
+    if (!name) return;
+
+    if (
+      projects.some(
+        (item) => item.name.trim().toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      setError("A project with that name already exists.");
+      return;
+    }
+
+    const project: Project = {
+      id: crypto.randomUUID(),
+      name,
+      description: "",
+      color: colors[projects.length % colors.length],
+      sidebarFontColor: "#ffffff",
+      icon: "folder",
+    };
+
+    if (
+      await mutate(
+        { action: "saveProject", project },
+        "Project created"
+      )
+    ) {
+      setDraft((current) =>
+        current
+          ? {
+              ...current,
+              projectId: project.id,
+              sectionId: "",
+              customValues: {},
+            }
+          : current
+      );
+      setNewTaskProjectName("");
+    }
+  }
+
+  async function renameTaskEditorProject() {
+    if (!draft || busy) return;
+    const project = projects.find(
+      (item) => item.id === taskProjectRenameId
+    );
+    const name = taskProjectRenameName.trim();
+
+    if (!project || !name) {
+      setError("Choose a project and enter a name.");
+      return;
+    }
+
+    if (
+      projects.some(
+        (item) =>
+          item.id !== project.id &&
+          item.name.trim().toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      setError("A project with that name already exists.");
+      return;
+    }
+
+    if (
+      await mutate(
+        { action: "saveProject", project: { ...project, name } },
+        "Project renamed"
+      )
+    ) {
+      setTaskProjectRenameId("");
+      setTaskProjectRenameName("");
+    }
+  }
+
+  async function deleteTaskEditorProject(projectId: string) {
+    if (!draft || busy) return;
+
+    const project = projects.find(
+      (item) => item.id === projectId
+    );
+    if (!project) return;
+
+    if (
+      tasks.some((item) => item.projectId === projectId) ||
+      sections.some((item) => item.projectId === projectId)
+    ) {
+      setError(
+        "This project contains tasks or sections. Move or remove them before deleting the project."
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Delete the empty project "${project.name}"?`
+      )
+    ) return;
+
+    if (
+      await mutate(
+        { action: "deleteProject", id: projectId },
+        "Project deleted"
+      )
+    ) {
+      if (draft.projectId === projectId) {
+        const next = projects.find(
+          (item) => item.id !== projectId
+        );
+        setDraft((current) =>
+          current
+            ? {
+                ...current,
+                projectId: next?.id ?? "",
+                sectionId: "",
+                customValues: {},
+              }
+            : current
+        );
+      }
+      setTaskProjectRenameId("");
+      setTaskProjectRenameName("");
+    }
+  }
+
   function newProject() {
     setProjectDraft({
       id: crypto.randomUUID(),
@@ -2732,13 +3011,289 @@ function newPerson() {
   async function testSms(person: Person) {
     await mutate({ action: "testSms", id: person.id }, `Test SMS sent to ${person.name}`);
   }
+  // P36C.1G - Section management.
+  // P36C.1H.1 - Classification management functions.
+  function storeClassificationOptions(options: string[]) {
+    setClassificationOptions(options);
+    try {
+      window.localStorage.setItem(
+        "my-life-v2-classification-options",
+        JSON.stringify(options)
+      );
+    } catch {
+      setError("Could not save classifications in this browser.");
+    }
+  }
+
+  function addClassification() {
+    const name = newClassificationName.trim();
+
+    if (!name) return;
+
+    if (
+      classificationOptions.some(
+        (option) => option.toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      setError("That classification already exists.");
+      return;
+    }
+
+    const currentColors = {
+      ...readClassificationColors(),
+      ...classificationColors,
+    };
+    const color = nextClassificationColor(
+      classificationOptions,
+      currentColors
+    );
+    if (!persistClassificationColors({
+      ...currentColors,
+      [name]: color,
+    })) return;
+
+    storeClassificationOptions([...classificationOptions, name]);
+
+    setDraft((current) =>
+      current ? { ...current, classification: name } : current
+    );
+
+    setNewClassificationName("");
+    setError("");
+  }
+
+  function renameClassification() {
+    const name = classificationRenameName.trim();
+    const oldName = classificationRenameOld;
+
+    if (!oldName || !name) return;
+
+    if (
+      classificationOptions.some(
+        (option) =>
+          option !== oldName &&
+          option.toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      setError("That classification already exists.");
+      return;
+    }
+
+    const currentColors = {
+      ...readClassificationColors(),
+      ...classificationColors,
+    };
+    const oldColor =
+      currentColors[oldName] || legacyClassificationColor(oldName);
+
+    // Keep the old mapping too: previously saved tasks may still use
+    // the old Classification name until they are reassigned.
+    if (!persistClassificationColors({
+      ...currentColors,
+      [oldName]: oldColor,
+      [name]: oldColor,
+    })) return;
+
+    storeClassificationOptions(
+      classificationOptions.map((option) =>
+        option === oldName ? name : option
+      )
+    );
+
+    setDraft((current) =>
+      current && current.classification === oldName
+        ? { ...current, classification: name }
+        : current
+    );
+
+    setClassificationRenameOld("");
+    setClassificationRenameName("");
+    setError("");
+  }
+
+  function deleteClassification(name: string) {
+    if (classificationOptions.length <= 1) {
+      setError("At least one classification must remain.");
+      return;
+    }
+
+    if (
+      tasks.some((task) => task.classification === name)
+    ) {
+      setError(
+        "This classification is assigned to tasks. Reassign those tasks before deleting it."
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Delete classification "${name}" from this browser's list?`
+      )
+    ) return;
+
+    const next = classificationOptions.filter(
+      (option) => option !== name
+    );
+
+    const currentColors = {
+      ...readClassificationColors(),
+      ...classificationColors,
+    };
+    const nextColors = { ...currentColors };
+    delete nextColors[name];
+    if (!persistClassificationColors(nextColors)) return;
+
+    storeClassificationOptions(next);
+
+    setDraft((current) =>
+      current && current.classification === name
+        ? { ...current, classification: next[0] ?? "Task" }
+        : current
+    );
+
+    setClassificationRenameOld("");
+    setClassificationRenameName("");
+    setError("");
+  }
+
+  async function renameTaskEditorSection() {
+    if (!draft || busy) return;
+    const section = sections.find(
+      (item) =>
+        item.id === taskSectionRenameId &&
+        item.projectId === draft.projectId
+    );
+    const name = taskSectionRenameName.trim();
+    if (!section || !name) {
+      setError("Choose a section and enter a name.");
+      return;
+    }
+    if (
+      sections.some(
+        (item) =>
+          item.projectId === draft.projectId &&
+          item.id !== section.id &&
+          item.name.trim().toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      setError("A section with that name already exists.");
+      return;
+    }
+    if (
+      await mutate(
+        { action: "saveSection", section: { ...section, name } },
+        "Section renamed"
+      )
+    ) {
+      setTaskSectionRenameId("");
+      setTaskSectionRenameName("");
+    }
+  }
+
+  async function deleteTaskEditorSection(sectionId: string) {
+    if (!draft || busy) return;
+    const section = sections.find(
+      (item) => item.id === sectionId && item.projectId === draft.projectId
+    );
+    if (!section) return;
+    if (tasks.some((item) => item.sectionId === sectionId)) {
+      setError(
+        "This section contains tasks. Move them to another section before deleting it."
+      );
+      return;
+    }
+    if (
+      !window.confirm(
+        `Delete the empty section "${section.name}"?`
+      )
+    ) return;
+    if (
+      await mutate(
+        { action: "deleteSection", id: sectionId },
+        "Section deleted"
+      )
+    ) {
+      if (draft.sectionId === sectionId) {
+        setDraft((current) =>
+          current ? { ...current, sectionId: "" } : current
+        );
+      }
+      setTaskSectionRenameId("");
+      setTaskSectionRenameName("");
+    }
+  }
+
+  // STEP 18F.23I.43I-P35C - Create a section for the task's selected project.
+  async function createTaskSection() {
+    if (!draft || busy) return;
+
+    const name = taskSectionName.trim();
+    const projectId = draft.projectId;
+
+    if (!name) {
+      setError("Enter a section name.");
+      return;
+    }
+
+    if (!projects.some((item) => item.id === projectId)) {
+      setError("Please select a valid project.");
+      return;
+    }
+
+    const existing = sections.find(
+      (section) =>
+        section.projectId === projectId &&
+        section.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+
+    if (existing) {
+      setDraft((current) =>
+        current && current.projectId === projectId
+          ? { ...current, sectionId: existing.id }
+          : current,
+      );
+      setTaskSectionName("");
+      setTaskSectionCreating(false);
+      setError("");
+      return;
+    }
+
+    const section: Section = {
+      id: crypto.randomUUID(),
+      projectId,
+      name,
+      sortOrder: sections.filter(
+        (item) => item.projectId === projectId,
+      ).length,
+    };
+
+    const saved = await mutate(
+      { action: "saveSection", section },
+      "Section created",
+    );
+
+    if (saved) {
+      setDraft((current) =>
+        current && current.projectId === projectId
+          ? { ...current, sectionId: section.id }
+          : current,
+      );
+      setTaskSectionName("");
+      setTaskSectionCreating(false);
+    }
+  }
+
   function newSection() {
-    if (!project) return;
+    // STEP 18F.23I.43I-P29 - Master List can create project sections.
+    const selectedProjectId = project?.id ?? "";
     setSectionDraft({
       id: crypto.randomUUID(),
-      projectId: project.id,
+      projectId: selectedProjectId,
       name: "",
-      sortOrder: projectSections.length,
+      sortOrder: project
+        ? projectSections.length
+        : 0,
     });
     setConfirmDelete(false);
   }
@@ -2792,6 +3347,14 @@ function newPerson() {
   }
   async function saveSection(e: FormEvent) {
     e.preventDefault();
+    // P29 - Never save a section without an existing project.
+    if (
+      !sectionDraft ||
+      !projects.some((item) => item.id === sectionDraft.projectId)
+    ) {
+      setError("Please select a valid project for this section.");
+      return;
+    }
     if (
       sectionDraft &&
       (await mutate(
@@ -3536,6 +4099,110 @@ function newPerson() {
     return occurrence === dateKey;
   };
 
+  // STEP P36C.1N.1E - Read-only live notification projection.
+  // Reuses the Calendar's recurrence and moved-occurrence rules.
+  const notificationItems = (() => {
+    const result: Array<{
+      id: string;
+      taskId: string;
+      title: string;
+      detail: string;
+      category: "overdue" | "today" | "appointment";
+    }> = [];
+
+    const now = new Date();
+    const localDate = (date: Date) =>
+      [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+      ].join("-");
+
+    const today = localDate(now);
+    const dates = Array.from({ length: 8 }, (_, offset) => {
+      const date = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + offset
+      );
+      return localDate(date);
+    });
+
+    for (const task of tasks) {
+      if (task.status === "Done") continue;
+
+      const appointment =
+        (task.classification || "Task").trim().toLowerCase() ===
+        "appointment";
+
+      if (!appointment && task.due && task.due < today &&
+          (task.recurrenceUnit || "none") === "none" &&
+          !taskRecurrenceExceptions.some(
+            (exception) =>
+              exception.taskId === task.id &&
+              exception.originalDate === task.due &&
+              exception.movedDate !== task.due
+          )) {
+        result.push({
+          id: `overdue:${task.id}:${task.due}`,
+          taskId: task.id,
+          title: task.title || "Untitled task",
+          detail: `Overdue since ${task.due}`,
+          category: "overdue",
+        });
+      }
+
+      if (!appointment && taskOccursOnDate(task, today)) {
+        result.push({
+          id: `today:${task.id}:${today}`,
+          taskId: task.id,
+          title: task.title || "Untitled task",
+          detail: task.dueTime
+            ? `Due today at ${task.dueTime}`
+            : "Due today",
+          category: "today",
+        });
+      }
+
+      if (appointment) {
+        for (const date of dates) {
+          if (!taskOccursOnDate(task, date)) continue;
+
+          const exception = taskRecurrenceExceptions.find(
+            (item) =>
+              item.taskId === task.id &&
+              item.movedDate === date
+          );
+          const time = exception?.movedDueTime ?? task.dueTime;
+
+          result.push({
+            id: `appointment:${task.id}:${date}`,
+            taskId: task.id,
+            title: task.title || "Untitled appointment",
+            detail: `${date === today ? "Today" : date}${
+              time ? ` at ${time}` : ""
+            }`,
+            category: "appointment",
+          });
+        }
+      }
+    }
+
+    const priority = {
+      overdue: 0,
+      today: 1,
+      appointment: 2,
+    };
+
+    return result
+      .sort((a, b) =>
+        priority[a.category] - priority[b.category] ||
+        a.detail.localeCompare(b.detail) ||
+        a.title.localeCompare(b.title)
+      )
+      .slice(0, 100);
+  })();
+
   const calendarTitle =
     calendarMode === "month"
       ? month.toLocaleDateString("en-US", { month: "long", year: "numeric" })
@@ -3998,9 +4665,17 @@ function newPerson() {
               setStatusFilter("All statuses");
               return;
             }
+            // STEP 18F.23I.43I-P7 - Sidebar projects always open Board.
+            if (projects.some((item) => item.id === id)) {
+              navigate(id);
+              setView("Board");
+              return;
+            }
             navigate(id);
           }}
-          onSearch={setQuery}
+          searchItems={globalSearchItems}
+          notificationItems={notificationItems}
+          onSearchOpen={openGlobalSearchResult}
           onAccountClick={() => setAccountOpen(true)}
           onAddTask={() => newTask()}
           onPeopleClick={() => {
@@ -4039,6 +4714,7 @@ function newPerson() {
         {active === "notes" ? (
           <MyLifeNotesWorkspace
             initialNoteId={overviewNoteIdRef.current}
+            selectionSignal={globalNoteSelection}
           />
         ) : (
           <>
@@ -4237,7 +4913,7 @@ function newPerson() {
           </div>
         </section>
         )}
-        {active !== "home" && active !== "calendar" && <div className="viewbar">
+        {active !== "home" && active !== "calendar" && <div className={`viewbar${project ? " ml-v2-project-legacy-bar" : ""}`}>
           <nav aria-label="Project views">
             {[
               { name: "Overview", icon: Home },
@@ -4297,7 +4973,7 @@ function newPerson() {
           <>
             {/* 18F.20L.40N */}
             {active !== "home" && (
-            <div className="toolbar">
+            <div className={`toolbar${project ? " ml-v2-project-legacy-toolbar" : ""}`}>
               <div className="search-box">
                 <Search size={16} />
                 <Input
@@ -4422,6 +5098,53 @@ function newPerson() {
               </div>
             </div>
             )}
+            {/* STEP 18F.23I.43I-P12 - Project view switcher */}
+            {/* STEP 18F.23I.43I-P31 - Project Board and Calendar toolbar */}
+            {project && (view === "Board" || view === "Calendar") && (
+              <div
+                className="ml-v2-project-view-switcher"
+                role="group"
+                aria-label="Project display view"
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                {([
+                  { name: "Board", icon: LayoutGrid },
+                  { name: "List", icon: List },
+                  { name: "Calendar", icon: CalendarDays },
+                ] as const).map(({ name, icon: Icon }) => (
+                  <Button
+                    key={name}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="ml-v2-standard-button"
+                    aria-pressed={view === name}
+                    onClick={() => setView(name)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      backgroundColor:
+                        view === name ? "#7656db" : undefined,
+                      color:
+                        view === name ? "#ffffff" : undefined,
+                      borderColor:
+                        view === name ? "#7656db" : undefined,
+                    }}
+                  >
+                    <Icon size={15} />
+                    {name}
+                  </Button>
+                ))}
+              </div>
+            )}
             {view === "Board" && (
               <div className="board">
                 {statuses.map((status) => (
@@ -4495,7 +5218,7 @@ function newPerson() {
             {view === "List" && (
               <div className="list-view-wrap">
                 {project && (
-                  <div className="list-customize">
+                  <div className="list-customize ml-v2-project-legacy-customize">
                     <span>
                       Organize this list with sections and your own columns.
                     </span>
@@ -4517,6 +5240,75 @@ function newPerson() {
                 <div className="task-list">
                   {/* STEP 18F.23I.41P - Actions outside draggable grid */}
                   <div className="ml-v2-list-action-bar">
+                    {/* STEP 18F.23I.43I-P15 - Consolidated project controls */}
+                    {project && (
+                      <div
+                        className="ml-v2-project-unified-actions"
+                        role="group"
+                        aria-label="Project views and actions"
+                      >
+                        {([
+                          { name: "Board", icon: LayoutGrid },
+                          { name: "List", icon: List },
+                          { name: "Calendar", icon: CalendarDays },
+                        ] as const).map(({ name, icon: Icon }) => (
+                          <Button
+                            key={name}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="ml-v2-standard-button"
+                            aria-pressed={view === name}
+                            onClick={() => setView(name)}
+                            style={{
+                              backgroundColor:
+                                view === name ? "#7656db" : undefined,
+                              color:
+                                view === name ? "#ffffff" : undefined,
+                              borderColor:
+                                view === name ? "#7656db" : undefined,
+                            }}
+                          >
+                            <Icon size={14} />
+                            {name}
+                          </Button>
+                        ))}
+                        <Button
+                          type="button"
+                          className="ml-v2-standard-button"
+                          variant="outline"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => newTask()}
+                        >
+                          <Plus size={14} />
+                          Add Task
+                        </Button>
+                        <Button
+                          type="button"
+                          className="ml-v2-standard-button"
+                          variant="outline"
+                          size="sm"
+                          disabled={busy}
+                          onClick={newSection}
+                        >
+                          <Plus size={14} />
+                          Add Section
+                        </Button>
+                        <Button
+                          type="button"
+                          className="ml-v2-standard-button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setColumnsOpen(true)}
+                        >
+                          <Columns3 size={14} />
+                          Add Columns
+                        </Button>
+                      </div>
+                    )}
+                    {!project && (
+                    <>
                     {/* STEP 18F.23I.41J - List header task and section actions */}
                     <div className="ml-v2-list-header-actions">
                       <button
@@ -4538,14 +5330,25 @@ function newPerson() {
                         <button
                           type="button"
                           className="ml-v2-standard-button"
-                          disabled={busy || !project}
+                          disabled={busy || projects.length === 0}
                           onClick={newSection}
                         >
                           <Plus size={13} />
                           Add Section
                         </button>
                       </span>
+                      {/* STEP 18F.23I.43I-P27 - Master List columns */}
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        onClick={() => setColumnsOpen(true)}
+                      >
+                        <Columns3 size={13} />
+                        Add Columns
+                      </button>
                     </div>
+                    </>
+                    )}
                   </div>
                   <div className="list-head" style={listGrid}>
                     {orderedListColumnIds.map((columnId) => {
@@ -4726,7 +5529,83 @@ onDragOver={(e) => e.preventDefault()}
                       })}
                     </>
                   ) : (
-                    filtered.map(renderListRow)
+                    // STEP 18F.23I.43I-P32B - Display all project sections in Master List.
+                    <>
+                      {projects.map((listProject) => {
+                        const listProjectSections = sections
+                          .filter((section) => section.projectId === listProject.id)
+                          .sort((a, b) => a.sortOrder - b.sortOrder);
+                        const listProjectTasks = filtered.filter(
+                          (task) => task.projectId === listProject.id,
+                        );
+                        const unsectionedTasks = listProjectTasks
+                          .filter((task) =>
+                            !listProjectSections.some(
+                              (section) => section.id === task.sectionId,
+                            ),
+                          )
+                          .sort((a, b) => a.sortOrder - b.sortOrder);
+
+                        if (!listProjectSections.length && !listProjectTasks.length) {
+                          return null;
+                        }
+
+                        return (
+                          <div key={listProject.id}>
+                            <div className="list-section-head">
+                              <strong>{listProject.name}</strong>
+                              <span>{listProjectTasks.length}</span>
+                            </div>
+                            {unsectionedTasks.map(renderListRow)}
+                            {listProjectSections.map((section) => {
+                              const sectionTasks = listProjectTasks
+                                .filter((task) => task.sectionId === section.id)
+                                .sort((a, b) => a.sortOrder - b.sortOrder);
+                              const collapsed = collapsedSections.includes(section.id);
+
+                              return (
+                                <section className="list-section" key={section.id}>
+                                  <div className="list-section-head">
+                                    <button
+                                      type="button"
+                                      aria-label={
+                                        collapsed
+                                          ? `Expand ${section.name}`
+                                          : `Collapse ${section.name}`
+                                      }
+                                      onClick={() =>
+                                        setCollapsedSections((current) =>
+                                          current.includes(section.id)
+                                            ? current.filter((id) => id !== section.id)
+                                            : [...current, section.id],
+                                        )
+                                      }
+                                    >
+                                      <ChevronDown
+                                        size={15}
+                                        className={
+                                          collapsed ? "collapsed-chevron" : ""
+                                        }
+                                      />
+                                    </button>
+                                    <strong>{section.name}</strong>
+                                    <span>{sectionTasks.length}</span>
+                                  </div>
+                                  {!collapsed && sectionTasks.map(renderListRow)}
+                                </section>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                      {filtered
+                        .filter((task) =>
+                          !projects.some(
+                            (listProject) => listProject.id === task.projectId,
+                          ),
+                        )
+                        .map(renderListRow)}
+                    </>
                   )}
                   {!filtered.length && (
                     <div className="empty-state">
@@ -5303,6 +6182,29 @@ onDragOver={(e) => e.preventDefault()}
             {view === "Overview" && (
               <MyLifeDashboard
                 userName={currentUser?.name}
+                // STEP 18F.23I.43F - Real project To Do tasks.
+                projectTodoTasks={tasks.map((task) => ({
+                  id: task.id,
+                  projectId: task.projectId ?? "",
+                  title: task.title,
+                  status: task.status,
+                  emoji: task.emoji,
+                }))}
+                onOpenProjectList={(projectId) => {
+                  navigate(projectId);
+                  setView("List");
+                  setTaskDateFilter("all");
+                  setStatusFilter("All statuses");
+                }}
+                // STEP 18F.23I.43I-P4 - Open task's project List.
+                onOpenProjectTask={(taskId, projectId) => {
+                  const task = tasks.find((item) => item.id === taskId);
+                  if (!task || task.projectId !== projectId) return;
+                  navigate(projectId);
+                  setView("List");
+                  setTaskDateFilter("all");
+                  setStatusFilter("All statuses");
+                }}
                 inProgress={
                   scope.filter((task) => task.status === "In progress").length
                 }
@@ -5379,6 +6281,8 @@ onDragOver={(e) => e.preventDefault()}
                   .map((task) => ({
                     id: task.id,
                     title: task.title,
+                    classification: task.classification || "Task",
+                    classificationColorRevision: Object.keys(classificationColors).length,
                     emoji: task.emoji,
                     due: task.due,
                     dueTime: task.dueTime,
@@ -5395,27 +6299,43 @@ onDragOver={(e) => e.preventDefault()}
                 comingUpTasks={filtered
                   .filter(
                     (task) =>
-                      task.status !== "Done" &&
-                      taskOccursOnDate(task, todayKey()),
+                      task.status !== "Done",
                   )
                   .sort((a, b) =>
                     (a.due || "9999").localeCompare(
                       b.due || "9999",
                     ),
                   )
-                  .slice(0, 6)
                   .map((task) => ({
                     id: task.id,
-                    assignee: people.find(
-                      (person) =>
-                        person.id === task.assignee ||
-                        person.name === task.assignee,
-                    )?.name ?? task.assignee,
-                    avatarData: people.find(
-                      (person) =>
-                        person.id === task.assignee ||
-                        person.name === task.assignee,
-                    )?.avatarData ?? null,
+                    // STEP 18F.23I.43I-P19 - Resolve saved People avatars.
+                    // Prefer exact matches; accept a unique first name only.
+                    ...(() => {
+                      const assignee = task.assignee.trim();
+                      const normalized = assignee.toLocaleLowerCase();
+                      const exactPerson = people.find(
+                        (person) =>
+                          person.id === assignee ||
+                          person.name.trim().toLocaleLowerCase() === normalized,
+                      );
+                      const firstNameMatches = exactPerson
+                        ? []
+                        : people.filter(
+                            (person) =>
+                              person.name.trim().split(/\s+/)[0]
+                                .toLocaleLowerCase() === normalized,
+                          );
+                      const matchedPerson =
+                        exactPerson ??
+                        (firstNameMatches.length === 1
+                          ? firstNameMatches[0]
+                          : undefined);
+
+                      return {
+                        assignee: matchedPerson?.name ?? task.assignee,
+                        avatarData: matchedPerson?.avatarData ?? null,
+                      };
+                    })(),
                     dueTime:
                       taskRecurrenceExceptions.find(
                         (item) =>
@@ -6051,7 +6971,7 @@ onDragOver={(e) => e.preventDefault()}
             Give your work a clear next step.
           </DialogDescription>
           {draft && (
-            <form onSubmit={saveTask} className="editor-form">
+            <form onSubmit={saveTask} className="editor-form ml-v2-task-editor-form">
               <label>
                 Task name
                 <Input
@@ -6085,6 +7005,326 @@ onDragOver={(e) => e.preventDefault()}
                       </option>
                     ))}
                   </NativeSelect>
+                  {/* P36C.1I.1 - Project management controls. */}
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    <Input
+                      aria-label="New project name"
+                      placeholder="New project name"
+                      maxLength={100}
+                      value={newTaskProjectName}
+                      onChange={(event) =>
+                        setNewTaskProjectName(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void addTaskEditorProject();
+                        }
+                        if (event.key === "Escape") {
+                          setNewTaskProjectName("");
+                          setTaskProjectsManaging(false);
+                        }
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        disabled={busy || !newTaskProjectName.trim()}
+                        onClick={() => void addTaskEditorProject()}
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        aria-expanded={taskProjectsManaging}
+                        onClick={() =>
+                          setTaskProjectsManaging((value) => !value)
+                        }
+                      >
+                        Manage Projects
+                      </button>
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        disabled={busy}
+                        onClick={() => {
+                          setNewTaskProjectName("");
+                          setTaskProjectsManaging(false);
+                          setTaskProjectRenameId("");
+                          setTaskProjectRenameName("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+
+                    {taskProjectsManaging && (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {projects.map((item) => (
+                          <div
+                            key={item.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={{ flex: "1 1 100px" }}>
+                              {item.name}
+                            </span>
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              disabled={busy}
+                              onClick={() => {
+                                setTaskProjectRenameId(item.id);
+                                setTaskProjectRenameName(item.name);
+                              }}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              disabled={
+                                busy ||
+                                tasks.some(
+                                  (task) => task.projectId === item.id
+                                ) ||
+                                sections.some(
+                                  (section) => section.projectId === item.id
+                                )
+                              }
+                              title={
+                                tasks.some(
+                                  (task) => task.projectId === item.id
+                                ) ||
+                                sections.some(
+                                  (section) => section.projectId === item.id
+                                )
+                                  ? "Project contains tasks or sections"
+                                  : "Delete empty project"
+                              }
+                              onClick={() =>
+                                void deleteTaskEditorProject(item.id)
+                              }
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ))}
+
+                        {taskProjectRenameId && (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <Input
+                              aria-label="Rename project"
+                              value={taskProjectRenameName}
+                              onChange={(event) =>
+                                setTaskProjectRenameName(event.target.value)
+                              }
+                            />
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              disabled={busy}
+                              onClick={() =>
+                                void renameTaskEditorProject()
+                              }
+                            >
+                              Save
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </label>
+                {/* P36C.1H.1 - Classification management. */}
+                <label>
+                  Classification
+                  <NativeSelect
+                    value={draft.classification ?? "Task"}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        classification: event.target.value,
+                      })
+                    }
+                  >
+                    {classificationOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </NativeSelect>
+
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    <Input
+                      aria-label="New classification name"
+                      placeholder="New classification name"
+                      maxLength={100}
+                      value={newClassificationName}
+                      onChange={(event) =>
+                        setNewClassificationName(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addClassification();
+                        }
+                        if (event.key === "Escape") {
+                          setNewClassificationName("");
+                          setClassificationsManaging(false);
+                        }
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        disabled={!newClassificationName.trim()}
+                        onClick={addClassification}
+                      >
+                        Add
+                      </button>
+
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        aria-expanded={classificationsManaging}
+                        onClick={() =>
+                          setClassificationsManaging((value) => !value)
+                        }
+                      >
+                        Manage Classifications
+                      </button>
+
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        onClick={() => {
+                          setNewClassificationName("");
+                          setClassificationsManaging(false);
+                          setClassificationRenameOld("");
+                          setClassificationRenameName("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+
+                    {classificationsManaging && (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {classificationOptions.map((option) => (
+                          <div
+                            key={option}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={{ flex: "1 1 100px" }}>
+                              {option}
+                            </span>
+                            <input
+                              type="color"
+                              aria-label={`Color for ${option}`}
+                              title={`Change ${option} color`}
+                              value={
+                                classificationColors[option] ||
+                                legacyClassificationColor(option)
+                              }
+                              onChange={(event) => {
+                                const currentColors = {
+                                  ...readClassificationColors(),
+                                  ...classificationColors,
+                                };
+                                persistClassificationColors({
+                                  ...currentColors,
+                                  [option]: event.target.value,
+                                });
+                              }}
+                              style={{
+                                width: 34,
+                                height: 30,
+                                padding: 2,
+                                border: "1px solid #ddd6f0",
+                                borderRadius: 7,
+                                background: "#ffffff",
+                                cursor: "pointer",
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              onClick={() => {
+                                setClassificationRenameOld(option);
+                                setClassificationRenameName(option);
+                              }}
+                            >
+                              Rename
+                            </button>
+
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              disabled={classificationOptions.length <= 1}
+                              onClick={() => deleteClassification(option)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ))}
+
+                        {classificationRenameOld && (
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <Input
+                              aria-label="Rename classification"
+                              value={classificationRenameName}
+                              onChange={(event) =>
+                                setClassificationRenameName(event.target.value)
+                              }
+                            />
+
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              onClick={renameClassification}
+                            >
+                              Save
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </label>
                 <label>
                   Section
@@ -6103,6 +7343,127 @@ onDragOver={(e) => e.preventDefault()}
                         </option>
                       ))}
                   </NativeSelect>
+                  {/* P36C.1G.4 - Clean section controls. */}
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    <Input
+                      aria-label="New section name"
+                      placeholder="New section name"
+                      maxLength={100}
+                      value={taskSectionName}
+                      onChange={(event) => setTaskSectionName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void createTaskSection();
+                        }
+                        if (event.key === "Escape") {
+                          setTaskSectionName("");
+                          setTaskSectionsManaging(false);
+                        }
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 7,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        disabled={busy || !taskSectionName.trim()}
+                        onClick={() => void createTaskSection()}
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        aria-expanded={taskSectionsManaging}
+                        onClick={() =>
+                          setTaskSectionsManaging((value) => !value)
+                        }
+                      >
+                        Manage Sections
+                      </button>
+                      <button
+                        type="button"
+                        className="ml-v2-standard-button"
+                        style={{ padding: "7px 11px" }}
+                        disabled={busy}
+                        onClick={() => {
+                          setTaskSectionName("");
+                          setTaskSectionsManaging(false);
+                          setTaskSectionRenameId("");
+                          setTaskSectionRenameName("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  {taskSectionsManaging && (
+                    <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                      {sections
+                        .filter((item) => item.projectId === draft.projectId)
+                        .map((item) => (
+                          <div
+                            key={item.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={{ flex: "1 1 100px" }}>
+                              {item.name}
+                            </span>
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              onClick={() => {
+                                setTaskSectionRenameId(item.id);
+                                setTaskSectionRenameName(item.name);
+                              }}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              disabled={busy}
+                              onClick={() => void deleteTaskEditorSection(item.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ))}
+                      {taskSectionRenameId && (
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <Input
+                            aria-label="Rename section"
+                            value={taskSectionRenameName}
+                            onChange={(event) =>
+                              setTaskSectionRenameName(event.target.value)
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="ml-v2-standard-button"
+                            disabled={busy}
+                            onClick={() => void renameTaskEditorSection()}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  </div>
                 </label>
                 <label>
                   Status
@@ -6973,6 +8334,41 @@ onDragOver={(e) => e.preventDefault()}
           </DialogDescription>
           {sectionDraft && (
             <form onSubmit={saveSection} className="editor-form">
+              {/* STEP 18F.23I.43I-P29 - Choose project from Master List. */}
+              {!sections.some((section) => section.id === sectionDraft.id) &&
+                !project && (
+                  <label>
+                    Project
+                    <select
+                      required
+                      className="ml-v2-standard-button"
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        minHeight: "40px",
+                        textAlign: "left",
+                      }}
+                      value={sectionDraft.projectId}
+                      onChange={(event) => {
+                        const projectId = event.target.value;
+                        setSectionDraft({
+                          ...sectionDraft,
+                          projectId,
+                          sortOrder: sections.filter(
+                            (section) => section.projectId === projectId,
+                          ).length,
+                        });
+                      }}
+                    >
+                      <option value="">Select a project</option>
+                      {projects.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               <label>
                 Section name
                 <Input
@@ -7021,7 +8417,13 @@ onDragOver={(e) => e.preventDefault()}
                 </Button>
                 <Button
                   type="submit"
-                  disabled={busy || !sectionDraft.name.trim()}
+                  disabled={
+                    busy ||
+                    !sectionDraft.name.trim() ||
+                    !projects.some(
+                      (item) => item.id === sectionDraft.projectId,
+                    )
+                  }
                 >
                   {busy ? "Saving…" : "Save section"}
                 </Button>

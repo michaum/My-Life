@@ -9,6 +9,7 @@ const taskSchema = z.object({
   projectId: z.string().min(1).max(100),
   sectionId: z.string().max(100).default(""),
   title: z.string().trim().min(1).max(250),
+  classification: z.string().trim().max(100).default("Task"),
   description: z.string().max(10000),
   status: z.enum(statuses),
   color: z
@@ -316,6 +317,7 @@ export async function GET(request: Request) {
         tasks: tasks.results.map((t: any) => ({
           ...t,
           projectId: t.project_id,
+          classification: t.classification || "Task",
           sectionId: t.section_id,
           dueTime: t.due_time,
           endTime: t.end_time,
@@ -886,13 +888,14 @@ export async function POST(request: Request) {
       await db.batch([
         db
           .prepare(
-            "INSERT INTO tasks(id,project_id,section_id,title,description,status,color,priority,assignee,due,due_time,end_time,recurrence_unit,recurrence_interval,emoji,font_family,font_size,font_style,font_color,board_font_color,list_font_color,calendar_font_color,overview_font_color,sort_order,subtasks,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id,section_id=excluded.section_id,title=excluded.title,description=excluded.description,status=excluded.status,color=excluded.color,priority=excluded.priority,assignee=excluded.assignee,due=excluded.due,due_time=excluded.due_time,end_time=excluded.end_time,recurrence_unit=excluded.recurrence_unit,recurrence_interval=excluded.recurrence_interval,emoji=excluded.emoji,font_family=excluded.font_family,font_size=excluded.font_size,font_style=excluded.font_style,font_color=excluded.font_color,board_font_color=excluded.board_font_color,list_font_color=excluded.list_font_color,calendar_font_color=excluded.calendar_font_color,overview_font_color=excluded.overview_font_color,sort_order=excluded.sort_order,subtasks=excluded.subtasks",
+            "INSERT INTO tasks(id,project_id,section_id,title,classification,description,status,color,priority,assignee,due,due_time,end_time,recurrence_unit,recurrence_interval,emoji,font_family,font_size,font_style,font_color,board_font_color,list_font_color,calendar_font_color,overview_font_color,sort_order,subtasks,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id,section_id=excluded.section_id,title=excluded.title,classification=excluded.classification,description=excluded.description,status=excluded.status,color=excluded.color,priority=excluded.priority,assignee=excluded.assignee,due=excluded.due,due_time=excluded.due_time,end_time=excluded.end_time,recurrence_unit=excluded.recurrence_unit,recurrence_interval=excluded.recurrence_interval,emoji=excluded.emoji,font_family=excluded.font_family,font_size=excluded.font_size,font_style=excluded.font_style,font_color=excluded.font_color,board_font_color=excluded.board_font_color,list_font_color=excluded.list_font_color,calendar_font_color=excluded.calendar_font_color,overview_font_color=excluded.overview_font_color,sort_order=excluded.sort_order,subtasks=excluded.subtasks",
           )
           .bind(
             t.id,
             t.projectId,
             sectionId,
             t.title,
+            t.classification,
             t.description,
             t.status,
             t.color,

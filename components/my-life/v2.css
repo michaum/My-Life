@@ -8428,3 +8428,1197 @@
   opacity: 0.8;
   cursor: not-allowed;
 }
+
+
+/* STEP 18F.23I.43F - Dynamic Project To Do List */
+.ml-v2 .ml-v2-dashboard-project-todo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-select {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border: 1px solid #ddd6f0;
+  border-radius: 9px;
+  padding: 0 10px;
+  background: #ffffff;
+  color: #665b80;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-select:hover {
+  border-color: #c9b9f5;
+  background: #eee8ff;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-select:focus-visible {
+  outline: 2px solid #7656db;
+  outline-offset: 2px;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-view-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-list li {
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-task {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  text-align: left;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-task span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-empty {
+  margin: 10px 0;
+  color: #8c84a2;
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .ml-v2 .ml-v2-dashboard-project-todo-toolbar {
+    flex-wrap: wrap;
+  }
+}
+
+
+/* STEP 18F.23I.43I-P1 - Card padding and alignment */
+.ml-v2 .ml-v2-dashboard-project-todo-card .ml-v2-dashboard-project-todo {
+  padding: 12px 16px 16px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-task {
+  justify-content: flex-start !important;
+  text-align: left !important;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-task span {
+  flex: 1;
+  text-align: left !important;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-task svg {
+  flex-shrink: 0;
+}
+
+
+/* STEP 18F.23I.43I-P2 - Unified dashboard titles */
+.ml-v2 .ml-v2-dashboard .ml-v2-dashboard-widget h2 {
+  color: #6545b5 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+}
+
+/* STEP 18F.23I.43I-P15 - Project-only toolbar consolidation */
+.ml-v2 .ml-v2-project-legacy-bar,
+.ml-v2 .ml-v2-project-legacy-toolbar,
+.ml-v2 .ml-v2-project-legacy-customize {
+  display: none !important;
+}
+
+.ml-v2 .ml-v2-project-unified-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.ml-v2 .ml-v2-project-unified-actions .ml-v2-standard-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ml-v2 .ml-v2-project-unified-actions
+.ml-v2-standard-button[aria-pressed="true"] {
+  background: #7656db !important;
+  color: #ffffff !important;
+  border-color: #7656db !important;
+}
+
+.ml-v2 .ml-v2-project-unified-actions
+.ml-v2-standard-button[aria-pressed="true"] svg {
+  color: #ffffff !important;
+}
+
+
+/* P36C.1J.5 - Consolidated purple task editor.
+   Only the Add/Edit Task form is affected.
+   Normal borders stay neutral; focus borders use #7656DB. */
+
+.ml-v2-task-editor-form {
+  --ring: #7656db;
+  --primary: #7656db;
+  accent-color: #7656db;
+}
+
+.ml-v2-task-editor-form :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select,
+  [role="combobox"],
+  [data-slot="input"],
+  [data-slot="textarea"],
+  [data-slot="select-trigger"]
+):is(:focus, :focus-visible) {
+  border-color: #7656db !important;
+  outline: 2px solid #7656db !important;
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 1px #7656db !important;
+  --tw-ring-color: #7656db !important;
+  --tw-ring-shadow: none !important;
+}
+
+.ml-v2-task-editor-form :is(
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"]
+):focus {
+  border-color: #7656db !important;
+  outline: 2px solid #7656db !important;
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 1px #7656db !important;
+}
+
+.ml-v2-task-editor-form :is(
+  input,
+  textarea,
+  select
+) {
+  accent-color: #7656db;
+}
+
+.ml-v2-task-editor-form :is(input, textarea)::selection {
+  background: #eee8ff;
+  color: #6545b5;
+}
+
+.ml-v2-task-editor-form button:focus-visible {
+  outline: 2px solid #7656db !important;
+  outline-offset: 2px !important;
+}
+
+
+/* P36C.1J.6 - Task Status trigger purple.
+   Cover the custom Status dropdown while open or focused. */
+
+.ml-v2-task-editor-form
+:is(
+  [role="combobox"],
+  [aria-haspopup="listbox"],
+  [data-slot="select-trigger"],
+  [data-state="open"]
+):is(:focus, :focus-visible, [data-state="open"], [aria-expanded="true"]) {
+  border-color: #7656db !important;
+  outline: 2px solid #7656db !important;
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 1px #7656db !important;
+}
+
+
+/* P36C.1J.9 - Exact ChoiceDropdown trigger purple.
+   Fixes Status open/focus outline inside Add/Edit Task only. */
+
+.ml-v2-task-editor-form button.choice-trigger:focus,
+.ml-v2-task-editor-form button.choice-trigger:focus-visible,
+.ml-v2-task-editor-form button.choice-trigger[aria-expanded="true"] {
+  border-color: #7656db !important;
+  outline: 2px solid #7656db !important;
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 1px #7656db !important;
+}
+
+
+/* P36C.1J.11 - No Status hover effect.
+   Focus and open states retain their purple accessibility indicator. */
+
+.ml-v2-task-editor-form button.choice-trigger:hover:not(:focus):not(:focus-visible):not([aria-expanded="true"]) {
+  background: #ffffff !important;
+  border-color: #ddd6f0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+.ml-v2-task-editor-form button.choice-trigger:focus,
+.ml-v2-task-editor-form button.choice-trigger:focus-visible,
+.ml-v2-task-editor-form button.choice-trigger[aria-expanded="true"] {
+  border-color: #7656db !important;
+  outline: 2px solid #7656db !important;
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 1px #7656db !important;
+}
+
+
+/* P36C.1J.12 - Plain text task editor Status.
+   Remove colored status boxes only within the task editor. */
+
+.ml-v2-task-editor-form .choice-trigger .choice-pill {
+  background: transparent !important;
+  color: inherit !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.ml-v2-task-editor-form .choice-menu .choice-pill {
+  background: transparent !important;
+  color: inherit !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+
+/* P36C.1J.13 - Plain Status menu labels.
+   The popover is portaled outside the task editor form. */
+
+.ml-v2-status-choice-menu .choice-pill {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: inherit !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.ml-v2-status-choice-menu .choice-menu-option:hover .choice-pill {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+
+/* P36C.1J.15 - Calendar color no-hover.
+   Keep hover identical to idle; purple only on focus/open. */
+
+.ml-v2-task-editor-form .task-color-trigger {
+  transition: none !important;
+}
+
+.ml-v2-task-editor-form .task-color-trigger:hover:not(:focus):not(:focus-visible):not([data-state="open"]) {
+  background: #ffffff !important;
+  border-color: #ddd6f0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.ml-v2-task-editor-form .task-color-trigger:is(:focus, :focus-visible, [data-state="open"]) {
+  background: #ffffff !important;
+  border-color: #7656db !important;
+  outline: 2px solid #7656db !important;
+  outline-offset: 0 !important;
+  box-shadow: 0 0 0 1px #7656db !important;
+}
+
+
+/* P36C.1K.2A - Compact appointment rows.
+   Visual layout only; no changes to scheduling or navigation. */
+
+.ml-v2 .ml-v2-dashboard-appointments-list {
+  gap: 6px;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 18px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-main {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-title {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-emoji {
+  flex: 0 0 auto;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-date {
+  flex: 0 0 auto;
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+  .ml-v2 .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+    gap: 9px;
+    padding: 8px;
+  }
+
+  .ml-v2 .ml-v2-dashboard-appointment-date {
+    font-size: 11px;
+  }
+}
+
+
+/* P36C.1K.15B - Pastel text only; no classification badge. */
+.ml-v2 .ml-v2-appointment-classification {
+  display: inline;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: inherit;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin-left: 8px;
+  box-shadow: none;
+}
+
+
+/* P36C.1K.15D - Center Classification between task and time. */
+.ml-v2 .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 140px) minmax(125px, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-main {
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ml-v2 .ml-v2-appointment-classification {
+  justify-self: center;
+  text-align: center;
+  margin: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-date {
+  justify-self: end;
+  margin-left: 0;
+  text-align: right;
+}
+
+@media (max-width: 480px) {
+  .ml-v2 .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+    grid-template-columns: minmax(0, 1fr) minmax(65px, 90px) auto;
+    column-gap: 6px;
+  }
+}
+
+
+/* P36C.1K.15E - Appointment text clipping fix. */
+.ml-v2 .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 78px 115px;
+  column-gap: 8px;
+  align-items: center;
+  height: auto;
+  min-height: 38px;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-main,
+.ml-v2 .ml-v2-dashboard-appointment-title {
+  min-width: 0;
+  width: 100%;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.ml-v2 .ml-v2-appointment-classification {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+  justify-self: center;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-date {
+  min-width: 0;
+  justify-self: end;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+@media (max-width: 480px) {
+  .ml-v2 .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+    grid-template-columns: minmax(0, 1fr) 65px 102px;
+    column-gap: 5px;
+  }
+
+  .ml-v2 .ml-v2-appointment-classification {
+    font-size: 10px;
+  }
+
+  .ml-v2 .ml-v2-dashboard-appointment-date {
+    font-size: 10px;
+  }
+}
+
+
+/* STEP P36C.1L.2B - SMART WALLPAPER EDITOR */
+.ml-v2 .ml-v2-workspace {
+  --ml-wallpaper-image: url("/images/wp4854964-beautiful-landscape-4k-wallpapers.jpg");
+  --ml-wallpaper-position: 43%;
+  --ml-wallpaper-zoom: 100%;
+}
+
+.ml-v2 .ml-v2-workspace::before,
+.ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference)::before {
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,0) 0px,
+      rgba(255,255,255,0) 185px,
+      rgba(255,255,255,.72) 250px,
+      #ffffff 310px
+    ),
+    var(--ml-wallpaper-image) !important;
+  background-position: center top, center var(--ml-wallpaper-position) !important;
+  background-size: 100% 100%, var(--ml-wallpaper-zoom) auto !important;
+}
+
+.ml-v2-wallpaper-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 310px;
+  z-index: 2;
+  pointer-events: none;
+  --ml-wallpaper-image: inherit;
+}
+
+.ml-v2 .ml-v2-workspace:has(.ml-v2-wallpaper-layer[style*="--ml-wallpaper-image"])::before {
+  background-image:
+    linear-gradient(to bottom, transparent 0px, transparent 185px, rgba(255,255,255,.72) 250px, white 310px),
+    var(--ml-wallpaper-image) !important;
+}
+
+.ml-v2-wallpaper-edit-button {
+  position: absolute;
+  right: 22px;
+  top: 118px;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1px solid #ddd6f0;
+  border-radius: 10px;
+  padding: 8px 13px;
+  background: rgba(255,255,255,.92);
+  color: #665b80;
+  font-size: 12px;
+  font-weight: 650;
+  z-index: 3;
+}
+
+.ml-v2-wallpaper-edit-button:hover {
+  background: #eee8ff;
+  color: #6545b5;
+}
+
+.ml-v2-wallpaper-layer.is-dragging {
+  pointer-events: auto;
+  z-index: 20;
+  background: rgba(118,86,219,.13);
+  outline: 3px dashed #7656db;
+  outline-offset: -8px;
+}
+
+.ml-v2-wallpaper-drop-hint {
+  position: absolute;
+  top: 115px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  background: white;
+  padding: 14px 20px;
+  color: #6545b5;
+  font-weight: 700;
+}
+
+.ml-v2-wallpaper-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(28,23,44,.62);
+}
+
+.ml-v2-wallpaper-dialog {
+  width: min(700px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  background: white;
+  color: #342c49;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 20px 70px rgba(0,0,0,.2);
+}
+
+.ml-v2-wallpaper-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ml-v2-wallpaper-dialog h2 {
+  font-size: 22px;
+  font-weight: 750;
+  margin: 0;
+}
+
+.ml-v2-wallpaper-dialog-heading button {
+  font-size: 25px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ml-v2-wallpaper-preview {
+  margin: 18px 0;
+  height: 230px;
+  border: 1px solid #ddd6f0;
+  border-radius: 12px;
+  background-color: #f3f0fa;
+  background-image: url("/images/wp4854964-beautiful-landscape-4k-wallpapers.jpg");
+  background-position: center 43%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  display: grid;
+  place-items: center;
+}
+
+.ml-v2-wallpaper-preview span {
+  padding: 8px 12px;
+  background: rgba(255,255,255,.85);
+  border-radius: 8px;
+}
+
+.ml-v2-wallpaper-sliders {
+  display: grid;
+  gap: 12px;
+}
+
+.ml-v2-wallpaper-sliders label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.ml-v2-wallpaper-sliders input {
+  width: 100%;
+  accent-color: #7656db;
+}
+
+.ml-v2-wallpaper-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.ml-v2-wallpaper-actions button {
+  background: white;
+  color: #665b80;
+  border: 1px solid #ddd6f0;
+  border-radius: 9px;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+
+.ml-v2-wallpaper-actions button:last-child {
+  background: #7656db;
+  color: white;
+}
+
+.ml-v2-wallpaper-actions button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.ml-v2-wallpaper-error {
+  color: #b42318;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .ml-v2-wallpaper-edit-button {
+    right: 12px;
+    top: 105px;
+  }
+}
+
+
+/* STEP P36C.1M.2B - GLOBAL SEARCH */
+.ml-v2 .ml-v2-global-search {
+  position: relative;
+  min-width: 0;
+  z-index: 60;
+}
+
+.ml-v2 .ml-v2-global-search .ml-v2-search {
+  width: 100%;
+}
+
+.ml-v2 .ml-v2-global-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(420px, 88vw);
+  max-height: min(480px, 65vh);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ddd6f0;
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(40, 25, 75, .2);
+  padding: 8px;
+  color: #342c49;
+}
+
+.ml-v2 .ml-v2-global-results-heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px 10px;
+  color: #665b80;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ml-v2 .ml-v2-global-result {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #fff;
+  color: #665b80;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ml-v2 .ml-v2-global-result.is-highlighted,
+.ml-v2 .ml-v2-global-result:hover,
+.ml-v2 .ml-v2-global-result:focus-visible {
+  background: #eee8ff;
+  border-color: #c9b9f5;
+  color: #6545b5;
+}
+
+.ml-v2 .ml-v2-global-result > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-global-result strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-v2 .ml-v2-global-result small {
+  font-size: 11px;
+  color: #81758f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-v2 .ml-v2-global-empty,
+.ml-v2 .ml-v2-global-notice {
+  padding: 10px;
+  margin: 0;
+  font-size: 12px;
+  color: #665b80;
+}
+
+.ml-v2 .ml-v2-global-notice {
+  color: #b42318;
+}
+
+
+/* STEP P36C.1M.2E - GLOBAL SEARCH FOREGROUND FIX */
+
+/*
+ * Keep the top bar above the dashboard, summary cards,
+ * and wallpaper while preserving the existing layout.
+ */
+
+.ml-v2 .ml-v2-workspace > .ml-v2-topbar {
+  position: relative;
+  z-index: 500;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.ml-v2 .ml-v2-workspace > .ml-v2-topbar .ml-v2-topbar-actions {
+  position: relative;
+  z-index: 501;
+  overflow: visible;
+}
+
+.ml-v2 .ml-v2-workspace > .ml-v2-topbar .ml-v2-global-search {
+  position: relative;
+  z-index: 502;
+  overflow: visible;
+}
+
+.ml-v2 .ml-v2-workspace > .ml-v2-topbar .ml-v2-global-results {
+  z-index: 503;
+  pointer-events: auto;
+  isolation: isolate;
+}
+
+/*
+ * Dashboard content remains below the top-bar search layer.
+ */
+
+.ml-v2 .ml-v2-workspace > .ml-v2-universal-header,
+.ml-v2 .ml-v2-workspace > .ml-v2-summary-tiles,
+.ml-v2 .ml-v2-workspace > .ml-v2-content {
+  z-index: 1;
+}
+
+
+/* STEP P36C.1M.2H - PORTAL DROPDOWN STYLES */
+
+/*
+ * The dropdown now lives under document.body, not inside .ml-v2.
+ * Restore its scoped appearance with portal-specific selectors.
+ */
+
+.ml-v2-global-results-portal {
+  box-sizing: border-box;
+  position: fixed;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border: 1px solid #ddd6f0;
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(40, 25, 75, .2);
+  padding: 8px;
+  color: #342c49;
+  font-family: inherit;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-results-heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px 10px;
+  color: #665b80;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-result {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: #fff;
+  color: #665b80;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-result:hover,
+.ml-v2-global-results-portal .ml-v2-global-result.is-highlighted,
+.ml-v2-global-results-portal .ml-v2-global-result:focus-visible {
+  background: #eee8ff;
+  border-color: #c9b9f5;
+  color: #6545b5;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-result > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-result strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-result small {
+  font-size: 11px;
+  color: #81758f;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-empty,
+.ml-v2-global-results-portal .ml-v2-global-notice {
+  padding: 10px;
+  margin: 0;
+  font-size: 12px;
+  color: #665b80;
+}
+
+.ml-v2-global-results-portal .ml-v2-global-notice {
+  color: #b42318;
+}
+
+
+/* STEP P36C.1N.1C - NOTIFICATION CENTER */
+
+.ml-v2-notification-trigger {
+  position: relative;
+}
+
+.ml-v2-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: #ff0066;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.ml-v2-notification-panel {
+  box-sizing: border-box;
+  width: min(390px, calc(100vw - 16px));
+  max-height: min(550px, calc(100vh - 90px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #ddd6f0;
+  border-radius: 16px;
+  box-shadow: 0 20px 55px rgba(40, 25, 75, .24);
+  color: #342c49;
+  font-family: inherit;
+}
+
+.ml-v2-notification-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 17px 18px;
+  background: #f6f2ff;
+  border-bottom: 1px solid #e6def8;
+}
+
+.ml-v2-notification-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.ml-v2-notification-heading strong {
+  font-size: 17px;
+  color: #6545b5;
+}
+
+.ml-v2-notification-heading small {
+  font-size: 12px;
+  color: #81758f;
+}
+
+.ml-v2-notification-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #665b80;
+  cursor: pointer;
+}
+
+.ml-v2-notification-close:hover {
+  background: #eee8ff;
+  color: #6545b5;
+}
+
+.ml-v2-notification-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 15px;
+  border-bottom: 1px solid #eee8f7;
+  font-size: 12px;
+  font-weight: 600;
+  color: #665b80;
+}
+
+.ml-v2-notification-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: #fff;
+  color: #7656db;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.ml-v2-notification-toolbar button:hover:not(:disabled) {
+  background: #eee8ff;
+}
+
+.ml-v2-notification-toolbar button:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.ml-v2-notification-list {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.ml-v2-notification-item {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: white;
+  text-align: left;
+  color: #665b80;
+  cursor: pointer;
+}
+
+.ml-v2-notification-item:hover {
+  background: #eee8ff;
+  border-color: #c9b9f5;
+}
+
+.ml-v2-notification-item-title {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.ml-v2-notification-item small {
+  color: #81758f;
+  font-size: 11px;
+}
+
+.ml-v2-notification-empty {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding: 45px 24px;
+  text-align: center;
+  color: #81758f;
+}
+
+.ml-v2-notification-empty svg {
+  color: #9999ff;
+}
+
+.ml-v2-notification-empty strong {
+  color: #6545b5;
+  font-size: 15px;
+}
+
+.ml-v2-notification-empty p {
+  margin: 0;
+  max-width: 250px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* STEP P36C.1O.1B-R1 - TODAY'S TASKS SINGLE-LINE LAYOUT */
+.ml-v2 .ml-v2-today-task-row {
+  flex-wrap: nowrap;
+}
+
+.ml-v2 .ml-v2-today-task-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ml-v2 .ml-v2-today-task-text {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.ml-v2 .ml-v2-today-task-text > * {
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-today-assignee {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-weight: 700;
+  color: #665b80;
+}
+
+.ml-v2 .ml-v2-today-task-text > :not(.ml-v2-today-assignee) {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* STEP P36C.1O.1D - CENTER TASK TITLES BETWEEN ASSIGNEE AND TIME */
+
+.ml-v2 .ml-v2-today-task-text {
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.ml-v2 .ml-v2-today-assignee {
+  order: 0;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-v2 .ml-v2-coming-up-title {
+  order: 1;
+  flex: 1 1 0 !important;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-weight: 600;
+}
+
+.ml-v2 .ml-v2-today-time,
+.ml-v2 .ml-v2-coming-up-chevron {
+  flex-shrink: 0;
+}
+
+/* STEP P36C.1O.1F - MATCH UPCOMING APPOINTMENTS TYPOGRAPHY */
+.ml-v2 .ml-v2-today-task-text .ml-v2-coming-up-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}

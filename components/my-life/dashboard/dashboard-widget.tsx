@@ -15,6 +15,7 @@ type DashboardWidgetProps = {
   title: string;
   size?: DashboardWidgetSize;
   children: ReactNode;
+  headerActions?: ReactNode;
   className?: string;
   draggable?: boolean;
   dragging?: boolean;
@@ -39,6 +40,7 @@ export function DashboardWidget({
   title,
   size = "medium",
   children,
+  headerActions,
   className = "",
   draggable = false,
   dragging = false,
@@ -73,6 +75,21 @@ export function DashboardWidget({
     >
       <header className="ml-v2-dashboard-widget-header">
         <h2>{title}</h2>
+        {headerActions ? (
+          <div
+            className="ml-v2-today-navigation"
+            style={{
+              marginLeft: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+            }}
+          >
+            {headerActions}
+          </div>
+        ) : null}
 
         {draggable ? (
         <button

@@ -1,10 +1,15 @@
 "use client";
 
 import { MyLifeTimeGreeting } from "./time-greeting";
+import { SmartWallpaper } from "./smart-wallpaper";
 
 import { useState, type ReactNode } from "react";
 import { MyLifeSidebar, type MyLifeNavigationItem } from "./sidebar";
-import { MyLifeTopBar } from "./top-bar";
+import {
+  MyLifeTopBar,
+  type GlobalSearchResult,
+  type MyLifeNotification,
+} from "./top-bar";
 import {
   MyLifeSummaryTiles,
   type MyLifeSummaryTilesProps,
@@ -25,6 +30,9 @@ type MyLifeAppShellProps = {
   exportDisabled?: boolean;
   onNavigate: (id: string) => void;
   onSearch?: (value: string) => void;
+  searchItems?: GlobalSearchResult[];
+  notificationItems?: MyLifeNotification[];
+  onSearchOpen?: (item: GlobalSearchResult) => void;
   onAccountClick?: () => void;
   onAddTask?: () => void;
   onPeopleClick?: () => void;
@@ -50,6 +58,9 @@ export function MyLifeAppShell({
   exportDisabled,
   onNavigate,
   onSearch,
+  searchItems,
+  notificationItems,
+  onSearchOpen,
   onAccountClick,
   onAddTask,
   onPeopleClick,
@@ -106,11 +117,15 @@ export function MyLifeAppShell({
         />
 
         <div className="ml-v2-workspace">
+          <SmartWallpaper />
           <MyLifeTopBar
             title={title}
             subtitle={subtitle}
             userName={userName}
             onSearch={onSearch}
+            searchItems={searchItems}
+            notificationItems={notificationItems}
+            onSearchOpen={onSearchOpen}
             onAccountClick={onAccountClick}
             onAddTask={onAddTask}
             onMenuClick={() => setMobileNavigationOpen(true)}

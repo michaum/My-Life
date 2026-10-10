@@ -186,8 +186,10 @@ async function saveFolder(folder: Folder): Promise<void> {
 // STEP 18F.23I.39G-R2 - Select existing note from Overview.
 export function MyLifeNotesWorkspace({
   initialNoteId = null,
+  selectionSignal = 0,
 }: {
   initialNoteId?: string | null;
+  selectionSignal?: number;
 }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -296,6 +298,18 @@ export function MyLifeNotesWorkspace({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+
+  // Global Search can select another note without remounting the workspace,
+  // preserving its existing autosave lifecycle.
+  useEffect(() => {
+    if (!selectionSignal || !initialNoteId) return;
+    if (!notesRef.current.some((note) => note.id === initialNoteId)) return;
+    selectedRef.current = initialNoteId;
+    setSelectedId(initialNoteId);
+    setSelectedFolderId(null);
+    setSearch("");
+  }, [selectionSignal, initialNoteId]);
 
   const selected = notes.find((note) => note.id === selectedId) ?? null;
 

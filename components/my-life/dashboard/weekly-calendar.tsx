@@ -32,6 +32,28 @@ function dateKey(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
+// STEP 18F.23I.43I-P24 - Stable pastel accent per task.
+const TASK_PASTEL_COLORS = [
+  "#F4A9C6", // pink
+  "#B9A5F5", // lavender
+  "#9BD9E8", // sky blue
+  "#F7CD91", // peach
+  "#A8DFC1", // mint
+  "#F4B5A6", // coral
+  "#D7B5E9", // lilac
+  "#A4D8D1", // seafoam
+] as const;
+
+function pastelColorForTask(taskId: string): string {
+  let hash = 0;
+
+  for (let index = 0; index < taskId.length; index += 1) {
+    hash = (Math.imul(hash, 31) + taskId.charCodeAt(index)) | 0;
+  }
+
+  return TASK_PASTEL_COLORS[(hash >>> 0) % TASK_PASTEL_COLORS.length];
+}
+
 export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTaskClick, onOpenToday }: Props) {
   const [selected, setSelected] = useState(today);
   const [year, month, day] = selected.split("-").map(Number);
@@ -76,10 +98,27 @@ export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTask
         ))}
       </div>
       <div className="ml-v2-weekly-calendar-events">
-        {tasks.filter(t => occursOnDate(t.id, selected)).map(task => (
+        {(() => {
+          // STEP 18F.23I.43I-P25A - Stable, nonrepeating pastel sequence.
+          const visibleTasks = tasks.filter(t => occursOnDate(t.id, selected));
+          let previousColor = "";
+
+          return visibleTasks.map(task => {
+            const preferredColor = pastelColorForTask(task.id);
+            const preferredIndex = TASK_PASTEL_COLORS.indexOf(
+              preferredColor as (typeof TASK_PASTEL_COLORS)[number],
+            );
+
+            const color = preferredColor === previousColor
+              ? TASK_PASTEL_COLORS[(preferredIndex + 1) % TASK_PASTEL_COLORS.length]
+              : preferredColor;
+
+            previousColor = color;
+
+            return (
           <button key={task.id} type="button"
             onClick={() => onTaskClick(task.id)}
-            style={{ borderLeft: `4px solid ${task.statusColor || "#7045d9"}` }}>
+            style={{ borderLeft: `4px solid ${color}` }}>
             <span>{timeForDate?.(task.id, selected)?.dueTime ?? task.dueTime ?? "All day"}</span>
             <strong>{task.title}</strong>
             {task.status === "Done" && (
@@ -88,7 +127,9 @@ export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTask
               </span>
             )}
           </button>
-        ))}
+            );
+          });
+        })()}
       </div>
     </section>
   );
