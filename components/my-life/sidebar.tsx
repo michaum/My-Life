@@ -74,6 +74,7 @@ function NavigationButton({
     <button
       type="button"
       className={`ml-v2-nav-item${selected ? " is-active" : ""}`}
+      data-nav-id={item.id}
       onClick={onClick}
       aria-current={selected ? "page" : undefined}
       title={item.label}
@@ -198,6 +199,7 @@ export function MyLifeSidebar({
           <button
             type="button"
             className="ml-v2-nav-item"
+            data-nav-id="people"
             onClick={onPeopleClick}
             title="People"
           >

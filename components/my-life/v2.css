@@ -9657,3 +9657,92 @@
     text-align: left;
   }
 }
+
+
+/* ==========================================================
+   STEP P36C.2K.8C - COLORFUL SIDEBAR FOUNDATION
+   CSS-only visual redesign. Preserve all Sidebar behavior.
+   ========================================================== */
+
+.ml-v2 .ml-v2-sidebar {
+  --ml-sidebar-white: #fffdfb;
+  --ml-sidebar-lavender: #f0eaff;
+  --ml-sidebar-purple: #7954e8;
+  --ml-sidebar-text: #665b80;
+  --ml-sidebar-hover-text: #6545b5;
+  background: #fffaf4;
+  border-right-color: #eae1ed;
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-nav-item:not(.is-active) {
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-nav-item.is-active {
+  background: #7954e8;
+  color: #ffffff;
+}
+
+
+
+
+
+
+
+
+
+
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  > .ml-v2-nav-item.is-active .ml-v2-nav-icon,
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  > .ml-v2-nav-item.is-active .ml-v2-nav-icon svg {
+  color: #ffffff;
+}
+
+@media (hover: hover) {
+  .ml-v2 .ml-v2-sidebar .ml-v2-nav-item:not(.is-active):not(:disabled):hover {
+    background: #f0eaff;
+  }
+}
+
+
+/* ==========================================================
+   STEP P36C.2K.8E - STABLE SIDEBAR ICON COLORS
+   Visual styling only. Navigation behavior unchanged.
+   ========================================================== */
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  .ml-v2-nav-item[data-nav-id="home"]:not(.is-active) .ml-v2-nav-icon {
+  color: #8860e8;
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  .ml-v2-nav-item[data-nav-id="mine"]:not(.is-active) .ml-v2-nav-icon {
+  color: #f075ac;
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  .ml-v2-nav-item[data-nav-id="all"]:not(.is-active) .ml-v2-nav-icon {
+  color: #35afc0;
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  .ml-v2-nav-item[data-nav-id="list"]:not(.is-active) .ml-v2-nav-icon {
+  color: #e8a24d;
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  .ml-v2-nav-item[data-nav-id="calendar"]:not(.is-active) .ml-v2-nav-icon {
+  color: #69ad78;
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  .ml-v2-nav-item[data-nav-id="people"]:not(.is-active) .ml-v2-nav-icon {
+  color: #8a6acb;
+}
+
+.ml-v2 .ml-v2-sidebar .ml-v2-navigation:not(.ml-v2-project-navigation)
+  .ml-v2-nav-item[data-nav-id="notes"]:not(.is-active) .ml-v2-nav-icon {
+  color: #c57b9f;
+}
