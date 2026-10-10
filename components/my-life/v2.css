@@ -9622,3 +9622,38 @@
   font-weight: 700;
   line-height: 1.35;
 }
+
+/* STEP P36C.2K.5C - Responsive Dashboard correction */
+
+.ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-secondary-grid {
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 300px), 1fr)
+  );
+}
+
+.ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-secondary-grid > * {
+  grid-column: auto;
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-appointment-title {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+@media (max-width: 1100px) {
+  .ml-v2 .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 4px;
+  }
+
+  .ml-v2 .ml-v2-dashboard-appointment-main,
+  .ml-v2 .ml-v2-appointment-classification,
+  .ml-v2 .ml-v2-dashboard-appointment-date {
+    justify-self: start;
+    text-align: left;
+  }
+}
