@@ -8946,7 +8946,7 @@
 
 /* STEP P36C.1L.2B - SMART WALLPAPER EDITOR */
 .ml-v2 .ml-v2-workspace {
-  --ml-wallpaper-image: url("/images/wp4854964-beautiful-landscape-4k-wallpapers.jpg");
+  --ml-wallpaper-image: url("/images/my-life-v2-illustrated-mountains.png");
   --ml-wallpaper-position: 43%;
   --ml-wallpaper-zoom: 100%;
 }
@@ -9071,7 +9071,7 @@
   border: 1px solid #ddd6f0;
   border-radius: 12px;
   background-color: #f3f0fa;
-  background-image: url("/images/wp4854964-beautiful-landscape-4k-wallpapers.jpg");
+  background-image: url("/images/my-life-v2-illustrated-mountains.png");
   background-position: center 43%;
   background-size: cover;
   background-repeat: no-repeat;
