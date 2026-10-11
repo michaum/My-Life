@@ -10242,3 +10242,15 @@
 }
 
 /* Preserve natural icon and avatar spacing within rows. */
+
+/* ==========================================================
+   STEP CM.7Q.7I.22U
+   V2-ONLY LEGACY MAIN-CONTENT OFFSET CORRECTION
+   ========================================================== */
+
+.app-shell.ml-v2 > .ml-v2-compat-main {
+  margin-left: 0;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+}
