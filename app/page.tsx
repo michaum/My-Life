@@ -1,3 +1,4 @@
+import * as React from "react";
 "use client";
 import "../components/my-life/v2.css";
 import { MyLifeAppShell, MyLifeDashboard } from "../components/my-life";
@@ -508,6 +509,10 @@ export default function Taskflow() {
       useState<FilterLabels>(defaultFilterLabels),
     [listColumnOrder, setListColumnOrder] =
       useState<Record<string, string[]>>({});
+  // CM.7N - Expand/collapse subtasks without changing task data.
+  const [expandedListSubtasks, setExpandedListSubtasks] =
+    useState<string[]>([]);
+
   const listColumnDragSourceRef = useRef<string | null>(null);
   const listColumnDragStartOrderRef = useRef<string[] | null>(null);
   const listColumnDragCurrentOrderRef = useRef<string[] | null>(null);
@@ -2342,8 +2347,20 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     ? customFields.filter((f) => f.projectId === project.id)
     : [];
 
+  // CM.7F - Native task columns prepared for new project defaults.
+  // Activation follows after header and row rendering are implemented.
+  const defaultNativeProjectColumns = [
+    "assignee",
+    "due-date",
+    "priority",
+    "task-progress",
+  ] as const;
+
   const availableListColumnIds = [
     "task-name",
+    ...defaultNativeProjectColumns.filter(
+      (columnId) => project && listColumnOrder[project.id]?.includes(columnId),
+    ),
     ...projectFields.map((field) => `field:${field.id}`),
   ];
 
@@ -3333,15 +3350,39 @@ function newPerson() {
   }
   async function saveProject(e: FormEvent) {
     e.preventDefault();
+    if (!projectDraft) return;
+
+    const isNewProject = !projects.some(
+      (item) => item.id === projectDraft.id,
+    );
+
+    if (isNewProject) {
+      const nextColumnOrder = {
+        ...listColumnOrder,
+        [projectDraft.id]: [
+          "task-name",
+          ...defaultNativeProjectColumns,
+        ],
+      };
+
+      if (
+        !(await mutate(
+          { action: "saveListColumnOrder", order: nextColumnOrder },
+          "Project columns initialized",
+        ))
+      ) {
+        return;
+      }
+    }
+
     if (
-      projectDraft &&
-      (await mutate(
+      await mutate(
         { action: "saveProject", project: projectDraft },
         "Project saved",
-      ))
+      )
     ) {
       setActive(projectDraft.id);
-      setView("Board");
+      setView(isNewProject ? "List" : "Board");
       setProjectDraft(null);
     }
   }
@@ -3860,6 +3901,7 @@ function newPerson() {
       .join(" ")} 105px`,
   };
   const renderListRow = (t: Task) => (
+    <React.Fragment key={t.id}>
     <div
       className="list-row"
       style={listGrid}
@@ -3927,6 +3969,30 @@ function newPerson() {
               >
                 {t.status === "Done" && <Check size={11} />}
               </button>
+              {t.subtasks.length > 0 && (
+                <button
+                  type="button"
+                  className="list-subtask-toggle"
+                  aria-label={`${expandedListSubtasks.includes(t.id) ? "Collapse" : "Expand"} subtasks for ${t.title}`}
+                  aria-expanded={expandedListSubtasks.includes(t.id)}
+                  onClick={() =>
+                    setExpandedListSubtasks((current) =>
+                      current.includes(t.id)
+                        ? current.filter((id) => id !== t.id)
+                        : [...current, t.id],
+                    )
+                  }
+                >
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      transform: expandedListSubtasks.includes(t.id)
+                        ? "rotate(0deg)"
+                        : "rotate(-90deg)",
+                    }}
+                  />
+                </button>
+              )}
               <button
                 onClick={() => editTask(t)}
                 className={t.status === "Done" ? "struck" : ""}
@@ -3935,6 +4001,40 @@ function newPerson() {
                 {t.title}
               </button>
             </div>
+          );
+        }
+
+        if (
+          defaultNativeProjectColumns.some(
+            (nativeId) => nativeId === columnId,
+          )
+        ) {
+          const subtaskCount = t.subtasks.length;
+          const completedSubtasks = t.subtasks.filter(
+            (subtask) => subtask.done,
+          ).length;
+
+          const value =
+            columnId === "assignee"
+              ? t.assignee || "Unassigned"
+              : columnId === "due-date"
+                ? t.due || "No due date"
+                : columnId === "priority"
+                  ? t.priority
+                  : subtaskCount > 0
+                    ? `${t.status} · ${completedSubtasks}/${subtaskCount} subtasks`
+                    : t.status;
+
+          return (
+            <button
+              key={columnId}
+              type="button"
+              className="custom-value-cell"
+              onClick={() => editTask(t)}
+              title={value}
+            >
+              {value}
+            </button>
           );
         }
 
@@ -3998,6 +4098,43 @@ function newPerson() {
         </button>
       </div>
     </div>
+    {t.subtasks.length > 0 &&
+      expandedListSubtasks.includes(t.id) && (
+        <div className="list-subtasks-expanded">
+          {t.subtasks.map((subtask) => (
+            <div className="list-subtask-display" key={subtask.id}>
+              <span aria-hidden="true">↳</span>
+              <input
+                type="checkbox"
+                aria-label={`Complete ${subtask.title}`}
+                checked={subtask.done}
+                disabled={busy}
+                onChange={(event) => {
+                  const done = event.target.checked;
+                  void mutate(
+                    {
+                      action: "saveTask",
+                      task: {
+                        ...t,
+                        subtasks: t.subtasks.map((item) =>
+                          item.id === subtask.id
+                            ? { ...item, done }
+                            : item,
+                        ),
+                      },
+                    },
+                    done ? "Subtask completed" : "Subtask reopened",
+                  );
+                }}
+              />
+              <span className={subtask.done ? "struck" : ""}>
+                {subtask.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </React.Fragment>
   );
   const calendarStart = new Date(month);
   let calendarDays = 42;
@@ -5375,6 +5512,40 @@ function newPerson() {
                               <GripVertical size={14} />
                             </span>
                             <span>Task name</span>
+                          </span>
+                        );
+                      }
+
+                      if (
+                        defaultNativeProjectColumns.some(
+                          (nativeId) => nativeId === columnId,
+                        )
+                      ) {
+                        const nativeLabels: Record<string, string> = {
+                          assignee: "Assignee",
+                          "due-date": "Due date",
+                          priority: "Priority",
+                          "task-progress": "Task Progress",
+                        };
+
+                        return (
+                          <span
+                            key={columnId}
+                            className={`draggable-column-head ${
+                              listColumnDragging === columnId ? "is-dragging" : ""
+                            }`}
+                            {...dragProps}
+                          >
+                            <span
+                              className="column-drag-handle"
+                              title={`Drag to move ${nativeLabels[columnId]}`}
+                              onPointerDown={(e) =>
+                                startListColumnPointerDrag(columnId, e)
+                              }
+                            >
+                              <GripVertical size={14} />
+                            </span>
+                            <span>{nativeLabels[columnId]}</span>
                           </span>
                         );
                       }
