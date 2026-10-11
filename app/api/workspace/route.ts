@@ -219,6 +219,27 @@ const listColumnOrderSchema = z.record(
   z.string(),
   z.array(z.string().min(1).max(100)).max(100),
 );
+const listColumnWidthsSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.number().int().min(80).max(2000)),
+);
+const nativeColumnSettingsSchema = z.object({
+  name: z.string().trim().min(1).max(100).optional(),
+  visible: z.boolean().optional(),
+  displayStyle: z.enum(["name", "avatar", "text", "badge"]).optional(),
+  dateFormat: z.enum(["default", "short", "long", "iso"]).optional(),
+  progressStyle: z.enum(["bar", "percentage"]).optional(),
+});
+
+const listColumnSettingsSchema = z.record(
+  z.string(),
+  z.object({
+    assignee: nativeColumnSettingsSchema.optional(),
+    "due-date": nativeColumnSettingsSchema.optional(),
+    priority: nativeColumnSettingsSchema.optional(),
+    "task-progress": nativeColumnSettingsSchema.optional(),
+  }).partial(),
+);
 const defaultFilterLabels = {
   priority: { High: "High", Medium: "Medium", Low: "Low" },
   sort: {
@@ -283,7 +304,7 @@ export async function GET(request: Request) {
         "SELECT * FROM task_recurrence_exceptions ORDER BY created_at",
       ),
       db.prepare(
-        "SELECT status_options,filter_labels,list_column_order FROM workspace WHERE id='initialized'",
+        "SELECT status_options,filter_labels,list_column_order,list_column_widths,list_column_settings FROM workspace WHERE id='initialized' ",
       ),
     ]);
     const valuesByTask = new Map<string, Record<string, string>>();
@@ -405,6 +426,30 @@ export async function GET(request: Request) {
                   workspaceSettings.results[0] as
                     { list_column_order?: string } | undefined
                 )?.list_column_order || "{}",
+              ),
+            ),
+          ),
+        listColumnWidths: listColumnWidthsSchema
+          .catch({})
+          .parse(
+            JSON.parse(
+              String(
+                (
+                  workspaceSettings.results[0] as
+                    { list_column_widths?: string } | undefined
+                )?.list_column_widths || "{}",
+              ),
+            ),
+          ),
+        listColumnSettings: listColumnSettingsSchema
+          .catch({})
+          .parse(
+            JSON.parse(
+              String(
+                (
+                  workspaceSettings.results[0] as
+                    { list_column_settings?: string } | undefined
+                )?.list_column_settings || "{}",
               ),
             ),
           ),
@@ -788,6 +833,18 @@ export async function POST(request: Request) {
       await db
         .prepare("UPDATE workspace SET list_column_order=? WHERE id='initialized'")
         .bind(JSON.stringify(order))
+        .run();
+    } else if (b.action === "saveListColumnWidths") {
+      const widths = listColumnWidthsSchema.parse(b.widths);
+      await db
+        .prepare("UPDATE workspace SET list_column_widths=? WHERE id='initialized'")
+        .bind(JSON.stringify(widths))
+        .run();
+    } else if (b.action === "saveListColumnSettings") {
+      const settings = listColumnSettingsSchema.parse(b.settings);
+      await db
+        .prepare("UPDATE workspace SET list_column_settings=? WHERE id='initialized'")
+        .bind(JSON.stringify(settings))
         .run();
     } else if (b.action === "saveRecurrenceException") {
     const exception = z.object({

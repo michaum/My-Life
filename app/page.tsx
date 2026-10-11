@@ -1,3 +1,4 @@
+import { PeopleProfileHoverCard } from "../components/my-life/people-profile-hover-card";
 import * as React from "react";
 "use client";
 import "../components/my-life/v2.css";
@@ -509,6 +510,25 @@ export default function Taskflow() {
       useState<FilterLabels>(defaultFilterLabels),
     [listColumnOrder, setListColumnOrder] =
       useState<Record<string, string[]>>({});
+  const [listColumnWidths, setListColumnWidths] =
+    useState<Record<string, Record<string, number>>>({});
+  const [listColumnSettings, setListColumnSettings] =
+    useState<Record<string, Record<string, {
+      name?: string;
+      visible?: boolean;
+      displayStyle?: "name" | "avatar" | "text" | "badge";
+      dateFormat?: "default" | "short" | "long" | "iso";
+      progressStyle?: "bar" | "percentage";
+    }>>>({});
+  const [nativeColumnDraft, setNativeColumnDraft] = useState<{
+    projectId: string;
+    columnId: "assignee" | "due-date" | "priority" | "task-progress";
+    name: string;
+    visible?: boolean;
+    displayStyle?: "name" | "avatar" | "text" | "badge";
+    dateFormat?: "default" | "short" | "long" | "iso";
+    progressStyle?: "bar" | "percentage";
+  } | null>(null);
   // CM.7N - Expand/collapse subtasks without changing task data.
   const [expandedListSubtasks, setExpandedListSubtasks] =
     useState<string[]>([]);
@@ -518,6 +538,7 @@ export default function Taskflow() {
   const listColumnDragCurrentOrderRef = useRef<string[] | null>(null);
   const listColumnDragMovedRef = useRef(false);
   const [listColumnDragging, setListColumnDragging] = useState<string | null>(null);
+  const [columnMenuOpen, setColumnMenuOpen] = useState<string | null>(null);
   // STEP 18F.23I.40J-R1 - Default landing page is Overview.
   const [active, setActive] = useState("home"),
     [view, setView] = useState("Overview"),
@@ -568,6 +589,8 @@ export default function Taskflow() {
     [subtask, setSubtask] = useState("");
   const [peopleOpen, setPeopleOpen] = useState(false),
     [personDraft, setPersonDraft] = useState<Person | null>(null);
+  // CM.7Q.7I.14 - Read-only People profile selection.
+  const [personViewing, setPersonViewing] = useState<Person | null>(null);
   useEffect(() => {
     try {
       const saved = JSON.parse(
@@ -1028,7 +1051,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       db.select<any[]>(
         "SELECT * FROM task_recurrence_exceptions ORDER BY created_at",
       ),
-      db.select<any[]>("SELECT status_options,filter_labels,list_column_order FROM workspace WHERE id='initialized'"),
+      db.select<any[]>("SELECT status_options,filter_labels,list_column_order,list_column_widths,list_column_settings FROM workspace WHERE id='initialized'"),
     ]);
 
     const valuesByTask = new Map<string, Record<string, string>>();
@@ -1117,6 +1140,18 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       listColumnOrder: JSON.parse(
         String(workspaceSettings[0]?.list_column_order || "{}"),
       ) as Record<string, string[]>,
+      listColumnWidths: JSON.parse(
+        String(workspaceSettings[0]?.list_column_widths || "{}"),
+      ) as Record<string, Record<string, number>>,
+      listColumnSettings: JSON.parse(
+        String(workspaceSettings[0]?.list_column_settings || "{}"),
+      ) as Record<string, Record<string, {
+      name?: string;
+      visible?: boolean;
+      displayStyle?: "name" | "avatar" | "text" | "badge";
+      dateFormat?: "default" | "short" | "long" | "iso";
+      progressStyle?: "bar" | "percentage";
+    }>>,
     };
   }
 
@@ -1526,6 +1561,16 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         "UPDATE workspace SET list_column_order=? WHERE id='initialized'",
         [JSON.stringify(payload.order)],
       );
+    } else if (action === "saveListColumnWidths") {
+      await db.execute(
+        "UPDATE workspace SET list_column_widths=? WHERE id='initialized'",
+        [JSON.stringify(payload.widths)],
+      );
+    } else if (action === "saveListColumnSettings") {
+      await db.execute(
+        "UPDATE workspace SET list_column_settings=? WHERE id='initialized'",
+        [JSON.stringify(payload.settings)],
+      );
     } else if (action === "saveRecurrenceException") {
     await db.execute(
       `INSERT INTO task_recurrence_exceptions(
@@ -1623,6 +1668,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       statusOptions: ChoiceOption[];
       filterLabels: FilterLabels;
       listColumnOrder: Record<string, string[]>;
+      listColumnWidths: Record<string, Record<string, number>>;
+      listColumnSettings: Record<string, Record<string, {
+      name?: string;
+      visible?: boolean;
+      displayStyle?: "name" | "avatar" | "text" | "badge";
+      dateFormat?: "default" | "short" | "long" | "iso";
+      progressStyle?: "bar" | "percentage";
+    }>>;
     };
 
     const now = new Date().toISOString();
@@ -1787,12 +1840,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       await db.execute(
         `UPDATE workspace
-         SET status_options=?,filter_labels=?,list_column_order=?
+         SET status_options=?,filter_labels=?,list_column_order=?,list_column_widths=?,list_column_settings=?
          WHERE id='initialized'`,
         [
           JSON.stringify(data.statusOptions ?? []),
           JSON.stringify(data.filterLabels ?? {}),
           JSON.stringify(data.listColumnOrder ?? {}),
+          JSON.stringify(data.listColumnWidths ?? {}),
+          JSON.stringify(data.listColumnSettings ?? {}),
         ],
       );
     return true;
@@ -1876,6 +1931,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       setWorkflowOptions(d.statusOptions);
       setFilterLabels(d.filterLabels);
       setListColumnOrder(d.listColumnOrder ?? {});
+      setListColumnWidths(d.listColumnWidths ?? {});
+      setListColumnSettings(d.listColumnSettings ?? {});
       return d;
     }
 
@@ -1898,6 +1955,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       statusOptions: ChoiceOption[];
       filterLabels: FilterLabels;
       listColumnOrder: Record<string, string[]>;
+      listColumnWidths: Record<string, Record<string, number>>;
+      listColumnSettings: Record<string, Record<string, {
+      name?: string;
+      visible?: boolean;
+      displayStyle?: "name" | "avatar" | "text" | "badge";
+      dateFormat?: "default" | "short" | "long" | "iso";
+      progressStyle?: "bar" | "percentage";
+    }>>;
     };
     if (!r.ok) throw new Error(d.error);
     setProjects(d.projects);
@@ -1910,6 +1975,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setWorkflowOptions(d.statusOptions);
     setFilterLabels(d.filterLabels);
     setListColumnOrder(d.listColumnOrder ?? {});
+    setListColumnWidths(d.listColumnWidths ?? {});
+    setListColumnSettings(d.listColumnSettings ?? {});
     return d;
   }
   async function initialize() {
@@ -2487,14 +2554,113 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }
   }
 
+  function startListColumnResize(
+    columnId: string,
+    e: React.PointerEvent<HTMLSpanElement>,
+  ) {
+    if (!project || busy || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const projectId = project.id;
+    const startX = e.clientX;
+    const header = e.currentTarget.parentElement;
+    if (!header) return;
+
+    const startWidth = header.getBoundingClientRect().width;
+    const previousWidths = listColumnWidths;
+    let nextWidth = Math.round(startWidth);
+
+    const restore = () => {
+      setListColumnWidths((current) => {
+        const restored = { ...current };
+        const projectWidths = { ...restored[projectId] };
+        const previous = previousWidths[projectId]?.[columnId];
+        if (previous === undefined) delete projectWidths[columnId];
+        else projectWidths[columnId] = previous;
+        restored[projectId] = projectWidths;
+        return restored;
+      });
+    };
+
+    const preview = (event: PointerEvent) => {
+      nextWidth = Math.max(
+        80,
+        Math.min(2000, Math.round(startWidth + event.clientX - startX)),
+      );
+      setListColumnWidths((current) => ({
+        ...current,
+        [projectId]: {
+          ...current[projectId],
+          [columnId]: nextWidth,
+        },
+      }));
+    };
+
+    const cleanup = () => {
+      window.removeEventListener("pointermove", preview);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", cancel);
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousSelection;
+    };
+
+    const cancel = () => {
+      cleanup();
+      restore();
+    };
+
+    const finish = async () => {
+      cleanup();
+      if (nextWidth === Math.round(startWidth)) {
+        restore();
+        return;
+      }
+
+      const nextWidths = {
+        ...previousWidths,
+        [projectId]: {
+          ...previousWidths[projectId],
+          [columnId]: nextWidth,
+        },
+      };
+
+      const saved = await mutate(
+        { action: "saveListColumnWidths", widths: nextWidths },
+        "Column width updated",
+      );
+
+      if (!saved) restore();
+    };
+
+    const previousCursor = document.body.style.cursor;
+    const previousSelection = document.body.style.userSelect;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    window.addEventListener("pointermove", preview);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", cancel);
+  }
+
   function startListColumnPointerDrag(
     columnId: string,
     e: React.PointerEvent<HTMLElement>,
   ) {
     if (!project || busy) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+    // Preserve normal clicks on custom-field header buttons.
+    const customFieldHeader = columnId.startsWith("field:");
+    if (customFieldHeader && e.button !== 0) return;
+
+    if (!customFieldHeader) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const pointerStartX = e.clientX;
+    const pointerStartY = e.clientY;
+    let dragActivated = !customFieldHeader;
 
     listColumnDragSourceRef.current = columnId;
     listColumnDragStartOrderRef.current = [...orderedListColumnIds];
@@ -2503,6 +2669,15 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setListColumnDragging(columnId);
 
     const handleMove = (event: PointerEvent) => {
+      if (!dragActivated) {
+        const distance = Math.hypot(
+          event.clientX - pointerStartX,
+          event.clientY - pointerStartY,
+        );
+        if (distance < 5) return;
+        dragActivated = true;
+      }
+
       previewListColumnPointerDrag(event as unknown as React.PointerEvent<HTMLElement>);
     };
 
@@ -2726,7 +2901,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       status,
       color: "#e5e5e5",
       priority: "Medium",
-      assignee: "Marcel",
+      assignee: "",
       due: "",
       dueTime: "",
       endTime: "",
@@ -3326,6 +3501,51 @@ function newPerson() {
     });
     setConfirmDelete(false);
   }
+  async function saveNativeColumnName(e: FormEvent) {
+    e.preventDefault();
+    if (!nativeColumnDraft || busy) return;
+
+    const name = nativeColumnDraft.name.trim();
+    if (!name) return;
+
+    const settings = {
+      ...listColumnSettings,
+      [nativeColumnDraft.projectId]: {
+        ...(listColumnSettings[nativeColumnDraft.projectId] ?? {}),
+        [nativeColumnDraft.columnId]: {
+          ...(listColumnSettings[nativeColumnDraft.projectId]?.[
+            nativeColumnDraft.columnId
+          ] ?? {}),
+          name,
+          ...(nativeColumnDraft.columnId === "assignee"
+            ? { displayStyle: nativeColumnDraft.displayStyle ?? "name" }
+            : {}),
+          ...(nativeColumnDraft.columnId === "due-date"
+            ? { dateFormat: nativeColumnDraft.dateFormat ?? "default" }
+            : {}),
+          ...(nativeColumnDraft.columnId === "priority"
+            ? { displayStyle: nativeColumnDraft.displayStyle ?? "text" }
+            : {}),
+          ...(nativeColumnDraft.columnId === "task-progress"
+            ? {
+                progressStyle: nativeColumnDraft.progressStyle,
+              }
+            : {}),
+        },
+      },
+    };
+
+    if (
+      await mutate(
+        { action: "saveListColumnSettings", settings },
+        "Column settings saved",
+      )
+    ) {
+      setListColumnSettings(settings);
+      setNativeColumnDraft(null);
+    }
+  }
+
   function editField(field: CustomField) {
     setColumnsOpen(false);
     setFieldDraft({
@@ -3881,23 +4101,128 @@ function newPerson() {
               {comments.filter((c) => c.task_id === t.id).length}
             </span>
           )}
-          <span
-            className={`avatar ${t.assignee ? "" : "unassigned"}`}
-            title={t.assignee || "Unassigned"}
-          >
-            {t.assignee ? initials(t.assignee) : <Users size={12} />}
-          </span>
+          {t.assignee &&
+          listColumnSettings[t.projectId]?.assignee?.displayStyle === "name" ? (
+            renderAssigneeName(t.assignee)
+          ) : (
+            renderAssigneeAvatar(t.assignee)
+          )}
         </div>
       </div>
     </article>
   );
+  // CM.7Q.7C - Shared Board/List People avatar matching.
+  const resolveAssigneePerson = (assignee: string): Person | undefined => {
+    const normalized = assignee.trim().toLocaleLowerCase();
+    if (!normalized) return undefined;
+
+    const exactPerson = people.find(
+      (person) =>
+        person.id === assignee ||
+        person.name.trim().toLocaleLowerCase() === normalized,
+    );
+    if (exactPerson) return exactPerson;
+
+    const firstNameMatches = people.filter(
+      (person) =>
+        person.name.trim().split(/\s+/)[0].toLocaleLowerCase() === normalized,
+    );
+
+    return firstNameMatches.length === 1
+      ? firstNameMatches[0]
+      : undefined;
+  };
+
+  const renderAssigneeAvatar = (assignee: string) => {
+    const person = resolveAssigneePerson(assignee);
+    const displayName = person?.name ?? assignee;
+
+    const avatar = (
+      <span
+        className={`avatar ${assignee ? "" : "unassigned"}`}
+        title={displayName || "Unassigned"}
+        aria-label={displayName || "Unassigned"}
+        style={{ overflow: "hidden" }}
+      >
+        {!assignee ? (
+          <Users size={12} />
+        ) : person?.avatarData ? (
+          <img
+            src={person.avatarData}
+            alt=""
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "50%",
+            }}
+          />
+        ) : (
+          initials(displayName)
+        )}
+      </span>
+    );
+
+    if (!person) return avatar;
+
+    return (
+      <PeopleProfileHoverCard
+        person={person}
+        onEdit={() => {
+          setPersonDraft({ ...person });
+          setPeopleOpen(true);
+        }}
+        onView={() => {
+          setPersonDraft(null);
+          setPersonViewing({ ...person });
+          setPeopleOpen(true);
+        }}
+      >
+        {avatar}
+      </PeopleProfileHoverCard>
+    );
+  };
+
+  // CM.7Q.7I.17B - Shared assignee name profile hover.
+  const renderAssigneeName = (assignee: string) => {
+    const person = resolveAssigneePerson(assignee);
+    const displayName = person?.name ?? assignee;
+    const name = <span>{displayName || "Unassigned"}</span>;
+
+    if (!person) return name;
+
+    return (
+      <PeopleProfileHoverCard
+        person={person}
+        onEdit={() => {
+          setPersonViewing(null);
+          setPersonDraft({ ...person });
+          setPeopleOpen(true);
+        }}
+        onView={() => {
+          setPersonDraft(null);
+          setPersonViewing({ ...person });
+          setPeopleOpen(true);
+        }}
+      >
+        {name}
+      </PeopleProfileHoverCard>
+    );
+  };
+
   const listGrid = {
     gridTemplateColumns: `${orderedListColumnIds
-      .map((id) =>
-        id === "task-name"
-          ? "minmax(260px,2.6fr)"
-          : "minmax(145px,1fr)",
-      )
+      .map((id) => {
+        const width = project ? listColumnWidths[project.id]?.[id] : undefined;
+        return typeof width === "number" &&
+          Number.isFinite(width) &&
+          width >= 80 &&
+          width <= 2000
+          ? `${width}px`
+          : id === "task-name"
+            ? "minmax(260px,2.6fr)"
+            : "minmax(145px,1fr)";
+      })
       .join(" ")} 105px`,
   };
   const renderListRow = (t: Task) => (
@@ -4018,12 +4343,50 @@ function newPerson() {
             columnId === "assignee"
               ? t.assignee || "Unassigned"
               : columnId === "due-date"
-                ? t.due || "No due date"
+                ? (() => {
+                    if (!t.due) return "No due date";
+
+                    const format =
+                      listColumnSettings[project?.id ?? ""]?.["due-date"]
+                        ?.dateFormat ?? "default";
+
+                    if (format === "default" || format === "iso") {
+                      return t.due;
+                    }
+
+                    const date = new Date(`${t.due}T12:00:00`);
+
+                    if (Number.isNaN(date.getTime())) return t.due;
+
+                    return date.toLocaleDateString("en-US", {
+                      month: format === "short" ? "short" : "long",
+                      day: "numeric",
+                      ...(format === "long" ? { year: "numeric" } : {}),
+                    });
+                  })()
                 : columnId === "priority"
                   ? t.priority
                   : subtaskCount > 0
                     ? `${t.status} · ${completedSubtasks}/${subtaskCount} subtasks`
                     : t.status;
+
+          const progressStyle =
+            listColumnSettings[project?.id ?? ""]?.["task-progress"]
+              ?.progressStyle;
+
+          const progressPercentage =
+            subtaskCount > 0
+              ? Math.round((completedSubtasks / subtaskCount) * 100)
+              : t.status === "Done"
+                ? 100
+                : 0;
+
+          const showAssigneeAvatar =
+            columnId === "assignee" &&
+            listColumnSettings[t.projectId]?.assignee?.displayStyle === "avatar" &&
+            Boolean(t.assignee);
+
+
 
           return (
             <button
@@ -4033,7 +4396,46 @@ function newPerson() {
               onClick={() => editTask(t)}
               title={value}
             >
-              {value}
+              {columnId === "task-progress" &&
+            (progressStyle === "bar" || progressStyle === "percentage") ? (
+              progressStyle === "percentage" ? (
+                <span>{progressPercentage}%</span>
+              ) : (
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    width: "100%",
+                  }}
+                >
+                  <span
+                    className="ml-v2-project-progress-track"
+                    style={{ flex: 1 }}
+                  >
+                    <i
+                      style={{
+                        width: `${progressPercentage}%`,
+                        background: "var(--ml-v2-accent)",
+                      }}
+                    />
+                  </span>
+                  <span>{progressPercentage}%</span>
+                </span>
+              )
+            ) : columnId === "priority" &&
+            listColumnSettings[project?.id ?? ""]?.priority?.displayStyle === "badge" ? (
+              <span className={`priority priority-${t.priority.toLowerCase()}`}>
+                <span />
+                {t.priority}
+              </span>
+            ) : showAssigneeAvatar ? (
+                renderAssigneeAvatar(t.assignee)
+              ) : columnId === "assignee" && Boolean(t.assignee) ? (
+                renderAssigneeName(t.assignee)
+              ) : (
+                value
+              )}
             </button>
           );
         }
@@ -4698,11 +5100,6 @@ function newPerson() {
               icon: LayoutGrid,
             },
             // STEP 18F.23I.34C-R2 - LIST SIDEBAR
-            {
-              id: "list",
-              label: "List",
-              icon: List,
-            },
             // STEP 18F.23I.31C.6S - CALENDAR SIDEBAR
             {
               id: "calendar",
@@ -5488,104 +5885,164 @@ function newPerson() {
                     )}
                   </div>
                   <div className="list-head" style={listGrid}>
-                    {orderedListColumnIds.map((columnId) => {
-                      const dragProps = {
-                        "data-list-column-id": columnId,
-                      };
-
-                      if (columnId === "task-name") {
-                        return (
-                          <span
-                            key={columnId}
-                            className={`draggable-column-head ${
-                              listColumnDragging === columnId ? "is-dragging" : ""
-                            }`}
-                            {...dragProps}
-                          >
-                            <span
-                              className="column-drag-handle"
-                              title="Drag to move Task name"
-                              onPointerDown={(e) =>
-                                startListColumnPointerDrag(columnId, e)
-                              }
-                            >
-                              <GripVertical size={14} />
-                            </span>
-                            <span>Task name</span>
-                          </span>
-                        );
-                      }
-
-                      if (
-                        defaultNativeProjectColumns.some(
-                          (nativeId) => nativeId === columnId,
-                        )
-                      ) {
-                        const nativeLabels: Record<string, string> = {
-                          assignee: "Assignee",
-                          "due-date": "Due date",
-                          priority: "Priority",
-                          "task-progress": "Task Progress",
-                        };
-
-                        return (
-                          <span
-                            key={columnId}
-                            className={`draggable-column-head ${
-                              listColumnDragging === columnId ? "is-dragging" : ""
-                            }`}
-                            {...dragProps}
-                          >
-                            <span
-                              className="column-drag-handle"
-                              title={`Drag to move ${nativeLabels[columnId]}`}
-                              onPointerDown={(e) =>
-                                startListColumnPointerDrag(columnId, e)
-                              }
-                            >
-                              <GripVertical size={14} />
-                            </span>
-                            <span>{nativeLabels[columnId]}</span>
-                          </span>
-                        );
-                      }
-
+                    {orderedListColumnIds.map((columnId, index) => {
                       const field = projectFields.find(
-                        (item) =>
-                          `field:${item.id}` === columnId,
+                        (item) => `field:${item.id}` === columnId,
                       );
-
-                      if (!field) return null;
+                      const nativeLabels: Record<string, string> = {
+                        "task-name": "Task name",
+                        assignee: "Assignee",
+                        "due-date": "Due date",
+                        priority: "Priority",
+                        "task-progress": "Task Progress",
+                      };
+                      const label =
+                        field?.name ??
+                        (columnId !== "task-name"
+                          ? listColumnSettings[project?.id ?? ""]?.[columnId]?.name
+                          : undefined) ??
+                        nativeLabels[columnId] ??
+                        columnId;
+                      const previousId = orderedListColumnIds[index - 1];
+                      const nextId = orderedListColumnIds[index + 1];
 
                       return (
-                        <button
+                        <span
                           key={columnId}
-                          className={`custom-column-head draggable-column-head ${
+                          data-list-column-id={columnId}
+                          className={`draggable-column-head ml-column-menu-header ${
                             listColumnDragging === columnId ? "is-dragging" : ""
                           }`}
-                          onClick={() => {
-                          if (listColumnDragMovedRef.current) {
-                            listColumnDragMovedRef.current = false;
-                            return;
-                          }
-                          editField(field);
-                        }}
-                          title={`Drag to move or click to edit ${field.name}`}
-                          {...dragProps}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 5,
+                            minWidth: 0,
+                          position: "relative",
+                          }}
+                          onPointerDown={(e) => {
+                            if ((e.target as HTMLElement).closest("[data-column-menu], [data-column-resize]")) {
+                              return;
+                            }
+                            startListColumnPointerDrag(columnId, e);
+                          }}
                         >
+
                           <span
-                            className="column-drag-handle"
-                            title={`Drag to move ${field.name}`}
-                            onClick={(e) => e.stopPropagation()}
-                            onPointerDown={(e) =>
-                              startListColumnPointerDrag(columnId, e)
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            <span>{label}</span>
+
+                          </span>
+                          <Popover
+                            open={columnMenuOpen === columnId}
+                            onOpenChange={(open) =>
+                              setColumnMenuOpen(open ? columnId : null)
                             }
                           >
-                            <GripVertical size={14} />
-                          </span>
-                          <span>{field.name}</span>
-                          <small>{field.type}</small>
-                        </button>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                data-column-menu="true"
+                                aria-label={`Options for ${label}`}
+                                title={`${label} column options`}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: 25,
+                                  height: 28,
+                                  flexShrink: 0,
+                                  borderRadius: 6,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <ChevronDown size={15} />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              align="end"
+                              className="w-48 p-2"
+                              onPointerDown={(e) => e.stopPropagation()}
+                            >
+                              <div className="px-2 py-1 text-xs font-semibold">
+                                {label}
+                              </div>
+                              <button
+                                type="button"
+                                className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent disabled:opacity-40"
+                                disabled={!previousId || busy}
+                                onClick={() => {
+                                  setColumnMenuOpen(null);
+                                  if (previousId) void moveListColumn(columnId, previousId);
+                                }}
+                              >
+                                Move left
+                              </button>
+                              <button
+                                type="button"
+                                className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent disabled:opacity-40"
+                                disabled={!nextId || busy}
+                                onClick={() => {
+                                  setColumnMenuOpen(null);
+                                  if (nextId) void moveListColumn(columnId, nextId);
+                                }}
+                              >
+                                Move right
+                              </button>
+                              {project &&
+                                (columnId === "assignee" ||
+                                  columnId === "due-date" ||
+                                  columnId === "priority" ||
+                                  columnId === "task-progress") && (
+                                  <button
+                                    type="button"
+                                    className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent"
+                                    onClick={() => {
+                                      setColumnMenuOpen(null);
+                                      setNativeColumnDraft({
+                                        projectId: project.id,
+                                        columnId,
+                                        ...listColumnSettings[project.id]?.[columnId],
+                                        name: label,
+                                      });
+                                    }}
+                                  >
+                                    Edit column
+                                  </button>
+                                )}
+                              {field && (
+                                <button
+                                  type="button"
+                                  className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent"
+                                  onClick={() => {
+                                    setColumnMenuOpen(null);
+                                    editField(field);
+                                  }}
+                                >
+                                  Edit column
+                                </button>
+                              )}
+                            </PopoverContent>
+                          </Popover>
+                          <span
+                            data-column-resize="true"
+                            className="ml-column-resize-handle"
+                            role="separator"
+                            aria-orientation="vertical"
+                            aria-label={`Resize ${label} column`}
+                            title={`Drag to resize ${label}`}
+                            onPointerDown={(e) => startListColumnResize(columnId, e)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </span>
                       );
                     })}
                   </div>
@@ -6452,6 +6909,38 @@ onDragOver={(e) => e.preventDefault()}
                   .map((task) => ({
                     id: task.id,
                     title: task.title,
+                    // CM.7Q.7I.20C - Calendar appointment People display.
+                    assigneeDisplayStyle:
+                      listColumnSettings[task.projectId]?.assignee?.displayStyle === "avatar"
+                        ? "avatar"
+                        : "name",
+                    ...(() => {
+                      const assignee = task.assignee.trim();
+                      const normalized = assignee.toLocaleLowerCase();
+                      const exactPerson = people.find(
+                        (person) =>
+                          person.id === assignee ||
+                          person.name.trim().toLocaleLowerCase() === normalized,
+                      );
+                      const firstNameMatches = exactPerson
+                        ? []
+                        : people.filter(
+                            (person) =>
+                              person.name.trim().split(/\s+/)[0]
+                                .toLocaleLowerCase() === normalized,
+                          );
+                      const matchedPerson =
+                        exactPerson ??
+                        (firstNameMatches.length === 1
+                          ? firstNameMatches[0]
+                          : undefined);
+
+                      return {
+                        assignee: matchedPerson?.name ?? task.assignee,
+                        avatarData: matchedPerson?.avatarData ?? null,
+                        assigneePersonId: matchedPerson?.id,
+                      };
+                    })(),
                     classification: task.classification || "Task",
                     classificationColorRevision: Object.keys(classificationColors).length,
                     emoji: task.emoji,
@@ -6462,6 +6951,20 @@ onDragOver={(e) => e.preventDefault()}
                     statusColor: workflowOption(task.status).color,
                     textStyle: taskTextStyle(task, "overview"),
                   }))}
+                onEditAssigneeProfile={(personId) => {
+                  const selected = people.find((person) => person.id === personId);
+                  if (!selected) return;
+                  setPersonViewing(null);
+                  setPersonDraft({ ...selected });
+                  setPeopleOpen(true);
+                }}
+                onViewAssigneeProfile={(personId) => {
+                  const selected = people.find((person) => person.id === personId);
+                  if (!selected) return;
+                  setPersonDraft(null);
+                  setPersonViewing({ ...selected });
+                  setPeopleOpen(true);
+                }}
                 onCompleteTodayTask={async (id) => {
                   const task = tasks.find((item) => item.id === id);
                   if (!task || task.status === "Done" || busy) return;
@@ -6479,6 +6982,11 @@ onDragOver={(e) => e.preventDefault()}
                   )
                   .map((task) => ({
                     id: task.id,
+                    // CM.7Q.7H.5 - Preserve per-project Assignee display.
+                    assigneeDisplayStyle:
+                      listColumnSettings[task.projectId]?.assignee?.displayStyle === "avatar"
+                        ? "avatar"
+                        : "name",
                     // STEP 18F.23I.43I-P19 - Resolve saved People avatars.
                     // Prefer exact matches; accept a unique first name only.
                     ...(() => {
@@ -6505,6 +7013,7 @@ onDragOver={(e) => e.preventDefault()}
                       return {
                         assignee: matchedPerson?.name ?? task.assignee,
                         avatarData: matchedPerson?.avatarData ?? null,
+                        assigneePersonId: matchedPerson?.id,
                       };
                     })(),
                     dueTime:
@@ -7047,16 +7556,73 @@ onDragOver={(e) => e.preventDefault()}
       )}
       <Dialog
         open={peopleOpen}
+        // CM.7Q.7I.17H - Explicit dialog close handling
         onOpenChange={(open) => {
           // STEP 18F.23H.9 - RESET PEOPLE EDITOR
-          setPeopleOpen(open);
-          if (!open) setPersonDraft(null);
+          if (!open) {
+            // Close the dialog before resetting its displayed content.
+            setPeopleOpen(false);
+            setPersonDraft(null);
+            setPersonViewing(null);
+            return;
+          }
+          setPeopleOpen(true);
         }}
       >
         <DialogContent className="ml-v2-people-dialog">
           <DialogTitle>People</DialogTitle>
           <DialogDescription>Add people you assign tasks to. SMS is sent only when an assignee changes and their notifications are enabled.</DialogDescription>
-          {personDraft ? (
+          {personViewing && !personDraft ? (
+            <div className="editor-form">
+              <div className="ml-person-photo-editor">
+                <div className="ml-person-photo-preview">
+                  {personViewing.avatarData ? (
+                    <img src={personViewing.avatarData} alt={`${personViewing.name} profile`} />
+                  ) : (
+                    <span>
+                      {personViewing.name.trim().charAt(0).toUpperCase() || "?"}
+                    </span>
+                  )}
+                </div>
+                <div className="ml-person-photo-actions">
+                  <strong>{personViewing.name}</strong>
+                  <small>People profile</small>
+                </div>
+              </div>
+              <label>Name
+                <Input value={personViewing.name} readOnly />
+              </label>
+              <label>Mobile phone number
+                <Input value={formatPersonPhone(personViewing.phone)} readOnly />
+              </label>
+              <label>SMS notifications
+                <Input
+                  value={personViewing.smsEnabled ? "Enabled" : "Disabled"}
+                  readOnly
+                />
+              </label>
+              <div className="editor-footer">
+                <Button
+                  className="ml-v2-standard-button"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setPersonViewing(null)}
+                >
+                  Back to People
+                </Button>
+                <Button
+                  className="ml-v2-standard-button"
+                  type="button"
+                  onClick={() => {
+                    setPersonDraft({ ...personViewing });
+                    setPersonViewing(null);
+                  }}
+                >
+                  Edit profile
+                </Button>
+              </div>
+            </div>
+          ) : personDraft ? (
             <form onSubmit={savePerson} className="editor-form">
               <div className="ml-person-photo-editor">
                 <div className="ml-person-photo-preview">
@@ -7657,6 +8223,12 @@ onDragOver={(e) => e.preventDefault()}
                     }
                   >
                     <option value="">Unassigned</option>
+                    {draft.assignee &&
+                      !people.some((person) => person.name === draft.assignee) && (
+                        <option value={draft.assignee}>
+                          {draft.assignee} (not in People)
+                        </option>
+                      )}
                     {people.map((person) => <option key={person.id} value={person.name}>{person.name}</option>)}
                   </NativeSelect>
                 </label>
@@ -8695,6 +9267,147 @@ onDragOver={(e) => e.preventDefault()}
               Add column
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!nativeColumnDraft}
+        onOpenChange={(open) => {
+          if (!open && !busy) setNativeColumnDraft(null);
+        }}
+      >
+        <DialogContent className="field-dialog">
+          <DialogTitle>Edit column</DialogTitle>
+          <DialogDescription>
+            Change this project's column name. The native field type and task
+            functionality remain unchanged.
+          </DialogDescription>
+          {nativeColumnDraft && (
+            <form onSubmit={saveNativeColumnName} className="editor-form">
+              <div className="form-grid">
+                <label>
+                  Column name
+                  <Input
+                    required
+                    maxLength={100}
+                    value={nativeColumnDraft.name}
+                    onChange={(e) =>
+                      setNativeColumnDraft({
+                        ...nativeColumnDraft,
+                        name: e.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Native field
+                  <Input
+                    value={{
+                      assignee: "Assignee",
+                      "due-date": "Due date",
+                      priority: "Priority",
+                      "task-progress": "Task Progress",
+                    }[nativeColumnDraft.columnId]}
+                    disabled
+                  />
+                </label>
+              </div>
+              {nativeColumnDraft.columnId === "assignee" && (
+                <label>
+                  Assignee display
+                  <select
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={nativeColumnDraft.displayStyle ?? "name"}
+                    onChange={(e) =>
+                      setNativeColumnDraft({
+                        ...nativeColumnDraft,
+                        displayStyle: e.target.value as "name" | "avatar",
+                      })
+                    }
+                  >
+                    <option value="name">Name</option>
+                    <option value="avatar">Avatar</option>
+                  </select>
+                </label>
+              )}
+              {nativeColumnDraft.columnId === "due-date" && (
+                <label>
+                  Date format
+                  <select
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={nativeColumnDraft.dateFormat ?? "default"}
+                    onChange={(e) =>
+                      setNativeColumnDraft({
+                        ...nativeColumnDraft,
+                        dateFormat: e.target.value as
+                          | "default"
+                          | "short"
+                          | "long"
+                          | "iso",
+                      })
+                    }
+                  >
+                    <option value="default">Default (existing format)</option>
+                    <option value="short">Short (Oct 11)</option>
+                    <option value="long">Long (October 11, 2026)</option>
+                    <option value="iso">ISO (2026-10-11)</option>
+                  </select>
+                </label>
+              )}
+              {nativeColumnDraft.columnId === "priority" && (
+                <label>
+                  Priority display
+                  <select
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={nativeColumnDraft.displayStyle ?? "text"}
+                    onChange={(e) =>
+                      setNativeColumnDraft({
+                        ...nativeColumnDraft,
+                        displayStyle: e.target.value as "text" | "badge",
+                      })
+                    }
+                  >
+                    <option value="text">Text</option>
+                    <option value="badge">Badge (existing My Life colors)</option>
+                  </select>
+                </label>
+              )}
+              {nativeColumnDraft.columnId === "task-progress" && (
+                <label>
+                  Task Progress display
+                  <select
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={nativeColumnDraft.progressStyle ?? "existing"}
+                    onChange={(e) =>
+                      setNativeColumnDraft({
+                        ...nativeColumnDraft,
+                        progressStyle:
+                          e.target.value === "existing"
+                            ? undefined
+                            : (e.target.value as "bar" | "percentage"),
+                      })
+                    }
+                  >
+                    <option value="existing">Existing status and subtask counts</option>
+                    <option value="bar">Progress bar</option>
+                    <option value="percentage">Percentage</option>
+                  </select>
+                </label>
+              )}
+              <div className="editor-footer">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => setNativeColumnDraft(null)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={busy || !nativeColumnDraft.name.trim()}>
+                  Save column
+                </Button>
+              </div>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
       <Dialog

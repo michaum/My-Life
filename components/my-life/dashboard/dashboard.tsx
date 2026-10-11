@@ -24,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ComingUpWidget } from "./coming-up-widget";
+import { PeopleProfileHoverCard } from "../people-profile-hover-card";
 import { DashboardWidget } from "./dashboard-widget";
 import { ProjectProgressWidget } from "./project-progress-widget";
 import type { DashboardWidgetId } from "./types";
@@ -85,6 +86,8 @@ export type DashboardTask = {
   dueTime?: string;
   assignee?: string;
   avatarData?: string | null;
+  assigneePersonId?: string;
+  assigneeDisplayStyle?: "name" | "avatar";
   endTime?: string;
   occurrenceDate?: string;
   status: string;
@@ -114,6 +117,8 @@ export type MyLifeDashboardProps = {
   onShowPeople: () => void;
   onOpenCalendarToday: () => void;
   onCompleteTodayTask: (id: string) => Promise<void>;
+  onEditAssigneeProfile?: (personId: string) => void;
+  onViewAssigneeProfile?: (personId: string) => void;
   comingUpTasks: DashboardTask[];
   calendarTasks?: DashboardTask[];
   calendarTaskOccursOnDate?: (taskId: string, date: string) => boolean;
@@ -202,6 +207,8 @@ export function MyLifeDashboard({
   onShowPeople,
   onOpenCalendarToday,
   onCompleteTodayTask,
+  onEditAssigneeProfile,
+  onViewAssigneeProfile,
   comingUpTasks,
   calendarTasks,
   calendarTaskOccursOnDate,
@@ -380,6 +387,10 @@ export function MyLifeDashboard({
     title: string;
     classification?: string;
     emoji?: string;
+    assignee?: string;
+    avatarData?: string | null;
+    assigneePersonId?: string;
+    assigneeDisplayStyle?: "name" | "avatar";
     date: string;
     time: string;
     timestamp: number;
@@ -439,6 +450,10 @@ export function MyLifeDashboard({
         title: task.title,
         classification: task.classification || "Task",
         emoji: task.emoji,
+        assignee: task.assignee,
+        avatarData: task.avatarData,
+        assigneePersonId: task.assigneePersonId,
+        assigneeDisplayStyle: task.assigneeDisplayStyle,
         date: dateKey,
         time: startTime,
         timestamp: startsAt.getTime(),
@@ -617,8 +632,8 @@ export function MyLifeDashboard({
                           </span>
                         )}
                         {appointment.title}
-
                         </span>
+
                         </span>
                         <span
                           className="ml-v2-appointment-classification"
@@ -638,6 +653,58 @@ export function MyLifeDashboard({
                           })}
                         </span>
                       </button>
+                        {appointment.assignee?.trim() && (
+                          <span
+                            className="ml-v2-today-assignee"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {(() => {
+                              const display =
+                                appointment.assigneeDisplayStyle === "avatar"
+                                  ? appointment.avatarData
+                                    ? (
+                                      <img
+                                        src={appointment.avatarData}
+                                        alt={appointment.assignee}
+                                      />
+                                    )
+                                    : (
+                                      <span className="ml-v2-today-person-icon">
+                                        {appointment.assignee
+                                          .trim()
+                                          .split(/\s+/)
+                                          .map((part) => part[0])
+                                          .slice(0, 2)
+                                          .join("")
+                                          .toUpperCase()}
+                                      </span>
+                                    )
+                                  : <span>{appointment.assignee}</span>;
+
+                              return appointment.assigneePersonId ? (
+                                <PeopleProfileHoverCard
+                                  person={{
+                                    id: appointment.assigneePersonId,
+                                    name: appointment.assignee,
+                                    avatarData: appointment.avatarData,
+                                  }}
+                                  onEdit={() =>
+                                    onEditAssigneeProfile?.(
+                                      appointment.assigneePersonId!
+                                    )
+                                  }
+                                  onView={() =>
+                                    onViewAssigneeProfile?.(
+                                      appointment.assigneePersonId!
+                                    )
+                                  }
+                                >
+                                  {display}
+                                </PeopleProfileHoverCard>
+                              ) : display;
+                            })()}
+                          </span>
+                        )}
                     </li>
                   );
                 })}
@@ -844,7 +911,7 @@ export function MyLifeDashboard({
           className="ml-v2-dashboard-widget-fixed"
           draggable={false}
         >
-          <div
+          <div className="ml-v2-today-tasks-date-label"
             style={{
               fontSize: 12,
               color: "#665b80",
@@ -856,6 +923,8 @@ export function MyLifeDashboard({
           </div>
           <ComingUpWidget
             tasks={displayedDailyTasks}
+            onEditAssigneeProfile={onEditAssigneeProfile}
+            onViewAssigneeProfile={onViewAssigneeProfile}
             onCompleteTask={onCompleteTodayTask}
             today={today}
             formatDate={formatDate}

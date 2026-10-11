@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, CheckCheck, ChevronRight, Clock3 } from "lucide-react";
 import type { CSSProperties } from "react";
+import { PeopleProfileHoverCard } from "../people-profile-hover-card";
 
 export type DashboardUpcomingTask = {
   id: string;
@@ -11,6 +12,8 @@ export type DashboardUpcomingTask = {
   dueTime?: string;
   assignee?: string;
   avatarData?: string | null;
+  assigneePersonId?: string;
+  assigneeDisplayStyle?: "name" | "avatar";
   statusColor: string;
   textStyle?: CSSProperties;
 };
@@ -21,6 +24,8 @@ export type ComingUpWidgetProps = {
   formatDate: (date: string) => string;
   onTaskClick: (id: string) => void;
   onCompleteTask: (id: string) => Promise<void>;
+  onEditAssigneeProfile?: (personId: string) => void;
+  onViewAssigneeProfile?: (personId: string) => void;
 };
 
 // STEP P36C.1O.1D - Stable pastel title color per task.
@@ -56,6 +61,8 @@ export function ComingUpWidget({
   tasks,
   onTaskClick,
   onCompleteTask,
+  onEditAssigneeProfile,
+  onViewAssigneeProfile,
 }: ComingUpWidgetProps) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -106,16 +113,38 @@ export function ComingUpWidget({
                   >
                     {task.title}
                   </span>
-                  <span className="ml-v2-today-assignee">
-                    {task.avatarData ? (
-                      <img src={task.avatarData} alt="" />
-                    ) : (
-                      <span className="ml-v2-today-person-icon">
-                        {(task.assignee || "?").slice(0, 1).toUpperCase()}
+                  {(() => {
+                    const assigneeDisplay = (
+                      <span
+                        className="ml-v2-today-assignee"
+                        title={task.assignee || "Unassigned"}
+                        aria-label={task.assignee || "Unassigned"}
+                      >
+                        {!task.assignee || task.assigneeDisplayStyle !== "avatar" ? (
+                          <span>{task.assignee || "Unassigned"}</span>
+                        ) : task.avatarData ? (
+                          <img src={task.avatarData} alt="" />
+                        ) : (
+                          <span className="ml-v2-today-person-icon">
+                            {task.assignee.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}
+                          </span>
+                        )}
                       </span>
-                    )}
-                    {task.assignee || "Unassigned"}
-                  </span>
+                    );
+                    return task.assigneePersonId ? (
+                      <PeopleProfileHoverCard
+                        person={{
+                          id: task.assigneePersonId,
+                          name: task.assignee || "",
+                          avatarData: task.avatarData,
+                        }}
+                        onEdit={() => onEditAssigneeProfile?.(task.assigneePersonId!)}
+                        onView={() => onViewAssigneeProfile?.(task.assigneePersonId!)}
+                      >
+                        {assigneeDisplay}
+                      </PeopleProfileHoverCard>
+                    ) : assigneeDisplay;
+                  })()}
                 </span>
                 <span className="ml-v2-today-time">
                   <Clock3 size={12} aria-hidden="true" />

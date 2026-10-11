@@ -6,6 +6,9 @@ import {
   primaryKey,
 } from "drizzle-orm/sqlite-core";
 export const workspace = sqliteTable("workspace", {
+  listColumnOrder: text("list_column_order").notNull().default("{}"),
+  listColumnWidths: text("list_column_widths").notNull().default("{}"),
+  listColumnSettings: text("list_column_settings").notNull().default("{}"),
   id: text("id").primaryKey(),
   statusOptions: text("status_options")
     .notNull()

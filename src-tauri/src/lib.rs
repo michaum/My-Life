@@ -124,6 +124,18 @@ pub fn run() {
             sql: include_str!("../migrations/0019_notes_foundation.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 21,
+            description: "0020_list_column_widths",
+            sql: include_str!("../migrations/0020_list_column_widths.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 22,
+            description: "0021_list_column_settings",
+            sql: include_str!("../migrations/0021_list_column_settings.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

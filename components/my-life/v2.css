@@ -717,6 +717,7 @@
 }
 
 .ml-v2-project-navigation {
+  flex-shrink: 0;
   max-height: 230px;
   overflow-y: auto;
   padding-right: 2px;
@@ -2516,10 +2517,18 @@
   color: #6958dc;
 }
 
-.ml-v2-shell .draggable-column-head.is-dragging {
-  background: #fff;
-  color: #6d5ce7;
-  box-shadow: 0 8px 24px rgba(79, 65, 155, 0.15);
+.ml-v2-shell .list-head .draggable-column-head.is-dragging {
+  background: #7954e8;
+  color: #ffffff;
+  border-color: #7954e8;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.ml-v2-shell .list-head .draggable-column-head.is-dragging > span,
+.ml-v2-shell .list-head .draggable-column-head.is-dragging [data-column-menu],
+.ml-v2-shell .list-head .draggable-column-head.is-dragging svg {
+  color: #ffffff;
 }
 
 .ml-v2-shell .column-drag-handle {
@@ -9746,3 +9755,490 @@
   .ml-v2-nav-item[data-nav-id="notes"]:not(.is-active) .ml-v2-nav-icon {
   color: #c57b9f;
 }
+
+/* CM.7Q.4J - UNIFORM COLUMN HEADER ALIGNMENT */
+.ml-v2-shell .list-head .ml-column-menu-header {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.ml-v2-shell .list-head .ml-column-menu-header > span {
+  min-width: 0;
+}
+
+.ml-v2-shell .list-head .ml-column-menu-header [data-column-menu] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 28px;
+  margin-left: auto;
+  vertical-align: middle;
+}
+
+/* CM.7Q.5S.2 - Column resize edge */
+.ml-v2-shell .ml-column-resize-handle {
+  position: absolute;
+  z-index: 2;
+  top: -4px;
+  right: -8px;
+  bottom: -4px;
+  width: 12px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.ml-v2-shell .ml-column-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  left: 5px;
+  width: 2px;
+  border-radius: 2px;
+  background: #c6c3d3;
+  opacity: 0.85;
+  transition: background 140ms ease, opacity 140ms ease;
+}
+
+.ml-v2-shell .ml-column-resize-handle:hover::after,
+.ml-v2-shell .ml-column-resize-handle:active::after {
+  background: #8875ed;
+  opacity: 1;
+}
+
+
+/* CM.7Q.7I.4 - Universal People profile hover card */
+.ml-v2-shell .ml-person-hover-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.ml-v2-shell .ml-person-hover-card {
+  position: absolute;
+  z-index: 100;
+  left: 0;
+  bottom: calc(100% + 8px);
+  width: 290px;
+  max-width: min(290px, 85vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--ml-border, #e5e2f1);
+  border-radius: 12px;
+  background: var(--ml-surface-solid, #ffffff);
+  color: var(--ml-text, #202331);
+  box-shadow: 0 10px 28px rgba(32, 35, 49, 0.13);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+.ml-v2-shell .ml-person-hover-wrapper:hover .ml-person-hover-card,
+.ml-v2-shell .ml-person-hover-wrapper:focus-within .ml-person-hover-card {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.ml-v2-shell .ml-person-hover-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ml-v2-shell .ml-person-hover-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--ml-surface-soft, #f9faff);
+  font-weight: 700;
+}
+
+.ml-v2-shell .ml-person-hover-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ml-v2-shell .ml-person-hover-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ml-v2-shell .ml-person-hover-details strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.ml-v2-shell .ml-person-hover-details small {
+  font-size: 12px;
+  color: var(--ml-text-soft, #73788c);
+}
+
+.ml-v2-shell .ml-person-hover-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ml-v2-shell .ml-person-hover-actions button {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--ml-border, #e5e2f1);
+  border-radius: 8px;
+  background: var(--ml-surface-soft, #f9faff);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.ml-v2-shell .ml-person-hover-actions button:hover:not(:disabled) {
+  background: var(--ml-surface, #ffffff);
+}
+
+.ml-v2-shell .ml-person-hover-actions button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+
+/* CM.7Q.7I.7 - Foreground layer for People hover cards */
+.ml-v2-shell .ml-person-hover-wrapper:hover,
+.ml-v2-shell .ml-person-hover-wrapper:focus-within {
+  z-index: 1000;
+}
+
+.ml-v2-shell .ml-person-hover-wrapper:hover .ml-person-hover-card,
+.ml-v2-shell .ml-person-hover-wrapper:focus-within .ml-person-hover-card {
+  z-index: 1001;
+}
+
+.ml-v2-shell .board-card:has(.ml-person-hover-wrapper:hover),
+.ml-v2-shell .board-card:has(.ml-person-hover-wrapper:focus-within),
+.ml-v2-shell .task-card:has(.ml-person-hover-wrapper:hover),
+.ml-v2-shell .task-card:has(.ml-person-hover-wrapper:focus-within) {
+  position: relative;
+  z-index: 1002;
+}
+
+
+/* CM.7Q.7I.11 - Portal uses the existing My Life hover-card palette. */
+.ml-person-hover-card.ml-person-hover-card--portal {
+  position: fixed;
+  z-index: 10000;
+  bottom: auto;
+  right: auto;
+  width: 290px;
+  max-width: min(290px, 85vw);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--ml-border, #e5e2f1);
+  border-radius: 12px;
+  background: var(--ml-surface-solid, #ffffff);
+  color: var(--ml-text, #202331);
+  box-shadow: 0 10px 28px rgba(32, 35, 49, 0.13);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--ml-surface-soft, #f9faff);
+  font-weight: 700;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-details strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-details small {
+  font-size: 12px;
+  color: var(--ml-text-soft, #73788c);
+}
+
+.ml-person-hover-card--portal .ml-person-hover-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-actions button {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--ml-border, #e5e2f1);
+  border-radius: 8px;
+  background: var(--ml-surface-soft, #f9faff);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.ml-person-hover-card--portal .ml-person-hover-actions button:hover:not(:disabled) {
+  background: var(--ml-surface, #ffffff);
+}
+
+.ml-person-hover-card--portal .ml-person-hover-actions button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+
+/* CM.7Q.7I.16F - Today's Tasks avatar wrapper alignment */
+.ml-v2 .ml-v2-today-task-text > .ml-person-hover-wrapper {
+  order: 0;
+  flex: 0 0 auto;
+  min-width: 19px;
+  max-width: 42%;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.ml-v2 .ml-v2-today-task-text > .ml-person-hover-wrapper .ml-v2-today-assignee {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 19px;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.ml-v2 .ml-v2-today-task-text > .ml-person-hover-wrapper .ml-v2-today-assignee img,
+.ml-v2 .ml-v2-today-task-text > .ml-person-hover-wrapper .ml-v2-today-person-icon {
+  display: block;
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
+  min-height: 19px;
+  flex: 0 0 19px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ml-v2 .ml-v2-today-task-text > .ml-person-hover-wrapper .ml-v2-today-person-icon {
+  display: grid;
+  place-items: center;
+}
+
+/* CM.7Q.7I.20F.3 - Upcoming Appointments row alignment */
+.ml-v2 .ml-v2-dashboard-appointments-list > li {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 3px 6px;
+  border-radius: 11px;
+  transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list > li:hover {
+  background: var(--ml-v2-accent-soft, #eee9ff);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(101, 64, 196, .12);
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 5px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  .ml-v2-dashboard-appointment-link.ml-v2-standard-button:hover,
+.ml-v2 .ml-v2-dashboard-appointments-list
+  .ml-v2-dashboard-appointment-link.ml-v2-standard-button:active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  .ml-v2-dashboard-appointment-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  .ml-v2-dashboard-appointment-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  .ml-v2-dashboard-appointment-date {
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  .ml-v2-appointment-classification {
+  display: none;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list > li > .ml-v2-today-assignee {
+  order: 1;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  overflow: visible;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  > li > .ml-v2-today-assignee img,
+.ml-v2 .ml-v2-dashboard-appointments-list
+  > li > .ml-v2-today-assignee .ml-v2-today-person-icon {
+  width: 19px;
+  height: 19px;
+  min-width: 19px;
+  min-height: 19px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ml-v2 .ml-v2-dashboard-appointments-list
+  > li > .ml-v2-today-assignee .ml-person-hover-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .ml-v2 .ml-v2-dashboard-appointments-list
+    .ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+    gap: 5px;
+  }
+
+  .ml-v2 .ml-v2-dashboard-appointments-list
+    .ml-v2-dashboard-appointment-date {
+    font-size: 10px;
+  }
+}
+
+/* CM.7Q.7I.20G.3 - Borderless dashboard project tasks */
+.ml-v2 .ml-v2-dashboard-project-todo-card
+  .ml-v2-dashboard-project-todo-task {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 9px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  transition: background-color 160ms ease;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-card
+  .ml-v2-dashboard-project-todo-task:hover {
+  background: var(--ml-v2-accent-soft, #f2edff) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.ml-v2 .ml-v2-dashboard-project-todo-card
+  .ml-v2-dashboard-project-todo-task:focus-visible {
+  outline: 2px solid var(--ml-v2-accent, #7656db);
+  outline-offset: 2px;
+}
+
+/* CM.7Q.7I.20H.2 - Today's Tasks date padding */
+.ml-v2 .ml-v2-today-tasks-date-label {
+  padding-inline: 12px;
+  box-sizing: border-box;
+}
+
+/* CM.7Q.7I.20H.3C - Unified Dashboard CLF alignment */
+
+/* Match the established 17px left inset of widget titles. */
+.ml-v2 .ml-v2-dashboard-widget > .ml-v2-dashboard-widget-content {
+  padding-left: 17px;
+  padding-right: 17px;
+  box-sizing: border-box;
+}
+
+/* Avoid nested horizontal padding in the Project Tasks widget. */
+.ml-v2 .ml-v2-dashboard-project-todo-card
+  .ml-v2-dashboard-project-todo {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Align the Notes content with its widget title. */
+.ml-v2 .ml-v2-dashboard-notes-card
+  .ml-v2-dashboard-notes-preview {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Date aligns directly with the Today's Tasks title. */
+.ml-v2 .ml-v2-today-tasks-date-label {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Preserve natural icon and avatar spacing within rows. */

@@ -1,6 +1,9 @@
 "use client";
 
 import { MyLifeTimeGreeting } from "./time-greeting";
+import { MyLifeGreetingClock } from "./greeting-clock";
+import { MyLifeGreetingWeather } from "./greeting-weather";
+import { MyLifeGreetingSettings } from "./greeting-settings";
 import { SmartWallpaper } from "./smart-wallpaper";
 
 import { useState, type ReactNode } from "react";
@@ -136,7 +139,7 @@ export function MyLifeAppShell({
             className="ml-v2-universal-header"
             aria-label="Current page"
           >
-            <div className="ml-v2-dashboard-welcome">
+            <div className="ml-v2-dashboard-welcome" style={activeView === "home" ? { position: "relative" } : undefined}>
               <div>
                 <span className="ml-v2-dashboard-eyebrow">
                   {activeView === "home"
@@ -163,6 +166,8 @@ export function MyLifeAppShell({
                     day: "numeric",
                     year: "numeric",
                   })}
+                  {activeView === "home" ? <MyLifeGreetingClock /> : null}
+                  {activeView === "home" ? <MyLifeGreetingWeather /> : null}
                 </time>
 
                 <p>
@@ -173,6 +178,7 @@ export function MyLifeAppShell({
                       : subtitle || "Keep everything organized and moving forward."}
                 </p>
               </div>
+              {activeView === "home" ? <MyLifeGreetingSettings /> : null}
             </div>
           </section>
 
