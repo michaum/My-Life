@@ -34,7 +34,7 @@ function dateKey(date: Date) {
 
 // STEP 18F.23I.43I-P24 - Stable pastel accent per task.
 const TASK_PASTEL_COLORS = [
-  "#F4A9C6", // pink
+  "#C0A5F5", // lavender
   "#B9A5F5", // lavender
   "#9BD9E8", // sky blue
   "#F7CD91", // peach

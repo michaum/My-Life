@@ -21,7 +21,7 @@
 
   --ml-v2-accent: #7c6ff2;
   --ml-v2-accent-soft: #eeeaff;
-  --ml-v2-pink: #f58bb5;
+  --ml-v2-lavender: #a58cf6;
   --ml-v2-blue: #79a9f7;
   --ml-v2-green: #73c9a3;
   --ml-v2-orange: #f2b36f;
@@ -124,7 +124,7 @@
     linear-gradient(
       135deg,
       var(--ml-v2-accent),
-      var(--ml-v2-pink)
+      var(--ml-v2-lavender)
     );
   box-shadow: 0 8px 22px rgba(124, 111, 242, 0.25);
 }
@@ -397,7 +397,7 @@
     linear-gradient(
       135deg,
       #eeeaff,
-      #ffeaf2
+      #e6ddff
     );
   font-size: 0.82rem;
   font-weight: 800;
@@ -534,12 +534,12 @@
   background:
     linear-gradient(
       110deg,
-      #ff0f68 0%,
-      #d50058 48%,
-      #a9004e 100%
+      #7656db 0%,
+      #6247ba 48%,
+      #49405f 100%
     );
   box-shadow:
-    0 8px 24px rgba(215, 0, 88, 0.28),
+    0 8px 24px rgba(73, 64, 95, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
   color: #ffffff;
   isolation: isolate;
@@ -2991,7 +2991,7 @@
 
 .ml-v2 .calendar-day:hover {
   background: #fcfcfd;
-  box-shadow: inset 0 0 0 1px rgba(255, 26, 102, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(118, 86, 219, 0.08);
 }
 
 .ml-v2 .calendar-grid--day .calendar-day {
@@ -3026,9 +3026,9 @@
 }
 
 .ml-v2 .calendar-day > span.today {
-  background: #ff1a66;
+  background: #7656db;
   color: #ffffff;
-  box-shadow: 0 3px 9px rgba(255, 26, 102, 0.22);
+  box-shadow: 0 3px 9px rgba(118, 86, 219, 0.22);
 }
 
 .ml-v2 .calendar-entry {
@@ -3248,9 +3248,9 @@
 }
 
 .ml-v2 .calendar-timeline-date-header.today strong {
-  background: #ff1a66;
+  background: #7656db;
   color: #ffffff;
-  box-shadow: 0 3px 9px rgba(255, 26, 102, 0.22);
+  box-shadow: 0 3px 9px rgba(118, 86, 219, 0.22);
 }
 
 .ml-v2 .calendar-timeline-hours {
@@ -3298,7 +3298,7 @@
 }
 
 .ml-v2 .calendar-timeline-day.today {
-  background-color: rgba(255, 26, 102, 0.025);
+  background-color: rgba(118, 86, 219, 0.025);
 }
 
 .ml-v2 .calendar-timeline-day:hover {
@@ -3370,7 +3370,7 @@
 }
 
 .ml-v2 .calendar-timeline-task:focus-visible {
-  outline: 2px solid #ff1a66;
+  outline: 2px solid #7656db;
   outline-offset: 1px;
 }
 
@@ -3589,7 +3589,7 @@
   font-weight: 750;
 }
 
-/* Use V2 purple for today instead of legacy pink */
+/* Use the V2 purple accent for today's date */
 
 .ml-v2 .calendar-day > span.today {
   background: #7567f8;
@@ -3899,8 +3899,8 @@
 
 .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(2) {
   background: #ffffff;
-  border-color: #ffc0da;
-  border-top: 1px solid #ffc0da;
+  border-color: #e8c98d;
+  border-top: 1px solid #e8c98d;
 }
 
 .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(3) {
@@ -3922,7 +3922,7 @@
 
 .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(2) span,
 .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(2) strong {
-  color: #b92366;
+  color: #865700;
 }
 
 .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-summary-card:nth-child(3) span,
@@ -4098,9 +4098,9 @@
 
 .ml-v2 .ml-v2-dashboard-reference
 .ml-v2-dashboard-summary-card:nth-child(2) {
-  background: #fff0f5;
-  border-color: #ffc0d6;
-  border-top-color: #f05b9a;
+  background: #fff6e5;
+  border-color: #e8c98d;
+  border-top-color: #b77a18;
 }
 
 .ml-v2 .ml-v2-dashboard-reference
@@ -4197,8 +4197,8 @@
 }
 
 .ml-v2 .ml-v2-dashboard-reference .ml-v2-summary-overdue {
-  background: #fff0f1;
-  color: #d83348;
+  background: #ffebc2;
+  color: #865700;
 }
 
 .ml-v2 .ml-v2-dashboard-reference .ml-v2-summary-upcoming {
@@ -9390,7 +9390,7 @@
   border-radius: 20px;
   display: grid;
   place-items: center;
-  background: #ff0066;
+  background: #7656db;
   color: white;
   font-size: 10px;
   font-weight: 700;
@@ -10200,6 +10200,14 @@
   box-shadow: none !important;
 }
 
+/* STEP 18F.8F.20N - Dark dashboard project task hover. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-project-todo-card
+  .ml-v2-dashboard-project-todo-task:hover {
+  background: #353452 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
 .ml-v2 .ml-v2-dashboard-project-todo-card
   .ml-v2-dashboard-project-todo-task:focus-visible {
   outline: 2px solid var(--ml-v2-accent, #7656db);
@@ -10739,10 +10747,32 @@
   .ml-v2-shell .list-subtask-grid-row .list-subtask-display { padding-left: 20px; }
 }
 
+/* STEP 18F.8F.20F - Readable inline subtask titles in both themes. */
+.ml-v2-shell .list-subtask-display input.list-subtask-inline-title {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  color: #202331;
+  border: 1px solid #c9c8dd;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font: inherit;
+}
+.ml-v2-shell .list-subtask-display input.list-subtask-inline-title:hover {
+  background: #fff;
+  color: #202331;
+}
+.ml-v2-shell .list-subtask-display input.list-subtask-inline-title:focus {
+  background: #fff;
+  color: #202331;
+  border-color: #7656db;
+}
+
 /* STEP 18F.3B - SUBTASK INLINE COLUMN EDITORS */
 .list-subtask-edit-cell { min-width: 0; display: flex; align-items: center; padding: 3px 6px; overflow: hidden; }
-.list-subtask-edit-cell select, .list-subtask-edit-cell input { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; font: inherit; font-size: 12px; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 5px 4px; }
-.list-subtask-edit-cell select:hover, .list-subtask-edit-cell input:hover, .list-subtask-edit-cell select:focus, .list-subtask-edit-cell input:focus { border-color: var(--ml-border, #c9c8dd); background: var(--ml-surface, #fff); }
+.list-subtask-edit-cell select, .list-subtask-edit-cell input { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; font: inherit; font-size: 12px; color: #202331; background: #fff; border: 1px solid #c9c8dd; border-radius: 6px; padding: 5px 4px; }
+.list-subtask-edit-cell select:hover, .list-subtask-edit-cell input:hover, .list-subtask-edit-cell select:focus, .list-subtask-edit-cell input:focus { border-color: #7656db; background: #fff; color: #202331; }
 .list-subtask-edit-cell input[type="date"] { min-width: 0; }
 
 /* STEP 18F.3D - CLICK-TO-OPEN SUBTASK DATE PICKER */

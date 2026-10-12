@@ -1,98 +1,98 @@
 /* Taskflow palette supplied by the user: orange, deep teal, and charcoal. */
 body{background:#f5f6f5;color:#1d2128}
-button:focus-visible,a:focus-visible{outline-color:#ff1a66}
+button:focus-visible,a:focus-visible{outline-color:#7656db}
 .sidebar{background:#000;border-right-color:#242424;color:#fff}
 .brand{color:#fff}
-.brand-mark{background:#ff1a66;color:#1d2128}
-.brand-dot{color:#ff1a66}
+.brand-mark{background:#7656db;color:#1d2128}
+.brand-dot{color:#7656db}
 .workspace-label{background:#262b33;border-color:#3a414a}
-.workspace-icon{background:#ff1a66;color:#1d2128}
+.workspace-icon{background:#7656db;color:#1d2128}
 .workspace-label small,.profile small{color:#aeb7b8}
-.workspace-label>svg{color:#ff1a66}
+.workspace-label>svg{color:#7656db}
 .nav-item{color:#c6ced0}
 .nav-item:hover{background:#292f37;color:#fff}
-.nav-item.selected{background:#727272;color:#fff;box-shadow:inset 3px 0 #ff1a66}
+.nav-item.selected{background:#727272;color:#fff;box-shadow:inset 3px 0 #7656db}
 .nav-count{color:#96a7a9}
 .nav-item.selected .nav-count{color:#dce8e8}
-.sidebar-section-title{color:#ff78a5}
-.sidebar-section-title button,.create-project{color:#ff5c91}
+.sidebar-section-title{color:#a58cf6}
+.sidebar-section-title button,.create-project{color:#7656db}
 .quiet-note{background:#727272;border-color:#858585;color:#f1f1f1}
-.quiet-note>svg{color:#ff1a66}
+.quiet-note>svg{color:#7656db}
 .quiet-note strong{color:#fff}
 .quiet-note p{color:#d2e2e2}
 .profile{border-top-color:#373e47}
-.profile .avatar,.topbar .avatar{background:#ff1a66;color:#1d2128}
-.online-dot{background:#ff1a66}
+.profile .avatar,.topbar .avatar{background:#7656db;color:#1d2128}
+.online-dot{background:#7656db}
 .topbar,.project-header,.viewbar{background:#fff}
 .topbar,.viewbar{border-color:#d5dfde}
 .breadcrumb{color:#738184}
 .breadcrumb strong,.private-label{color:#727272}
-.eyebrow{color:#d41457}
+.eyebrow{color:#7656db}
 .project-header>p,.project-summary{color:#687579}
 .status-label{color:#727272}
-.status-label>span{background:#ff1a66}
+.status-label>span{background:#7656db}
 .summary-progress{background:#dce6e5}
-.summary-progress i{background:#ff1a66}
-.example-label{background:#ffedf3;border-color:#ff9fbe;color:#861a3f}
+.summary-progress i{background:#7656db}
+.example-label{background:#f2edff;border-color:#9b82e8;color:#51328e}
 .view-tab{color:#718083}
-.view-tab.active{color:#727272;border-color:#ff1a66}
+.view-tab.active{color:#727272;border-color:#7656db}
 .saved-label{color:#727272}
 .search-box{color:#727272}
-.search-box:focus-within{outline-color:#ff1a66}
+.search-box:focus-within{outline-color:#7656db}
 .toolbar-actions select{color:#727272;border-color:#cbd8d7}
 .board-column{background:#edf1f1}
 .board-column.drop-target{background:#e4e4e4;border-color:#727272}
-.column-count{background:#ffd1df;color:#7a1739}
+.column-count{background:#e4d8ff;color:#51328e}
 .column-header button,.card-top>button{color:#727272}
 .task-card{border-color:#d5dedd;box-shadow:0 2px 2px #1d212808}
 .task-card:hover{box-shadow:0 6px 18px #1d212814}
-.priority-high{background:#ffe7ef;color:#8f1840}
-.priority-high>span{background:#ff1a66}
+.priority-high{background:#eee8ff;color:#6545b5}
+.priority-high>span{background:#7656db}
 .priority-medium{background:#e6e6e6;color:#727272}
 .priority-medium>span{background:#727272}
 .priority-low{background:#e8eaec;color:#50575f}
 .priority-low>span{background:#1d2128}
 .check-task{border-color:#8ca5a6}
-.check-task:hover{border-color:#ff1a66;background:#ffe8f0}
+.check-task:hover{border-color:#7656db;background:#eee8ff}
 .check-task.checked{background:#727272;border-color:#727272}
 .subtask-progress>span,.due,.card-meta,.card-meta>span:not(.avatar){color:#667779}
 .subtask-progress>div{background:#dfe7e7}
-.subtask-progress i{background:#ff1a66}
+.subtask-progress i{background:#7656db}
 .card-project{color:#727272}
 .add-column-task{color:#727272}
 .add-column-task:hover{background:#e5e5e5;color:#1d2128}
 .task-list,.calendar-wrap,.overview-panel,.stat{border-color:#d4dfde}
 .list-head{background:#727272;color:#fff}
 .list-head .custom-column-head,.list-head .add-column-head{color:#fff}
-.custom-column-head small{color:#ffb0ca}
-.list-row:hover{background:#fff2f6}
+.custom-column-head small{color:#bba4ff}
+.list-row:hover{background:#f6f2ff}
 .custom-value-cell{color:#727272}
-.custom-value-cell:hover{border-color:#ff1a66;color:#1d2128}
-.list-section-head{background:#ff1a66;border-color:#d91558;color:#1d2128}
+.custom-value-cell:hover{border-color:#7656db;color:#1d2128}
+.list-section-head{background:#7656db;border-color:#d91558;color:#1d2128}
 .list-section-head>span,.list-section-head>button:first-child,.section-add-task,.section-menu{color:#1d2128}
 .list-customize>span,.list-customize button{color:#727272}
 .calendar-heading h2,.panel-title h2{color:#1d2128}
 .weekday{background:#727272;border-color:#858585;color:#fff}
 .calendar-day{border-color:#dce4e3}
 .calendar-day>span{color:#727272}
-.calendar-day>span.today{background:#ff1a66;color:#1d2128}
+.calendar-day>span.today{background:#7656db;color:#1d2128}
 .calendar-task{background:#e1eeee}
 .calendar-note{color:#727272}
 .stat>div{color:#727272}
 .stat strong{color:#727272}
 .upcoming-task small,.project-progress-row small{color:#727272}
-.project-progress-row .summary-progress i{background:#ff1a66!important}
-.toast{background:#1d2128;border-color:#ff1a66;color:#fff}
+.project-progress-row .summary-progress i{background:#7656db!important}
+.toast{background:#1d2128;border-color:#7656db;color:#fff}
 .editor-form label,.editor-form legend{color:#727272}
 .editor-form input,.editor-form textarea,.editor-form select{color:#1d2128}
 .editor-footer{border-color:#d5e0df}
 .subtasks-editor>strong,.comments-editor>strong,.help-content strong{color:#727272}
-.subtask-row input{accent-color:#ff1a66}
+.subtask-row input{accent-color:#7656db}
 .comment p,.help-content p{color:#727272}
 .column-manager>button:not([data-slot=button]){border-color:#d2dfde}
 .column-manager>button:not([data-slot=button]):hover{background:#e7f0f0}
 .empty-field-list{border-color:#d4d4d4;color:#727272}
-.error-banner{border-left:4px solid #ff1a66}
+.error-banner{border-left:4px solid #7656db}
 .workspace-footer{color:#d7d7d7}
 
 /* Slate workspace canvas requested by the user. Content cards stay light for legibility. */
@@ -107,21 +107,21 @@ body,.main-content{background:#414141}
 .project-header h1{color:#fff}
 .project-header>p,.project-summary{color:#eef1f2}
 .project-settings{color:#fff}
-.status-label{color:#ff9fbe}
-.status-label>span{background:#ff1a66}
+.status-label{color:#9b82e8}
+.status-label>span{background:#7656db}
 .project-header .summary-progress{background:#4f565d}
 .view-tab{color:#eef1f2}
-.view-tab.active{color:#ff5c91;border-color:#1d2128}
+.view-tab.active{color:#7656db;border-color:#1d2128}
 .saved-label{color:#f2f4f5}
 .toolbar .search-box{background:#fff;border-radius:6px;padding:0 9px;color:#727272}
-.toolbar .search-box:focus-within{outline:2px solid #ff1a66}
+.toolbar .search-box:focus-within{outline:2px solid #7656db}
 .list-customize>span{color:#fff}
 .workspace-footer{color:#f2f4f5}
 .main-content>.loading-state{color:#fff}
 
 /* Asana-style single-select menus and editable color options. */
 .choice-trigger{width:100%;min-width:0;height:32px;padding:3px 8px;display:flex;align-items:center;justify-content:space-between;gap:7px;border:1px solid #cbd8d7;border-radius:6px;background:#fff;color:#1d2128;text-align:left;font-size:11px}
-.choice-trigger:hover,.choice-trigger[aria-expanded=true]{border-color:#ff1a66;box-shadow:0 0 0 1px #ff1a6630}
+.choice-trigger:hover,.choice-trigger[aria-expanded=true]{border-color:#7656db;box-shadow:0 0 0 1px #7656db30}
 .choice-trigger>span{min-width:0;overflow:hidden}.choice-trigger>svg{color:#718083;flex-shrink:0}
 .choice-pill{display:inline-block;max-width:100%;padding:3px 7px;border-radius:4px;color:#1d2128;line-height:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .choice-placeholder{color:#7b8588}
@@ -137,13 +137,13 @@ body,.main-content{background:#414141}
 .option-editor-row.status-option-row{grid-template-columns:18px 30px 1fr}
 .option-editor-row>svg{color:#8c9598}.option-editor-row input{height:34px!important}
 .option-color-button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#1d2128}
-.remove-option{width:30px;height:30px;display:grid;place-items:center;border-radius:5px;color:#7a8487}.remove-option:hover{background:#ffe8f0;color:#b7124b}
+.remove-option{width:30px;height:30px;display:grid;place-items:center;border-radius:5px;color:#7a8487}.remove-option:hover{background:#eee8ff;color:#7656db}
 .color-palette{width:220px;padding:10px;background:#fff;color:#1d2128}.color-palette>strong{display:block;margin-bottom:9px;font-size:11px}.color-palette>div{display:grid;grid-template-columns:repeat(5,30px);gap:7px}
 .color-palette button{width:30px;height:30px;border-radius:5px;display:grid;place-items:center;color:#1d2128}.color-palette button[aria-pressed=true]{outline:2px solid #727272;outline-offset:2px}
 .add-option{margin-top:12px;width:fit-content}
 .task-color-control{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#727272}
 .task-color-trigger{height:36px;width:100%;display:flex;align-items:center;gap:9px;padding:0 10px;border:1px solid #cbd7d6;border-radius:6px;background:#fff;color:#1d2128;text-align:left}
-.task-color-trigger:hover{border-color:#ff1a66}.task-color-trigger i{width:20px;height:20px;border-radius:5px;border:1px solid #1d21281a}.task-color-trigger span{flex:1}.task-color-trigger svg{color:#727272}
+.task-color-trigger:hover{border-color:#7656db}.task-color-trigger i{width:20px;height:20px;border-radius:5px;border:1px solid #1d21281a}.task-color-trigger span{flex:1}.task-color-trigger svg{color:#727272}
 .reset-task-color{grid-column:1/-1;width:100%!important;height:auto!important;padding:8px!important;margin-top:3px;background:#f1f2f2!important;color:#414141!important;font-size:11px}
 .calendar-task{color:#1d2128;font-weight:500;border:1px solid #1d212812}
 .list-row>.choice-trigger{height:29px;font-size:10px}.list-row>.choice-trigger .choice-pill{line-height:16px;padding:2px 6px;font-size:10px}

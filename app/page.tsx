@@ -219,7 +219,7 @@ function normalizeOptions(value: unknown): ChoiceOption[] {
 }
 
 const statuses: Status[] = ["To do", "In progress", "In review", "Done"];
-const statusColors = ["#7f8a8d", "#ff1a66", "#727272", "#727272"];
+const statusColors = ["#7f8a8d", "#7656db", "#727272", "#727272"];
 const defaultStatusOptions: ChoiceOption[] = statuses.map((label, index) => ({
   id: label,
   label,
@@ -319,7 +319,7 @@ const projectIcons = {
 const choicePalette = [
   "#ffbe0c",
   "#fb5507",
-  "#ff006e",
+  "#9874d4",
   "#8338eb",
   "#3a86fe",
   "#b8b8b8",
@@ -333,21 +333,21 @@ const choicePalette = [
   "#78a7f5",
   "#a595ed",
   "#c18be3",
-  "#e58bd0",
-  "#f48db6",
-  "#f7a0ad",
+  "#8464d8",
+  "#b39af2",
+  "#9281d6",
   "#9fa4a6",
   "#8adbd3",
   "#82b1f6",
   "#d7a0ec",
-  "#f19ac8",
+  "#c2b2f0",
   "#a9b0b2",
 ];
 const colors = [
-  "#ff1a66",
+  "#7656db",
   "#727272",
   "#1d2128",
-  "#d41457",
+  "#8464d8",
   "#ffbe0c",
   "#3a86fe",
 ];
@@ -5074,8 +5074,21 @@ function smartTextFieldUrl(value: string): string | null {
         : `${calendarDates[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${calendarDates.at(-1)!.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
   const moveCalendar = (direction: -1 | 1) => {
     const next = new Date(month);
-    if (calendarMode === "month") next.setMonth(next.getMonth() + direction);
-    else next.setDate(next.getDate() + direction * (calendarMode === "day" ? 1 : 7));
+    if (calendarMode === "month") {
+      const selectedDay = next.getDate();
+      next.setDate(1);
+      next.setMonth(next.getMonth() + direction);
+      const lastDay = new Date(
+        next.getFullYear(),
+        next.getMonth() + 1,
+        0,
+      ).getDate();
+      next.setDate(Math.min(selectedDay, lastDay));
+    } else {
+      next.setDate(
+        next.getDate() + direction * (calendarMode === "day" ? 1 : 7),
+      );
+    }
     setMonth(next);
   };
   return (
@@ -5126,8 +5139,8 @@ function smartTextFieldUrl(value: string): string | null {
                 borderRadius: "12px",
                 display: "grid",
                 placeItems: "center",
-                background: "rgba(255,26,102,0.14)",
-                color: "#ff1a66",
+                background: "rgba(118,86,219,0.14)",
+                color: "#7656db",
               }}
             >
               {updateInstalling ? (
@@ -5253,7 +5266,7 @@ function smartTextFieldUrl(value: string): string | null {
                   type="button"
                   onClick={() => void installAvailableUpdate()}
                   style={{
-                    background: "#ff1a66",
+                    background: "#7656db",
                     color: "#ffffff",
                     border: "none",
                     fontWeight: 700,
@@ -5310,7 +5323,7 @@ function smartTextFieldUrl(value: string): string | null {
                         style={{
                           fontSize: "13px",
                           fontWeight: 700,
-                          color: "#ff1a66",
+                          color: "#7656db",
                         }}
                       >
                         {percentage}%
@@ -5331,7 +5344,7 @@ function smartTextFieldUrl(value: string): string | null {
                           width: `${percentage}%`,
                           height: "100%",
                           borderRadius: "999px",
-                          background: "#ff1a66",
+                          background: "#7656db",
                           transition: "width 160ms ease",
                         }}
                       />
@@ -5654,10 +5667,10 @@ function smartTextFieldUrl(value: string): string | null {
                   borderRadius: "999px",
                   border:
                     taskDateFilter === "overdue"
-                      ? "1px solid #ff1a66"
+                      ? "1px solid #7656db"
                       : "1px solid #d7d7d7",
                   background:
-                    taskDateFilter === "overdue" ? "#ffe8f0" : "#f8f8f8",
+                    taskDateFilter === "overdue" ? "#f0ebff" : "#f8f8f8",
                   color: "#333",
                   fontSize: "11px",
                   lineHeight: 1,
@@ -5692,10 +5705,10 @@ function smartTextFieldUrl(value: string): string | null {
                   borderRadius: "999px",
                   border:
                     taskDateFilter === "today"
-                      ? "1px solid #ff1a66"
+                      ? "1px solid #7656db"
                       : "1px solid #d7d7d7",
                   background:
-                    taskDateFilter === "today" ? "#ffe8f0" : "#f8f8f8",
+                    taskDateFilter === "today" ? "#f0ebff" : "#f8f8f8",
                   color: "#333",
                   fontSize: "11px",
                   lineHeight: 1,
@@ -5732,10 +5745,10 @@ function smartTextFieldUrl(value: string): string | null {
                   borderRadius: "999px",
                   border:
                     taskDateFilter === "upcoming"
-                      ? "1px solid #ff1a66"
+                      ? "1px solid #7656db"
                       : "1px solid #d7d7d7",
                   background:
-                    taskDateFilter === "upcoming" ? "#ffe8f0" : "#f8f8f8",
+                    taskDateFilter === "upcoming" ? "#f0ebff" : "#f8f8f8",
                   color: "#333",
                   fontSize: "11px",
                   lineHeight: 1,
@@ -6633,7 +6646,13 @@ onDragOver={(e) => e.preventDefault()}
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Previous month"
+                      aria-label={
+                        calendarMode === "month"
+                          ? "Previous month"
+                          : calendarMode === "day"
+                            ? "Previous day"
+                            : "Previous week"
+                      }
                       onClick={() =>
                         moveCalendar(-1)
                       }
@@ -6643,7 +6662,13 @@ onDragOver={(e) => e.preventDefault()}
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Next month"
+                      aria-label={
+                        calendarMode === "month"
+                          ? "Next month"
+                          : calendarMode === "day"
+                            ? "Next day"
+                            : "Next week"
+                      }
                       onClick={() =>
                         moveCalendar(1)
                       }

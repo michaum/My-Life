@@ -46,19 +46,24 @@ html[data-ml-theme="dark"] .ml-v2 .ml-v2-nav-item.is-active,
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-nav-item[aria-current="page"] {
   color: var(--ml-v2-text);
 }
-html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button {
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button,
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button {
   background: var(--ml-button-bg);
   border-color: var(--ml-button-border);
   color: var(--ml-button-text);
 }
-html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button:hover:not(:disabled) {
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button:hover:not(:disabled),
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button:hover:not(:disabled) {
   background: var(--ml-button-hover-bg);
   border-color: var(--ml-button-hover-border);
   color: var(--ml-button-hover-text);
 }
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button:active:not(:disabled),
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button:active:not(:disabled),
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button.is-active,
-html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button[aria-pressed="true"] {
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button.is-active,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button[aria-pressed="true"],
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button[aria-pressed="true"] {
   background: var(--ml-button-active-bg);
   border-color: var(--ml-button-active-bg);
   color: var(--ml-button-active-text);
@@ -66,4 +71,135 @@ html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button[aria-pressed="true"] {
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar-appearance .ml-theme-choice__label,
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar-appearance .ml-theme-choice__icon {
   color: var(--ml-v2-text-soft);
+}
+
+/* STEP 18F.8F.23Y - DARK PEOPLE PROFILE SURFACES */
+
+/* The profile hover card is portaled to document.body. */
+html[data-ml-theme="dark"] .ml-person-hover-card--portal {
+  background: #252638;
+  border-color: #42435e;
+  color: #f2efff;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+}
+
+html[data-ml-theme="dark"] .ml-person-hover-card--portal
+.ml-person-hover-details strong {
+  color: #f2efff;
+}
+
+html[data-ml-theme="dark"] .ml-person-hover-card--portal
+.ml-person-hover-details small {
+  color: #b8b6d0;
+}
+
+html[data-ml-theme="dark"] .ml-person-hover-card--portal
+.ml-person-hover-avatar {
+  background: #353451;
+  color: #f2efff;
+}
+
+html[data-ml-theme="dark"] .ml-person-hover-card--portal
+.ml-person-hover-actions button {
+  background: #34334c;
+  border-color: #555073;
+  color: #f2efff;
+}
+
+html[data-ml-theme="dark"] .ml-person-hover-card--portal
+.ml-person-hover-actions button:hover:not(:disabled) {
+  background: #493c72;
+  border-color: #8f75e6;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-person-hover-card--portal
+.ml-person-hover-actions button:focus-visible {
+  outline: 2px solid #a991ff;
+  outline-offset: 2px;
+}
+
+/* The photo editor belongs to the dark People dialog. */
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-editor {
+  background: #303044;
+  border-color: #494861;
+  color: #f2efff;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-actions strong {
+  color: #f2efff;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-actions small {
+  color: #b8b6d0;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-preview {
+  border-color: #565171;
+}
+
+/* Covers both the browse button and the V2 standard-button variant. */
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-browse,
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-browse.ml-v2-standard-button {
+  background: #403853;
+  border-color: #685b91;
+  color: #f1eaff;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-browse:hover,
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-browse.ml-v2-standard-button:hover:not(:disabled) {
+  background: #554579;
+  border-color: #9a80ed;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-remove {
+  color: #ff9ab9;
+}
+
+/* STEP 18F.8F.23AB - PURPLE REMOVE PHOTO BUTTON */
+
+/* Match the existing dark-mode Replace photo button. */
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 5px 11px;
+  border: 1px solid #685b91;
+  border-radius: 8px;
+  background: #403853;
+  color: #f1eaff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-remove:hover:not(:disabled) {
+  background: #554579;
+  border-color: #9a80ed;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-remove:focus-visible {
+  outline: 2px solid #a991ff;
+  outline-offset: 2px;
 }

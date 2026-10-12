@@ -8,8 +8,8 @@
   --card-foreground: #1d2128;
   --popover: #ffffff;
   --popover-foreground: #1d2128;
-  --primary: #ff1a66;
-  --primary-foreground: #1d2128;
+  --primary: #7656db;
+  --primary-foreground: #ffffff;
   --secondary: #eeeeee;
   --secondary-foreground: #727272;
   --muted: #f2f4f3;
@@ -19,7 +19,7 @@
   --destructive: #b84b41;
   --border: #d8e0df;
   --input: #cbd7d6;
-  --ring: #ff1a66;
+  --ring: #7656db;
   --radius: 0.55rem;
 }
 @theme inline {
@@ -1116,6 +1116,12 @@ h1 {
   font-size: 11px;
   color: #78876a;
 }
+
+/* Dark project editor labels use the dialog's readable text palette. */
+html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form label,
+html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form legend {
+  color: #d5d0e2;
+}
 .editor-form input,
 .editor-form textarea,
 .editor-form select {
@@ -1573,7 +1579,7 @@ h1 {
 }
 .row-actions button:hover {
   background: #edf1e8;
-  color: #ff1a66;
+  color: #7656db;
 }
 .option-editor > label {
   margin-top: 11px;
@@ -1607,8 +1613,8 @@ h1 {
 }
 .project-icon-choices button[aria-pressed="true"] {
   color: #fff;
-  background: #ff1a66;
-  border-color: #ff1a66;
+  background: #7656db;
+  border-color: #7656db;
 }
 .font-color-row {
   display: flex;
@@ -1933,4 +1939,59 @@ h1 {
 }
 .person-row > div {
   min-width: 0;
+}
+
+
+/* MY LIFE V2 - STEP 18F.8F.14K - PORTAL DIALOG DARK THEME */
+/* Radix dialogs are portalled under body, outside .ml-v2.
+   Scope these tokens to dialog content, not the whole document. */
+html[data-ml-theme="dark"] [data-slot="dialog-content"] {
+  --background: #262633;
+  --foreground: #f2effb;
+  --card: #262633;
+  --card-foreground: #f2effb;
+  --popover: #262633;
+  --popover-foreground: #f2effb;
+  --secondary: #302d3d;
+  --secondary-foreground: #f2effb;
+  --muted: #302d3d;
+  --muted-foreground: #c5bfd4;
+  --accent: #49405f;
+  --accent-foreground: #f2effb;
+  --border: #514b61;
+  --input: #625a73;
+  --ring: #a58cf6;
+
+  background-color: var(--background);
+  color: var(--foreground);
+  border-color: var(--border);
+  color-scheme: dark;
+}
+
+/* Keep transparent form fields readable against the dialog surface. */
+html[data-ml-theme="dark"] [data-slot="dialog-content"] input,
+html[data-ml-theme="dark"] [data-slot="dialog-content"] select,
+html[data-ml-theme="dark"] [data-slot="dialog-content"] textarea {
+  color: var(--foreground);
+  border-color: var(--input);
+}
+
+/* White project editor fields require dark text in Dark mode. */
+html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form input:not([type="color"]),
+html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form textarea,
+html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form select {
+  color: #292638;
+  background-color: #ffffff;
+}
+
+html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form input::placeholder,
+html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form textarea::placeholder {
+  color: #777184;
+  opacity: 1;
+}
+
+/* Dialog close control follows the active theme. */
+html[data-ml-theme="dark"] [data-slot="dialog-content"]
+  button[data-slot="dialog-close"] {
+  color: var(--foreground);
 }

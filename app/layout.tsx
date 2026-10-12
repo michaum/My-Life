@@ -6,6 +6,7 @@ import "../components/my-life/theme/tokens.css";
 import "../components/my-life/theme/dark-shell.css";
 import "../components/my-life/theme/dark-refinement.css";
 import "../components/my-life/theme/dark-dashboard.css";
+import "../components/my-life/theme/dark-calendar.css";
 import "../components/my-life/theme/dark-tasks.css";
 import "../components/my-life/theme/dark-notes.css";
 export async function generateMetadata():Promise<Metadata>{

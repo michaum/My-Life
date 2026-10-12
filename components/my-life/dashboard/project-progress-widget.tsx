@@ -21,7 +21,7 @@ export type ProjectProgressWidgetProps = {
 
 const PROJECT_PROGRESS_COLORS = [
   "#8247ED",
-  "#FF4FA3",
+  "#A58CF6",
   "#00BCE8",
   "#26BE80",
   "#FFB82E",

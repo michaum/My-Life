@@ -1,0 +1,142 @@
+/*
+ * MY LIFE V2 - STEP 18F.8F.16H
+ * Main Calendar Dark Theme
+ *
+ * Presentation only. Preserve task/event colors and behavior.
+ */
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-wrap {
+  background: #202438;
+  border-color: #3c4058;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading {
+  background: linear-gradient(110deg, #292d43, #202438);
+  border-bottom-color: #3c4058;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading h2 {
+  color: #f2effb;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading .calendar-view-switcher {
+  background: #292d43;
+  border-color: #555478;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading .calendar-view-switcher button,
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading > div > button {
+  background: #30354c;
+  color: #e1d8f6;
+  border-color: #555478;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading .calendar-view-switcher button:not(:disabled):hover,
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading > div > button:not(:disabled):hover {
+  background: #41445f;
+  color: #ffffff;
+  border-color: #a58cf6;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading .calendar-view-switcher button[data-variant="default"],
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading .calendar-view-switcher button[data-variant="default"]:hover,
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading .calendar-view-switcher button:not(:disabled):active,
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading > div > button:not(:disabled):active {
+  background: #7656db;
+  color: #ffffff;
+  border-color: #a58cf6;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-grid {
+  background: #202438;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .weekday {
+  background: #292d43;
+  color: #d5c9eb;
+  border-color: #3c4058;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day {
+  background: #202438;
+  border-color: #41445f;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day:hover {
+  background: #303650;
+  box-shadow: inset 0 0 0 1px rgba(165,140,246,.30);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day.other-month {
+  background: #202438;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day > span {
+  color: #ded5ef;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day.other-month > span {
+  color: #c2b7d5;
+  opacity: .75;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day > span.today {
+  background: #7656db;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-note {
+  background: #202438;
+  border-color: #3c4058;
+  color: #c7bdd9;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline {
+  background: #202438;
+  border-color: #3c4058;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-header,
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-time-header,
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-date-header,
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-hours {
+  background: #292d43;
+  border-color: #3c4058;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-date-header {
+  color: #d5c9eb;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-date-header strong {
+  color: #f2effb;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-date-header.today strong {
+  background: #7656db;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-hour-label {
+  color: #c7bdd9;
+  border-color: #3c4058;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-day {
+  background-color: #202438;
+  border-color: #3c4058;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 47px,
+    #3c4058 48px
+  );
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-day.today {
+  background-color: #353452;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-day:hover {
+  background-color: #303650;
+}

@@ -136,6 +136,12 @@ pub fn run() {
             sql: include_str!("../migrations/0021_list_column_settings.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 23,
+            description: "0022_task_classification",
+            sql: include_str!("../migrations/0022_task_classification.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

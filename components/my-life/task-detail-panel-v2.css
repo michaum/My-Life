@@ -264,3 +264,91 @@
 .ml-task-detail-v2__lightbox { position:fixed; inset:0; background:#000d; z-index:9999; display:flex; align-items:center; justify-content:center; padding:50px 25px; }
 .ml-task-detail-v2__lightbox img { max-width:95%; max-height:95%; object-fit:contain; }
 .ml-task-detail-v2__lightbox > button { position:absolute; top:15px; right:20px; background:white; color:#111; border-radius:8px; padding:8px 12px; }
+
+/* STEP 18F.8F.20U - Task Detail V2 Dark theme.
+   Scoped to the task detail dialog; Light mode remains unchanged. */
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel .ml-task-detail-v2 {
+  background: #262633;
+  color: #f2effb;
+  border-color: #514b61;
+  color-scheme: dark;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__property > span,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__field > div:first-child {
+  color: #c9c3d9;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__fields,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__field,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__field > div:first-child {
+  border-color: #514b61;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 input:not([type="checkbox"]):not([type="file"]),
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 select,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 textarea {
+  background-color: #303044;
+  color: #f2effb;
+  border-color: #625a73;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 input::placeholder,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 textarea::placeholder {
+  color: #b8b0ca;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 input:focus-visible,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 select:focus-visible,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 textarea:focus-visible {
+  border-color: #a58cf6;
+  outline-color: #a58cf6;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2 button:not(:disabled):not(.ml-task-detail-v2__attachment-preview) {
+  color: #f2effb;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__attachment-preview,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__attachment-menu summary,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__attachment-menu-items {
+  background: #303044;
+  color: #f2effb;
+  border-color: #625a73;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__attachment-menu-items button:hover {
+  background: #41405a;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__attachment-add {
+  border-color: #625a73;
+  color: #e5def4;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__attachment-hint,
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel
+  .ml-task-detail-v2__attachment-add > small {
+  color: #b8b0ca;
+}

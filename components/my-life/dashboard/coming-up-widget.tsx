@@ -31,7 +31,7 @@ export type ComingUpWidgetProps = {
 // STEP P36C.1O.1D - Stable pastel title color per task.
 const TASK_PASTELS = [
   "#B17AC6", // Lavender
-  "#D47D9E", // Rose
+  "#9874D4", // Soft violet
   "#58A69B", // Mint
   "#C58B61", // Peach
   "#679AC9", // Sky blue

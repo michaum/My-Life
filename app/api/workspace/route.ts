@@ -186,14 +186,14 @@ const choiceColors = [
   "#78a7f5",
   "#a595ed",
   "#c18be3",
-  "#e58bd0",
-  "#f48db6",
-  "#f7a0ad",
+  "#8464d8",
+  "#b39af2",
+  "#9281d6",
   "#9fa4a6",
   "#8adbd3",
   "#82b1f6",
   "#d7a0ec",
-  "#f19ac8",
+  "#c2b2f0",
   "#a9b0b2",
 ];
 const choiceSchema = z.object({
@@ -401,7 +401,7 @@ export async function GET(request: Request) {
             statuses.map((label, index) => ({
               id: label,
               label,
-              color: ["#7f8a8d", "#ff1a66", "#727272", "#727272"][index],
+              color: ["#7f8a8d", "#7656db", "#727272", "#727272"][index],
             })),
           )
           .parse(

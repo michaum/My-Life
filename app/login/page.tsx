@@ -167,7 +167,7 @@ export default function LoginPage() {
             padding: 0,
             border: 0,
             borderRadius: "50%",
-            background: "#ff1a66",
+            background: "#7656db",
             color: "#ffffff",
             fontSize: "25px",
             fontWeight: 400,
@@ -253,7 +253,7 @@ export default function LoginPage() {
             style={{
               width: "17px",
               height: "17px",
-              accentColor: "#ff1a66",
+              accentColor: "#7656db",
               cursor: "pointer",
             }}
           />
@@ -282,7 +282,7 @@ export default function LoginPage() {
             padding: "12px 16px",
             border: 0,
             borderRadius: "10px",
-            background: "#ff1a66",
+            background: "#7656db",
             color: "#ffffff",
             fontSize: "16px",
             fontWeight: 700,
