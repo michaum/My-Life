@@ -1,5 +1,7 @@
 "use client";
 
+import { MyLifeThemeSelector } from "./theme/theme-selector";
+
 import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
@@ -287,6 +289,9 @@ export function MyLifeSidebar({
       <div className="ml-v2-sidebar-spacer" />
 
       <div className="ml-v2-sidebar-tools">
+        <div className="ml-v2-sidebar-appearance">
+          <MyLifeThemeSelector />
+        </div>
         {onExport ? (
           <button
             type="button"

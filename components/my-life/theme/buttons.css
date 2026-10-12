@@ -1,0 +1,39 @@
+/* Explicit opt-in only: never target all native buttons. */
+.ml-theme-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--ml-button-border);
+  border-radius: 9px;
+  background: var(--ml-button-bg);
+  color: var(--ml-button-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.ml-theme-button:hover:not(:disabled) {
+  background: var(--ml-button-hover-bg);
+  border-color: var(--ml-button-hover-border);
+  color: var(--ml-button-hover-text);
+}
+.ml-theme-button:active:not(:disabled),
+.ml-theme-button.is-active,
+.ml-theme-button[aria-pressed="true"] {
+  background: var(--ml-button-active-bg);
+  border-color: var(--ml-button-active-bg);
+  color: var(--ml-button-active-text);
+}
+.ml-theme-button:focus-visible {
+  outline: 2px solid var(--ml-color-focus);
+  outline-offset: 2px;
+}
+.ml-theme-button:disabled {
+  background: var(--ml-button-disabled-bg);
+  color: var(--ml-button-disabled-text);
+  cursor: not-allowed;
+}
+.ml-theme-button svg { color: currentColor; }

@@ -1,0 +1,69 @@
+/* STEP 18F.8F.2 - Dark mode shell foundation.
+   All rules are dark-only and scoped to My Life V2.
+   No popup, task detail, calendar, list, wallpaper, or global native controls. */
+
+html[data-ml-theme="dark"] .ml-v2 {
+  --ml-v2-bg: #171923;
+  --ml-v2-surface: rgba(38, 38, 51, .93);
+  --ml-v2-surface-solid: #262633;
+  --ml-v2-surface-soft: #302d3d;
+  --ml-v2-text: #f2effb;
+  --ml-v2-text-soft: #c5bfd4;
+  --ml-v2-text-faint: #a69eb9;
+  --ml-v2-border: rgba(215, 204, 240, .16);
+  --ml-v2-border-strong: rgba(215, 204, 240, .28);
+  --ml-v2-accent: #a58cf6;
+  color: var(--ml-v2-text);
+  color-scheme: dark;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar {
+  background: rgba(28, 28, 40, .94);
+  border-right-color: var(--ml-v2-border);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-topbar,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-top-bar {
+  background: rgba(30, 30, 43, .94);
+  border-color: var(--ml-v2-border);
+  color: var(--ml-v2-text);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-card {
+  background: var(--ml-v2-surface);
+  border-color: var(--ml-v2-border);
+  color: var(--ml-v2-text);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar-tools {
+  border-top-color: var(--ml-v2-border);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-nav-item {
+  color: var(--ml-v2-text-soft);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-nav-item:hover {
+  background: rgba(165, 140, 246, .16);
+  color: var(--ml-v2-text);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-nav-item.is-active,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-nav-item[aria-current="page"] {
+  color: var(--ml-v2-text);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button {
+  background: var(--ml-button-bg);
+  border-color: var(--ml-button-border);
+  color: var(--ml-button-text);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button:hover:not(:disabled) {
+  background: var(--ml-button-hover-bg);
+  border-color: var(--ml-button-hover-border);
+  color: var(--ml-button-hover-text);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button:active:not(:disabled),
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button.is-active,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-standard-button[aria-pressed="true"] {
+  background: var(--ml-button-active-bg);
+  border-color: var(--ml-button-active-bg);
+  color: var(--ml-button-active-text);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar-appearance .ml-theme-choice__label,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar-appearance .ml-theme-choice__icon {
+  color: var(--ml-v2-text-soft);
+}

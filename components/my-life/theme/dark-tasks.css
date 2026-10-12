@@ -1,0 +1,295 @@
+/* STEP 18F.8F.10C — Dark-only Task List and Board surfaces. No geometry or behavior changes. */
+html[data-ml-theme="dark"] .ml-v2 .viewbar,
+html[data-ml-theme="dark"] .ml-v2 .toolbar,
+html[data-ml-theme="dark"] .ml-v2-shell .list-customize {
+  background: rgba(43,40,55,.94); color: #eee9f7; border-color: #514a65;
+}
+html[data-ml-theme="dark"] .ml-v2 .view-tab { color: #d4cde4; }
+html[data-ml-theme="dark"] .ml-v2 .view-tab.active { background: #49405f; color: #fff; }
+html[data-ml-theme="dark"] .ml-v2 .saved-label { color: #c6bbd9; }
+html[data-ml-theme="dark"] .ml-v2 .search-box { background: #302c3d; border-color: #514a65; color: #d9d0e9; }
+html[data-ml-theme="dark"] .ml-v2 .search-box input { background: transparent; color: #f3effb; }
+html[data-ml-theme="dark"] .ml-v2 .search-box input::placeholder { color: #a9a0ba; }
+html[data-ml-theme="dark"] .ml-v2 .toolbar-actions select { background-color: #302c3d; color: #eee9f7; border-color: #514a65; }
+html[data-ml-theme="dark"] .ml-v2 .toolbar-actions select:hover { background-color: #3b354d; }
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .task-list { background: #292634; border-color: #514a65; }
+html[data-ml-theme="dark"] .ml-v2-shell .list-head { background: #343041; color: #d2c9e2; border-bottom-color: #514a65; }
+html[data-ml-theme="dark"] .ml-v2-shell .list-section-head { background: #302c3d; color: #eee9f7; border-color: #514a65; }
+html[data-ml-theme="dark"] .ml-v2 .board-column { background: #302c3d; border-color: #514a65; color: #eee9f7; }
+html[data-ml-theme="dark"] .ml-v2 .board-column-header { color: #eee9f7; }
+html[data-ml-theme="dark"] .ml-v2 .task-card { background: #393447; border-color: #5a526d; color: #f2edfa; }
+/* Keep status/priority chips, colorful summary tiles, popup portals and buttons unchanged. */
+
+
+/* STEP 18F.8F.10D — contrast refinements; dark theme only, no geometry changes. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap {
+  --ml-list-line: #50495e;
+  --ml-list-ink: #f0ebf8;
+  --ml-list-muted: #c4bad5;
+  --ml-list-hover: #393349;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .task-list {
+  background: #292634;
+  border-color: #514a65;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row {
+  background: #302c3d;
+  color: #e9e2f3;
+  border-top-color: #514a65;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row:hover {
+  background: #3d3650;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row[draggable="true"]:active {
+  background: #48405d;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-name,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-name > button:last-child {
+  color: #f2edfa;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-head {
+  background: #343041;
+  color: #d9d0e8;
+  border-bottom-color: #514a65;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head {
+  background: #302b3d;
+  color: #eee8f8;
+  border-color: #514a65;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head strong,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head span {
+  color: #e7dff5;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-header,
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-header h2 {
+  color: #f1eafa;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card {
+  background: #393447;
+  border-color: #5a526d;
+  color: #f2edfa;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card .card-title,
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card .task-title {
+  color: #f2edfa;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .subtask-progress > span,
+html[data-ml-theme="dark"] .ml-v2 .board-column .card-project {
+  color: #c9bedb;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .subtask-progress > div {
+  background: #51495f;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column.drop-target {
+  background: #403652;
+  border-color: #927df3;
+}
+/* Status badges, priority chips, controls, wallpaper, popup and Light Mode unchanged. */
+
+
+/* STEP 18F.8F.10G — Audited Dark Tasks contrast only. */
+html[data-ml-theme="dark"] .ml-v2 .board-column .empty-column {
+  background: #383246;
+  border-color: #625873;
+  color: #d8cfe8;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .empty-column span { color: #d8cfe8; }
+html[data-ml-theme="dark"] .ml-v2 .board-column .card-description { color: #c9c0d9; }
+html[data-ml-theme="dark"] .ml-v2 .board-column .card-title button:not(.check-task) { color: #f1ebfa; }
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-header h2 { color: #f4eefc; }
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-count { color: #ded4ef; background: #443c55; }
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-header > button {
+  background: #4b425e; color: #f0eafa; border-color: #655a79;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-header > button:hover {
+  background: #5a4c74; color: #fff;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .add-column-task {
+  color: #d7cdea; border-color: #554c68; background: #342e42;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .draggable-column-head,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .ml-column-menu-header,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .ml-column-menu-header > span {
+  color: #ddd5ed;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .column-drag-handle,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-task-drag-handle {
+  color: #afa5c6;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .custom-value-cell {
+  color: #d0c7df;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .custom-value-cell:hover {
+  background: #484057; color: #f0eafa;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section {
+  background: #302c3d;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head > span {
+  color: #e1d7f1; background: #453c56;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head > button:first-child {
+  color: #cfc3e5;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head > button:first-child:hover {
+  color: #fff; background: #4b405e;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .check-task:not(.checked) {
+  background: #393348; border-color: #a69abf;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-subtasks-expanded {
+  background: #2e293b; border-color: #514a65;
+}
+/* Existing priority/status chips, task editor popup, wallpaper and Light Mode untouched. */
+
+
+/* STEP 18F.8F.10H — Overview-inspired navy Board + bright task text. Dark-only. */
+html[data-ml-theme="dark"] .ml-v2 .board-column {
+  background: #202438;
+  border-color: #383f5b;
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-header h2 {
+  color: #ffffff;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-count {
+  background: #303650;
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card,
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card.completed {
+  background: #292e46;
+  border-color: #414966;
+  color: #ffffff;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card .card-title button:not(.check-task) {
+  color: #ffffff !important;
+  opacity: 1;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card .card-description {
+  color: #e8e8f0 !important;
+  opacity: 1;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card .subtask-progress,
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card .card-project {
+  color: #d4d9e9;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .empty-column {
+  background: #292e46;
+  border-color: #414966;
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .empty-column span {
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .add-column-task {
+  background: #262b41;
+  border-color: #414966;
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .column-header > button {
+  background: #333a56;
+  border-color: #4a5272;
+  color: #ffffff;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-name > button:last-child {
+  color: #ffffff !important;
+  opacity: 1;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row:not(:has(.struck)) {
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .custom-value-cell {
+  color: #e8e8f0;
+}
+/* Preserve task status and priority chips, completed-task treatment, all light-theme rules. */
+
+
+/* STEP 18F.8F.10I — Final Dark List polish. Overview navy, no layout changes. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .task-list {
+  background: #202438;
+  border-color: #383f5b;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .ml-v2-list-action-bar,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-customize,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-bottom-actions {
+  background: #202438;
+  border-color: #383f5b;
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-bottom-actions .ml-v2-standard-button {
+  background: #292e46;
+  color: #ffffff;
+  border-color: #414966;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-bottom-actions .ml-v2-standard-button:hover:not(:disabled) {
+  background: #343b58;
+  border-color: #626d9a;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-name > button:last-child:not(.struck) {
+  color: #ffffff !important;
+  opacity: 1;
+}
+html[data-ml-theme="dark"] .ml-v2 .board-column .task-card:not(.completed) .card-title button:not(.check-task):not(.struck) {
+  color: #ffffff !important;
+  opacity: 1;
+}
+/* Do not override completed styling, chips, popup, Light Mode, or dimensions. */
+
+
+/* STEP 18F.8F.10J — Align List surfaces with Overview navy. Dark only. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap {
+  --ml-list-line: #383f5b;
+  --ml-list-ink: #e8e8f0;
+  --ml-list-muted: #c8cee1;
+  --ml-list-hover: #343b58;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-head {
+  background: #202438;
+  color: #e8e8f0;
+  border-bottom-color: #383f5b;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-head .draggable-column-head,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-head .ml-column-menu-header,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-head .ml-column-menu-header > span {
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head {
+  background: #202438;
+  border-color: #383f5b;
+  color: #ffffff;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head strong {
+  color: #ffffff;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head > span {
+  background: #303650;
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row {
+  background: #292e46;
+  color: #e8e8f0;
+  border-bottom-color: #383f5b;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row:hover,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row:focus-within {
+  background: #343b58;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row[draggable="true"]:active {
+  background: #3b4463;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .custom-value-cell {
+  color: #e8e8f0;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .custom-value-cell:hover {
+  background: #343b58;
+  color: #ffffff;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-subtasks-expanded {
+  background: #242a40;
+  border-color: #383f5b;
+  color: #e8e8f0;
+}
+/* No geometry, app logic, popup, wallpaper, badges or Light Mode changes. */

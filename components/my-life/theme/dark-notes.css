@@ -1,0 +1,108 @@
+/* STEP 18F.8F.9C - Notes workspace only. No Light Mode or popup rules. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-workspace {
+  color: #f0eff9;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folders,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-main {
+  background: #22283a;
+  border-color: #414760;
+  color: #f0eff9;
+  box-shadow: 0 8px 24px rgba(4, 6, 18, .18);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-section-label,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-panel-heading,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-empty h2 {
+  color: #f0eff9;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-muted,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-empty p,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item span {
+  color: #b7b5cc;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search {
+  background: #292f44;
+  border-color: #444b64;
+  color: #c6c4db;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search input,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-title-input,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-content-input {
+  color: #f0eff9;
+  caret-color: #c1a8ff;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-workspace input::placeholder,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-workspace textarea::placeholder {
+  color: #a6a5bd;
+  opacity: 1;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list {
+  border-color: #444b64;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item {
+  color: #eceaf7;
+  border-color: transparent;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item:hover {
+  background: #303650;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item.is-selected {
+  background: #40345f;
+  border-color: #7862ae;
+  color: #fff;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list .ml-v2-notes-folder-entry:not(.is-active) {
+  background: #292f44;
+  color: #dad7ed;
+  border-color: #414760;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list .ml-v2-notes-folder-entry:not(.is-active):hover {
+  background: #39334f;
+  color: #e5d8ff;
+  border-color: #7662a3;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list .ml-v2-notes-folder-entry.is-active {
+  background: #7656db;
+  border-color: #9478f1;
+  color: #fff;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-secondary-button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-main-actions .ml-v2-add-button {
+  background: #30364b;
+  color: #e8e4f7;
+  border-color: #505672;
+  box-shadow: none;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-secondary-button:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-main-actions .ml-v2-add-button:not(:disabled):hover {
+  background: #40365c;
+  color: #f4ebff;
+  border-color: #826bc0;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-main-actions .ml-v2-add-button:not(:disabled):active {
+  background: #7656db;
+  color: #fff;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-editor-top {
+  color: #c8b7f8;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-editor-top button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-move-label select {
+  background: #30364b;
+  border-color: #505672;
+  color: #e7e3f6;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-title-input {
+  border-bottom-color: #444b64;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-empty-icon {
+  background: #39314f;
+  color: #c6b0ff;
+}
+/* The folder creation input has inline border styling; override only its surface. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folders form input {
+  background: #292f44;
+  color: #f0eff9;
+  border-color: #505672 !important;
+}

@@ -2,6 +2,12 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import './globals.css';
 import './brand.css';
+import "../components/my-life/theme/tokens.css";
+import "../components/my-life/theme/dark-shell.css";
+import "../components/my-life/theme/dark-refinement.css";
+import "../components/my-life/theme/dark-dashboard.css";
+import "../components/my-life/theme/dark-tasks.css";
+import "../components/my-life/theme/dark-notes.css";
 export async function generateMetadata():Promise<Metadata>{
  const host=(await headers()).get('host')||'';
  // Only the exact project subdomain is accepted; forwarded host headers are not used.

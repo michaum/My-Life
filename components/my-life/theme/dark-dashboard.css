@@ -1,0 +1,35 @@
+/* STEP 18F.8F.6 — dark dashboard refinement, opt-in exact class matches.
+
+   No wallpaper, summary tiles, popup, native controls, or other views. */
+
+/* Core dashboard panels */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-widget {
+  background-color: #262633; color: #f2effb; border-color: rgba(215,204,240,.23);
+}
+
+/* Dashboard supporting text */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-empty {
+  color: #c5bfd4;
+}
+
+/* Dashboard notes */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-notes-card {
+  background-color: #262633; color: #f2effb; border-color: rgba(215,204,240,.23);
+}
+
+/* Dashboard appointments */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-appointments {
+  background-color: #262633; color: #f2effb; border-color: rgba(215,204,240,.23);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-universal-header { background-color: rgba(38,38,51,.90); color: #f2effb; border-color: rgba(215,204,240,.22); }
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome { background-color: rgba(38,38,51,.88); color: #f2effb; border-color: rgba(215,204,240,.22); }
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome h1 { color: #f2effb; }
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome p { color: #c5bfd4; }

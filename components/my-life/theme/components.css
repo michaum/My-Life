@@ -1,0 +1,8 @@
+/* Opt-in shared surfaces. Specialized calendar/task/attachment controls are excluded. */
+.ml-theme-surface {
+  background: var(--ml-color-surface);
+  color: var(--ml-color-text);
+  border: 1px solid var(--ml-color-border);
+  border-radius: 12px;
+}
+.ml-theme-muted { color: var(--ml-color-text-muted); }

@@ -1,0 +1,14 @@
+/* Explicit opt-in. Checkbox, file, date picker internals are not globally restyled. */
+.ml-theme-field {
+  background: var(--ml-field-bg);
+  color: var(--ml-field-text);
+  border: 1px solid var(--ml-field-border);
+  border-radius: 9px;
+  font: inherit;
+}
+.ml-theme-field::placeholder { color: var(--ml-field-placeholder); }
+.ml-theme-field:focus-visible {
+  outline: 2px solid var(--ml-color-focus);
+  outline-offset: 2px;
+}
+.ml-theme-field:disabled { opacity: .65; cursor: not-allowed; }

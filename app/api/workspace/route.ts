@@ -53,6 +53,16 @@ const taskSchema = z.object({
         id: z.string().max(100),
         title: z.string().trim().min(1).max(250),
         done: z.boolean(),
+        due: z.string().refine(
+          (v) => !v || (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))),
+          "Invalid subtask due date",
+        ).optional(),
+        assignee: z.string().max(100).optional(),
+        priority: z.enum(["Low", "Medium", "High"]).optional(),
+        status: z.enum(statuses).optional(),
+        customValues: z.record(z.string().min(1).max(100), z.string().max(5000))
+          .refine((v) => Object.keys(v).length <= 50, "Too many subtask custom values")
+          .optional(),
       }),
     )
     .max(100),
@@ -65,7 +75,6 @@ const taskSchema = z.object({
         data: z.string().min(1),
       }),
     )
-    .max(5)
     .default([]),
   customValues: z
     .record(z.string().min(1).max(100), z.string().max(5000))

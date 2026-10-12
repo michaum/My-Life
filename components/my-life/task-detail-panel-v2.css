@@ -1,0 +1,266 @@
+/* STEP CM.7Q.7I.22Z.16B - Task Detail Panel V2 foundation.
+   Isolated from the original Task Editor and existing CLF. */
+
+.ml-task-detail-v2 {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  background: #fff;
+  color: #242424;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.ml-task-detail-v2__toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 55px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.ml-task-detail-v2__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ml-task-detail-v2__close {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 23px;
+  cursor: pointer;
+}
+
+.ml-task-detail-v2__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 20px;
+}
+
+.ml-task-detail-v2__title {
+  margin-bottom: 22px;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.ml-task-detail-v2__properties {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 24px;
+}
+
+.ml-task-detail-v2__property {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 26px;
+}
+
+.ml-task-detail-v2__property > span {
+  color: #545454;
+}
+
+.ml-task-detail-v2__projects {
+  padding-bottom: 15px;
+}
+
+.ml-task-detail-v2__projects h3,
+.ml-task-detail-v2__section h3 {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ml-task-detail-v2__project-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e9e9e9;
+}
+
+.ml-task-detail-v2__fields {
+  margin-bottom: 20px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.ml-task-detail-v2__field {
+  display: grid;
+  grid-template-columns: 40% minmax(0, 1fr);
+  min-height: 38px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.ml-task-detail-v2__field > div {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 12px;
+}
+
+.ml-task-detail-v2__field > div:first-child {
+  border-right: 1px solid #e8e8e8;
+  color: #646464;
+}
+
+.ml-task-detail-v2__section {
+  padding: 20px 0;
+}
+
+.ml-task-detail-v2__description {
+  min-height: 180px;
+}
+
+.ml-task-detail-v2__activity {
+  margin-top: auto;
+}
+
+.ml-task-detail-v2__comment-editor {
+  margin-top: 20px;
+}
+
+@media (max-width: 560px) {
+  .ml-task-detail-v2__body {
+    padding: 16px;
+  }
+
+  .ml-task-detail-v2__property {
+    grid-template-columns: 95px minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+
+
+/* ==========================================================
+   STEP CM.7Q.7I.22Z.16H
+   TASK DETAIL V2 - COMPACT CONTENT SPACING
+   ========================================================== */
+
+.ml-task-detail-v2 {
+  min-height: 0;
+}
+
+.ml-task-detail-v2__body {
+  padding: 12px 20px 20px;
+}
+
+.ml-task-detail-v2__title {
+  margin-bottom: 18px;
+}
+
+.ml-task-detail-v2__properties {
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.ml-task-detail-v2__projects {
+  padding-bottom: 10px;
+}
+
+.ml-task-detail-v2__fields {
+  margin-bottom: 8px;
+}
+
+.ml-task-detail-v2__section {
+  padding: 12px 0;
+}
+
+.ml-task-detail-v2__description {
+  min-height: 0;
+}
+
+.ml-task-detail-v2__activity {
+  margin-top: 0;
+}
+
+@media (max-width: 560px) {
+  .ml-task-detail-v2__body {
+    padding: 12px 16px 20px;
+  }
+}
+
+
+/* STEP CM.7Q.7I.22Z.16P - Editable task title */
+.ml-task-detail-v2__title-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ml-task-detail-v2__title-input {
+  width: 100%;
+  height: auto;
+  min-height: 40px;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.ml-task-detail-v2__title-input:hover,
+.ml-task-detail-v2__title-input:focus-visible {
+  border-color: #d8dbe2;
+  outline: none;
+}
+
+.ml-task-detail-v2__save-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 18px;
+  color: #73788c;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* STEP CM.7Q.7I.22Z.17B - Complete editable V2 panel */
+.ml-task-detail-v2__property > div, .ml-task-detail-v2__field > div:last-child { min-width: 0; }
+.ml-task-detail-v2 select, .ml-task-detail-v2 textarea, .ml-task-detail-v2 input:not([type="checkbox"]):not([type="file"]) { max-width: 100%; }
+.ml-task-detail-v2__date-row { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; min-width: 0; }
+.ml-task-detail-v2__date-row input[type="date"] { flex: 1 1 145px; }
+.ml-task-detail-v2__date-row input[type="time"] { flex: 1 1 100px; }
+.ml-task-detail-v2__date-row input[type="number"] { width: 70px; }
+.ml-task-detail-v2__stack { display: grid; gap: 9px; }
+.ml-task-detail-v2__subtask, .ml-task-detail-v2__inline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ml-task-detail-v2__subtask input:not([type="checkbox"]), .ml-task-detail-v2__inline input { flex: 1 1 auto; min-width: 0; }
+.ml-task-detail-v2__attachment-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(115px,1fr)); gap: 10px; }
+.ml-task-detail-v2__attachment { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.ml-task-detail-v2__attachment img { width: 100%; max-height: 120px; object-fit: contain; border: 1px solid #e8e8e8; border-radius: 6px; }
+.ml-task-detail-v2__toolbar { flex-wrap: wrap; }
+@media(max-width:560px) { .ml-task-detail-v2__subtask, .ml-task-detail-v2__inline { flex-wrap: wrap; } }
+
+/* STEP CM.7Q.7I.22Z.17D - Asana-inspired attachment gallery */
+.ml-task-detail-v2__attachment-heading { display:flex; align-items:center; justify-content:space-between; }
+.ml-task-detail-v2__attachment-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+.ml-task-detail-v2__attachment { position:relative; display:flex; flex-direction:column; gap:5px; min-width:0; }
+.ml-task-detail-v2__attachment-preview { border:1px solid #d9dce4; border-radius:9px; overflow:hidden; padding:0; background:#f7f8fb; cursor:zoom-in; aspect-ratio:1.6; }
+.ml-task-detail-v2__attachment-preview img { display:block; width:100%; height:100%; max-height:none; object-fit:cover; }
+.ml-task-detail-v2__attachment > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.ml-task-detail-v2__attachment-add { border:1px dashed #c6cbd5; border-radius:9px; min-height:84px; display:flex; flex-direction:column; justify-content:center; align-items:center; background:transparent; cursor:pointer; }
+.ml-task-detail-v2__attachment-add > span { font-size:30px; line-height:1; }
+.ml-task-detail-v2__attachment-add > small, .ml-task-detail-v2__attachment-hint { color:#7a8090; }
+.ml-task-detail-v2__attachment-menu { position:absolute; top:5px; right:5px; z-index:2; }
+.ml-task-detail-v2__attachment-menu summary { list-style:none; background:white; border:1px solid #e0e2e8; border-radius:6px; width:27px; height:27px; display:grid; place-items:center; cursor:pointer; font-weight:700; }
+.ml-task-detail-v2__attachment-menu summary::-webkit-details-marker { display:none; }
+.ml-task-detail-v2__attachment-menu-items { position:absolute; top:30px; right:0; width:190px; padding:5px; border:1px solid #e0e2e8; background:white; box-shadow:0 6px 20px #0002; border-radius:8px; display:grid; z-index:5; }
+.ml-task-detail-v2__attachment-menu-items button { padding:9px; border:0; background:transparent; text-align:left; cursor:pointer; font-size:13px; }
+.ml-task-detail-v2__attachment-menu-items button:hover { background:#f3f5f9; }
+.ml-task-detail-v2__attachment-menu-items .ml-task-detail-v2__attachment-delete { color:#c72525; }
+.ml-task-detail-v2__lightbox { position:fixed; inset:0; background:#000d; z-index:9999; display:flex; align-items:center; justify-content:center; padding:50px 25px; }
+.ml-task-detail-v2__lightbox img { max-width:95%; max-height:95%; object-fit:contain; }
+.ml-task-detail-v2__lightbox > button { position:absolute; top:15px; right:20px; background:white; color:#111; border-radius:8px; padding:8px 12px; }

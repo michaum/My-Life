@@ -118,6 +118,60 @@ function dynamicBackgroundEnabled(): boolean {
   }
 }
 
+/* STEP 18F.8F.10L.2 — Rich dark gradients keyed to existing live weather. */
+function greetingDarkWeatherBackground(weather: GreetingWeather): { image: string; color: string } {
+  if (!weather.isDay && weather.kind === "night") {
+    return {
+      image: "radial-gradient(circle at 84% 18%, rgba(255,233,169,.34) 0%, transparent 19%), " +
+        "linear-gradient(120deg, #202846 0%, #39365c 55%, #55517b 100%)",
+      color: "#202846",
+    };
+  }
+  switch (weather.kind) {
+    case "sunny":
+      return {
+        image: "radial-gradient(circle at 88% 17%, rgba(255,207,105,.40) 0%, transparent 35%), " +
+          "linear-gradient(120deg, #59416e 0%, #9a655f 48%, #c08b58 100%)",
+        color: "#59416e",
+      };
+    case "cloudy":
+      return {
+        image: "radial-gradient(ellipse at 85% 12%, rgba(193,211,235,.24) 0%, transparent 52%), " +
+          "linear-gradient(120deg, #29334e 0%, #46516a 54%, #606b80 100%)",
+        color: "#29334e",
+      };
+    case "rainy":
+      return {
+        image: "repeating-linear-gradient(115deg, transparent 0px, transparent 23px, rgba(196,230,255,.10) 24px, transparent 26px), " +
+          "linear-gradient(120deg, #20334d 0%, #31536c 54%, #386e78 100%)",
+        color: "#20334d",
+      };
+    case "snowy":
+      return {
+        image: "radial-gradient(circle at 82% 18%, rgba(222,244,255,.30) 0%, transparent 32%), " +
+          "linear-gradient(120deg, #344765 0%, #537292 54%, #738aa8 100%)",
+        color: "#344765",
+      };
+    case "stormy":
+      return {
+        image: "linear-gradient(130deg, transparent 74%, rgba(255,235,145,.38) 75%, transparent 77%), " +
+          "linear-gradient(120deg, #282b49 0%, #41405e 54%, #555678 100%)",
+        color: "#282b49",
+      };
+    case "foggy":
+      return {
+        image: "linear-gradient(0deg, rgba(209,222,235,.13), transparent 75%), " +
+          "linear-gradient(120deg, #344153 0%, #526073 54%, #697789 100%)",
+        color: "#344153",
+      };
+    case "night":
+      return {
+        image: "linear-gradient(120deg, #202846 0%, #39365c 55%, #55517b 100%)",
+        color: "#202846",
+      };
+  }
+}
+
 function weatherIcon(weather: GreetingWeather): string {
   switch (weather.kind) {
     case "sunny": return "☀️";
@@ -380,6 +434,8 @@ export function MyLifeGreetingWeather() {
     const original = originalGreetingBackgroundRef.current;
 
     const restoreOriginal = () => {
+      card.style.removeProperty("--ml-greeting-dark-image");
+      card.style.removeProperty("--ml-greeting-dark-color");
       card.style.backgroundImage = original.image;
       card.style.backgroundColor = original.color;
       card.style.transition = original.transition;
@@ -392,6 +448,9 @@ export function MyLifeGreetingWeather() {
       }
 
       const theme = greetingWeatherBackground(weather);
+      const darkTheme = greetingDarkWeatherBackground(weather);
+      card.style.setProperty("--ml-greeting-dark-image", darkTheme.image);
+      card.style.setProperty("--ml-greeting-dark-color", darkTheme.color);
 
       card.style.backgroundImage = theme.image;
       card.style.backgroundColor = theme.color;

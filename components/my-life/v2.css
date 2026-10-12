@@ -10254,3 +10254,619 @@
   width: 100%;
   max-width: none;
 }
+
+
+/* ==========================================================
+   STEP CM.7Q.7I.22Z.13A
+   RIGHT-SIDE TASK DETAIL PANEL FOUNDATION
+   Scoped to the existing task editor only.
+   ========================================================== */
+
+.ml-v2-task-detail-panel {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+
+  transform: none !important;
+
+  width: min(720px, 92vw) !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  border-radius: 0 !important;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+
+  padding: 30px 32px !important;
+  box-sizing: border-box;
+
+  background: var(--ml-v2-surface-solid, #ffffff);
+  color: var(--ml-v2-text, #202331);
+
+  animation: none !important;
+}
+
+/* STEP CM.7Q.7I.22Z.13E - Override centered Dialog animations */
+.ml-v2-task-detail-panel[data-state="open"],
+.ml-v2-task-detail-panel[data-state="closed"] {
+  top: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  right: 0 !important;
+  transform: translate3d(0, 0, 0) !important;
+  translate: none !important;
+  animation: none !important;
+}
+
+@media (max-width: 900px) {
+  .ml-v2-task-detail-panel {
+    width: min(680px, 96vw) !important;
+    padding: 24px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .ml-v2-task-detail-panel {
+    width: 100vw !important;
+    padding: 20px 16px !important;
+  }
+}
+
+
+/* ==========================================================
+   STEP CM.7Q.7I.22Z.14C
+   ASANA-STYLE TASK PANEL HEADER AND TITLE
+   ========================================================== */
+
+.ml-v2-task-detail-panel .ml-v2-task-panel-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 30px 15px 0;
+  border-bottom: 1px solid var(--ml-v2-border, #e7e7ef);
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-panel-heading [data-slot="dialog-title"] {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-panel-heading [data-slot="dialog-description"] {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-panel-title-field {
+  gap: 8px;
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-panel-title-label {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-panel-title-input {
+  width: 100%;
+  min-height: 46px;
+  height: auto;
+  padding: 8px 12px;
+  font-size: 21px;
+  line-height: 1.35;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  color: var(--ml-v2-text, #202331);
+}
+
+@media (max-width: 560px) {
+  .ml-v2-task-detail-panel .ml-v2-task-panel-title-input {
+    font-size: 18px;
+    min-height: 42px;
+  }
+}
+
+
+/* ==========================================================
+   STEP CM.7Q.7I.22Z.15B
+   ASANA-STYLE TASK DETAIL PROPERTY FOUNDATION
+   Presentation only; all existing controls remain intact.
+   ========================================================== */
+
+.ml-v2-task-detail-panel .ml-v2-task-editor-form > .form-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 22px;
+  row-gap: 19px;
+  align-items: start;
+  padding: 20px 0 8px;
+  border-top: 1px solid #e9e7f0;
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-editor-form > .form-grid > label {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ml-v2-text-soft, #73788c);
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-editor-form > .form-grid > label > :is(
+  input,
+  textarea,
+  select,
+  [data-slot="native-select-wrapper"],
+  [data-slot="input"],
+  [role="combobox"]
+) {
+  min-width: 0;
+  width: 100%;
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-editor-form > .form-grid > label > :is(
+  input,
+  select,
+  [data-slot="input"]
+) {
+  min-height: 36px;
+}
+
+.ml-v2-task-detail-panel .ml-v2-task-editor-form > .form-grid > label > div {
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  .ml-v2-task-detail-panel .ml-v2-task-editor-form > .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+    row-gap: 16px;
+    padding-top: 16px;
+  }
+}
+
+
+/* ==========================================================
+   STEP CM.7Q.7I.22Z.16H
+   TASK DETAIL V2 - COMPACT PREVIEW DIALOG LAYOUT
+   ========================================================== */
+
+.ml-v2-task-detail-panel:has(.ml-task-detail-v2) {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  align-content: start !important;
+  gap: 12px !important;
+}
+
+.ml-v2-task-detail-panel:has(.ml-task-detail-v2)
+  .ml-v2-task-panel-heading {
+  flex: 0 0 auto;
+}
+
+.ml-v2-task-detail-panel:has(.ml-task-detail-v2)
+  > .ml-task-detail-v2 {
+  flex: 0 0 auto;
+}
+
+/* ==========================================================
+   STEP CM.7Q.7I.22Z.16I
+   V2 DEFAULT PREVIEW - CLEAN SINGLE HEADER
+   ========================================================== */
+
+.ml-v2-task-detail-panel--preview > .ml-v2-task-panel-heading {
+  display: none !important;
+}
+
+.ml-v2-task-detail-panel--preview {
+  gap: 0 !important;
+}
+
+.ml-v2-task-detail-panel--preview > .ml-task-detail-v2 {
+  margin-top: 0 !important;
+}
+
+.ml-v2-task-panel-original-switch {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
+
+
+/* STEP 18B - PROJECT LIST REFINED PRESENTATION */
+/* V2-only, visual-only. Original List interactions and user-set column widths stay intact. */
+.ml-v2-shell .list-view-wrap {
+  --ml-list-line: #e9edf4;
+  --ml-list-ink: #273349;
+  --ml-list-muted: #798397;
+  --ml-list-hover: #f4f7ff;
+  --ml-list-accent: #7367eb;
+  min-width: 0;
+}
+.ml-v2-shell .list-view-wrap .task-list {
+  overflow-x: auto;
+  border: 1px solid #e4e9f2;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(38, 52, 87, .055);
+  scrollbar-color: #cbd4e4 transparent;
+}
+.ml-v2-shell .list-head {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  min-height: 47px;
+  gap: 12px;
+  padding: 9px 17px;
+  border-bottom: 1px solid #e4e9f2;
+  background: #f8faff;
+  color: #69758b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .012em;
+}
+.ml-v2-shell .draggable-column-head {
+  min-width: 0;
+  border-radius: 6px;
+  color: #66728a;
+}
+.ml-v2-shell .draggable-column-head:hover {
+  background: #eef1fc;
+  color: #3b4763;
+}
+.ml-v2-shell .ml-column-resize-handle {
+  z-index: 2;
+}
+.ml-v2-shell .list-row {
+  min-height: 54px;
+  gap: 12px;
+  padding: 10px 17px;
+  border-top: 0;
+  border-bottom: 1px solid var(--ml-list-line);
+  background: #fff;
+  color: var(--ml-list-ink);
+  font-size: 12px;
+  transition: background-color 130ms ease, box-shadow 130ms ease;
+}
+.ml-v2-shell .list-row:hover,
+.ml-v2-shell .list-row:focus-within {
+  position: relative;
+  z-index: 1;
+  background: var(--ml-list-hover);
+  box-shadow: inset 3px 0 0 var(--ml-list-accent);
+}
+.ml-v2-shell .list-row[draggable="true"]:active {
+  background: #f0efff;
+}
+.ml-v2-shell .list-name {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 9px;
+}
+.ml-v2-shell .list-name > button:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: #28354b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+.ml-v2-shell .list-row .struck {
+  color: #9ca5b4 !important;
+  text-decoration-color: #b4bdca;
+}
+.ml-v2-shell .list-task-drag-handle {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  color: #a0a9ba;
+}
+.ml-v2-shell .list-row:hover .list-task-drag-handle,
+.ml-v2-shell .list-row:focus-within .list-task-drag-handle {
+  color: #7367eb;
+  opacity: 1;
+}
+.ml-v2-shell .list-row .check-task {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  border: 1.5px solid #b9c4d6;
+  border-radius: 6px;
+  background: #fff;
+}
+.ml-v2-shell .list-row .check-task:hover {
+  border-color: #7669e8;
+  background: #f5f2ff;
+}
+.ml-v2-shell .list-row .check-task.checked {
+  border-color: #6f61e6;
+  background: #6f61e6;
+  color: #fff;
+}
+.ml-v2-shell .list-subtask-toggle {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  color: #8993a5;
+}
+.ml-v2-shell .list-subtask-toggle:hover {
+  background: #eae9ff;
+  color: #6558d6;
+}
+.ml-v2-shell .list-row .custom-value-cell {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 7px;
+  color: #606c82;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ml-v2-shell .list-row .custom-value-cell:hover {
+  background: #ebeffa;
+  color: #36425a;
+}
+.ml-v2-shell .list-row .priority {
+  border-radius: 7px;
+  font-weight: 650;
+}
+.ml-v2-shell .list-section {
+  background: #fff;
+}
+.ml-v2-shell .list-section-head {
+  min-height: 46px;
+  padding: 11px 18px;
+  border-top: 1px solid #e7ebf4;
+  border-bottom: 1px solid #e8ecf4;
+  background: #f5f7fd;
+  color: #35435e;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ml-v2-shell .list-section-head strong {
+  color: #33415c;
+  font-size: 12px;
+  font-weight: 750;
+}
+.ml-v2-shell .list-section-head > span {
+  color: #8a94a8;
+  font-size: 11px;
+  font-weight: 600;
+}
+.ml-v2-shell .list-subtasks-expanded {
+  border-bottom: 1px solid #e9edf4;
+  background: #fafbff;
+  padding: 6px 18px 8px 72px;
+}
+.ml-v2-shell .list-subtask-display {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  color: #606c83;
+  font-size: 11px;
+}
+.ml-v2-shell .list-subtask-display:hover {
+  background: #f0f3fc;
+}
+.ml-v2-shell .list-subtask-display input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #7367eb;
+}
+.ml-v2-shell .list-subtask-display > span:first-child {
+  color: #a4adbd;
+}
+.ml-v2-shell .list-head button:focus-visible,
+.ml-v2-shell .list-row button:focus-visible,
+.ml-v2-shell .list-subtask-display input:focus-visible,
+.ml-v2-shell .list-section-head button:focus-visible {
+  outline: 2px solid #7669e8;
+  outline-offset: 2px;
+}
+@media (max-width: 800px) {
+  .ml-v2-shell .list-head,
+  .ml-v2-shell .list-row { gap: 10px; padding: 10px 12px; }
+  .ml-v2-shell .list-subtasks-expanded { padding-left: 45px; }
+  .ml-v2-shell .list-view-wrap .task-list { border-radius: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ml-v2-shell .list-row { transition: none; }
+}
+
+
+/* STEP 18D - ALIGNED SUBTASK ROWS */
+/* Match the parent/header grid, without inventing subtask fields or changing saved widths. */
+.ml-v2-shell .list-subtasks-expanded {
+  padding: 0;
+  border-bottom: 0;
+  background: #fff;
+}
+.ml-v2-shell .list-subtask-grid-row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  min-height: 49px;
+  padding: 8px 17px;
+  border-bottom: 1px solid var(--ml-list-line, #e9edf4);
+  background: #fafbff;
+  color: #606c83;
+  font-size: 11px;
+}
+.ml-v2-shell .list-subtask-grid-row:hover,
+.ml-v2-shell .list-subtask-grid-row:focus-within {
+  background: var(--ml-list-hover, #f4f7ff);
+}
+.ml-v2-shell .list-subtask-grid-row .list-subtask-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 0 0 35px;
+  background: transparent;
+}
+.ml-v2-shell .list-subtask-grid-row .list-subtask-display:hover {
+  background: transparent;
+}
+.ml-v2-shell .list-subtask-grid-row .list-subtask-display > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ml-v2-shell .list-subtask-grid-row .list-subtask-indent {
+  color: #9ca6bb;
+}
+.ml-v2-shell .list-subtask-grid-row .list-subtask-empty-cell {
+  min-width: 0;
+  align-self: stretch;
+  border-left: 1px solid #edf0f7;
+}
+@media (max-width: 800px) {
+  .ml-v2-shell .list-subtask-grid-row { gap: 10px; padding: 8px 12px; }
+  .ml-v2-shell .list-subtask-grid-row .list-subtask-display { padding-left: 20px; }
+}
+
+/* STEP 18F.3B - SUBTASK INLINE COLUMN EDITORS */
+.list-subtask-edit-cell { min-width: 0; display: flex; align-items: center; padding: 3px 6px; overflow: hidden; }
+.list-subtask-edit-cell select, .list-subtask-edit-cell input { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; font: inherit; font-size: 12px; color: inherit; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 5px 4px; }
+.list-subtask-edit-cell select:hover, .list-subtask-edit-cell input:hover, .list-subtask-edit-cell select:focus, .list-subtask-edit-cell input:focus { border-color: var(--ml-border, #c9c8dd); background: var(--ml-surface, #fff); }
+.list-subtask-edit-cell input[type="date"] { min-width: 0; }
+
+/* STEP 18F.3D - CLICK-TO-OPEN SUBTASK DATE PICKER */
+.list-subtask-edit-cell input.list-subtask-click-date { cursor: pointer; }
+.list-subtask-edit-cell input.list-subtask-click-date::-webkit-calendar-picker-indicator { display: none; }
+
+/* STEP 18F.6D - SMART URL LINKS: custom Text cells only. */
+.ml-v2-shell .ml-list-url-cell { display: flex; align-items: center; min-width: 0; width: 100%; gap: 3px; }
+.ml-v2-shell .ml-list-url-cell > .custom-value-cell,
+.ml-v2-shell .ml-list-url-cell > input { flex: 1 1 auto; min-width: 0; width: 100%; }
+.ml-v2-shell .ml-list-url-cell > .ml-list-url-open { flex: 0 0 23px; width: 23px; height: 25px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; color: #3678df; text-decoration: none; cursor: pointer; }
+.ml-v2-shell .ml-list-url-cell > .ml-list-url-open:hover,
+.ml-v2-shell .ml-list-url-cell > .ml-list-url-open:focus-visible { color: #2459bc; background: #edf4ff; outline-offset: 2px; }
+
+
+/* STEP 18F.8F.8C - Dashboard dark surfaces (scoped, reversible) */
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-main-layout > .ml-v2-dashboard-main-panel,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-weekly-calendar,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-secondary-grid > .ml-v2-dashboard-widget,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-widget {
+  background-color: #202438 !important;
+  border-color: #454b67 !important;
+  color: #f0eff9;
+}
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-widget-header,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-widget-content,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-weekly-calendar-heading,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-weekly-calendar-days,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-project-progress,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-coming-up,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-appointments,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-project-todo,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-notes-preview {
+  background-color: transparent !important;
+  color: #f0eff9;
+}
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-today-task-row,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-project-progress-row,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-appointments-list > li,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-project-todo-list > li,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-notes-list > li {
+  background-color: #282d43 !important;
+  border-color: #424963 !important;
+  color: #f0eff9;
+}
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-dashboard-widget-header h2,
+html[data-ml-theme="dark"] .ml-v2-dashboard-reference .ml-v2-project-progress-heading strong { color: #f5f3ff; }
+/* END STEP 18F.8F.8C */
+
+
+/* STEP 18F.8F.8E - Dark dashboard finishing pass */
+/* Dashboard workspace background: never change wallpaper image, position, or editor. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) {
+  background-color: #171923 !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-content:has(.ml-v2-dashboard-reference),
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-content-inner:has(.ml-v2-dashboard-reference) {
+  background-color: #171923 !important;
+  color: #f2effb;
+}
+/* The shared greeting lives above the dashboard; scope by dashboard in workspace. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome {
+  background: rgba(35, 36, 55, .95) !important;
+  border-color: rgba(196, 179, 245, .34) !important;
+  color: #f4efff !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome h1,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome h2 {
+  color: #f9f6ff !important;
+  text-shadow: none !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome p,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-current-date {
+  color: #d4cde7 !important;
+}
+/* Widget labels: preserve per-task inline colors and the five pastel summary tiles. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-today-tasks-date-label,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-heading,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-appointments-empty,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-notes-empty,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-project-todo-empty {
+  color: #c9c2df !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > * {
+  background-color: #2b3048 !important;
+  border-color: rgba(189, 176, 224, .25) !important;
+  color: #eeeaf9 !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > * strong {
+  color: #f4f0ff !important;
+}
+/* END STEP 18F.8F.8E */
+
+/* STEP 18F.8F.10L.2 — Weather-based greeting gradient, dark theme only.
+   Weather component supplies CSS variables; no weather => existing navy fallback.
+   The original Light Mode inline gradients remain unchanged. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] {
+  background-image: var(--ml-greeting-dark-image) !important;
+  background-color: var(--ml-greeting-dark-color) !important;
+  color: #ffffff !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] .ml-v2-dashboard-current-date,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] p {
+  color: #f4efff !important;
+}
+
+/* STEP 18F.8F.10L.5 — Dark Mode only. Restore wallpaper and use the
+   weather component's rich, live-condition gradient. No Light Mode changes. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-universal-header {
+  background-color: transparent !important;
+}
+/* Override the older dashboard greeting background shorthand (which otherwise
+   suppresses the live weather image). Retain navy fallback when weather absent. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"],
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] {
+  background: var(--ml-greeting-dark-image) !important;
+  background-color: var(--ml-greeting-dark-color) !important;
+  color: #ffffff !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] h1,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] h2,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] p,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] .ml-v2-dashboard-current-date {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(22, 20, 37, .25) !important;
+}

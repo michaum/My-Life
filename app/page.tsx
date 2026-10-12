@@ -8,7 +8,7 @@ import Database from "@tauri-apps/plugin-sql";
 import { getVersion } from "@tauri-apps/api/app";
 import packageJson from "../package.json";
 import { check } from "@tauri-apps/plugin-updater";
-import {
+import { ExternalLink,
   ArrowUpRight,
   CalendarDays,
   Check,
@@ -52,6 +52,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TaskDetailPanelV2 } from "@/components/my-life/task-detail-panel-v2";
+import { useAutosave } from "@/components/my-life/use-autosave";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -167,7 +169,16 @@ type Task = {
   calendarFontColor: string;
   overviewFontColor: string;
   sortOrder: number;
-  subtasks: { id: string; title: string; done: boolean }[];
+  subtasks: {
+    id: string;
+    title: string;
+    done: boolean;
+    due?: string;
+    assignee?: string;
+    priority?: "Low" | "Medium" | "High";
+    status?: string;
+    customValues?: Record<string, string>;
+  }[];
   attachments: TaskAttachment[];
   customValues: Record<string, string>;
 };
@@ -554,7 +565,142 @@ export default function Taskflow() {
     [notice, setNotice] = useState(""),
     [mobile, setMobile] = useState(false),
     [help, setHelp] = useState(false);
-  const [draft, setDraft] = useState<Task | null>(null),
+  const [draft, setDraft] = useState<Task | null>(null);
+  // STEP 18F.5C: prevent duplicate new-task submissions.
+  const creatingV2TaskRef = useRef(false);
+  const [v2AttachmentPreview, setV2AttachmentPreview] = useState<string | null>(null);
+
+  // STEP CM.7Q.7I.22Z.16P - Existing-task title autosave.
+  const taskTitleAutosave = useAutosave<Task>({
+    save: async (task) => {
+      if (!task.title.trim()) {
+        throw new Error("A task title cannot be empty.");
+      }
+      const saved = await mutate(
+        { action: "saveTask", task },
+        "Task saved"
+      );
+      if (!saved) {
+        throw new Error("Task could not be saved. Please retry.");
+      }
+    },
+    delay: 900,
+  });
+
+  // STEP CM.7Q.7I.22Z.17B - One serialized autosave queue for all V2 task fields.
+  async function closeTaskWithAutosave() {
+    if (!draft) return;
+    if (!tasks.some((task) => task.id === draft.id)) {
+      setDraft(null); // Unsaved new task: discard without creating.
+      setError("");
+      return;
+    }
+    if (!draft.title.trim()) {
+      setError("A task title cannot be empty.");
+      return;
+    }
+    if (taskTitleAutosave.state === "error") return;
+    if (taskTitleAutosave.hasPending()) {
+      const saved = await taskTitleAutosave.flush();
+      if (!saved) return;
+    }
+    setDraft(null);
+  }
+
+  function updateV2Task(patch: Partial<Task>, immediate = false) {
+    if (!draft) return;
+    const updated: Task = { ...draft, ...patch };
+    setDraft(updated);
+    if (!tasks.some((task) => task.id === draft.id)) return;
+    if (!updated.title.trim()) {
+      setError("A task title cannot be empty.");
+      return;
+    }
+    if (updated.recurrenceUnit !== "none" && !updated.due) {
+      setError("A recurring task needs a due date.");
+      return;
+    }
+    setError("");
+    taskTitleAutosave.schedule(updated, immediate);
+  }
+
+  function changeV2TaskTitle(value: string) {
+    updateV2Task({ title: value });
+  }
+
+  async function createV2Task() {
+    if (!draft || busy || creatingV2TaskRef.current || tasks.some((task) => task.id === draft.id)) return;
+    if (!draft.title.trim()) { setError("A task title cannot be empty."); return; }
+    if ((draft.recurrenceUnit || "none") !== "none" && !draft.due) {
+      setError("A recurring task needs a due date."); return;
+    }
+    creatingV2TaskRef.current = true;
+    try {
+      if (await mutate({ action: "saveTask", task: draft }, "Task created")) {
+        setDraft(null);
+        setError("");
+      }
+    } finally {
+      creatingV2TaskRef.current = false;
+    }
+  }
+
+  async function completeV2Task() {
+    if (!draft || busy || !draft.title.trim()) return;
+    if (taskTitleAutosave.hasPending() && !(await taskTitleAutosave.flush())) return;
+    await changeStatus(draft, draft.status === "Done" ? "To do" : "Done");
+    await refresh();
+    setDraft(null);
+  }
+
+  // STEP CM.7Q.7I.22Z.17D - Attachment ingestion through V2 autosave.
+  async function addV2Attachments(files: FileList | File[]) {
+    if (!draft) return;
+    const images = Array.from(files);
+    if (!images.length) return;
+    const allowed = new Set(["image/png", "image/jpeg", "image/webp"]);
+    if (images.some((file) => !allowed.has(file.type))) {
+      setError("Only PNG, JPEG and WebP images are supported.");
+      return;
+    }
+    try {
+      const attachments = await Promise.all(images.map(async (file) => {
+        const data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Unable to read image."));
+          reader.onerror = () => reject(new Error("Unable to read image."));
+          reader.readAsDataURL(file);
+        });
+        return { id: crypto.randomUUID(), name: file.name || "Pasted image", mimeType: file.type as Task["attachments"][number]["mimeType"], data };
+      }));
+      // Use the current draft only if this task is still open; avoid updating another task.
+      const updated: Task = { ...draft, attachments: [...draft.attachments, ...attachments] };
+      updateV2Task({ attachments: updated.attachments }, true);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to add images.");
+    }
+  }
+
+  function downloadV2Attachment(item: Task["attachments"][number]) {
+    const link = document.createElement("a");
+    link.href = item.data;
+    link.download = item.name || "attachment";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+
+  async function postV2Comment() {
+    if (!draft || !comment.trim() || busy) return;
+    if (taskTitleAutosave.hasPending() && !(await taskTitleAutosave.flush())) return;
+    if (await mutate({ action: "comment", taskId: draft.id, body: comment.trim() }, "Comment added")) {
+      setComment("");
+    }
+  }
+
+  // STEP CM.7Q.7I.22Z.16E - Temporary V2 preview switch.
+  const [taskPanelV2Preview, setTaskPanelV2Preview] = useState(true),
     [projectDraft, setProjectDraft] = useState<Project | null>(null),
     [sectionDraft, setSectionDraft] = useState<Section | null>(null),
     // STEP 18F.23I.43I-P35C - Inline section creation.
@@ -2891,6 +3037,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     setConfirmDelete(false);
     setComment("");
     setSubtask("");
+    setTaskPanelV2Preview(true);
+    setError("");
     setDraft({
       id: crypto.randomUUID(),
       projectId: project?.id || projects[0].id,
@@ -2927,6 +3075,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     });
   }
   function editTask(task: Task) {
+    setTaskPanelV2Preview(true);
     setDraft({
       ...task,
       recurrenceUnit: task.recurrenceUnit || "none",
@@ -3788,6 +3937,19 @@ function newPerson() {
     URL.revokeObjectURL(url);
     setNotice("Workspace exported");
   }
+// STEP 18F.6D - SMART URL LINKS: allow only complete HTTP(S) URLs.
+function smartTextFieldUrl(value: string): string | null {
+  const text = value.trim();
+  if (!/^https?:\/\//i.test(text) || /\s/.test(text)) return null;
+  try {
+    const parsed = new URL(text);
+    if (!['http:', 'https:'].includes(parsed.protocol) || !parsed.hostname || !parsed.hostname.includes('.')) return null;
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
   function fieldValue(task: Task, field: CustomField) {
     const value = task.customValues[field.id] || "";
     if (!value) return "—";
@@ -4223,7 +4385,7 @@ function newPerson() {
             ? "minmax(260px,2.6fr)"
             : "minmax(145px,1fr)";
       })
-      .join(" ")} 105px`,
+      .join(" ")} minmax(105px,1fr)`,
   };
   const renderListRow = (t: Task) => (
     <React.Fragment key={t.id}>
@@ -4474,15 +4636,26 @@ function newPerson() {
           );
         }
 
+        // STEP 18F.6D - SMART URL LINKS (parent custom Text columns).
+        const fieldUrl = field.type === "Text" ? smartTextFieldUrl(t.customValues[field.id] || "") : null;
         return (
-          <button
-            className="custom-value-cell"
-            key={columnId}
-            onClick={() => editTask(t)}
-            title={fieldValue(t, field)}
-          >
-            {fieldValue(t, field)}
-          </button>
+          <div className="ml-list-url-cell" key={columnId}>
+            <button
+              type="button"
+              className="custom-value-cell"
+              onClick={() => editTask(t)}
+              title={fieldValue(t, field)}
+            >
+              {fieldValue(t, field)}
+            </button>
+            {fieldUrl && (
+              <a className="ml-list-url-open" href={fieldUrl} target="_blank" rel="noopener noreferrer"
+                title="Visit Link" aria-label={`Visit link in ${field.name} for ${t.title}`}
+                onClick={(event) => event.stopPropagation()}>
+                <ExternalLink size={14} aria-hidden="true" />
+              </a>
+            )}
+          </div>
         );
       })}
       <div className="row-actions">
@@ -4504,34 +4677,185 @@ function newPerson() {
       expandedListSubtasks.includes(t.id) && (
         <div className="list-subtasks-expanded">
           {t.subtasks.map((subtask) => (
-            <div className="list-subtask-display" key={subtask.id}>
-              <span aria-hidden="true">↳</span>
-              <input
-                type="checkbox"
-                aria-label={`Complete ${subtask.title}`}
-                checked={subtask.done}
-                disabled={busy}
-                onChange={(event) => {
-                  const done = event.target.checked;
-                  void mutate(
-                    {
-                      action: "saveTask",
-                      task: {
-                        ...t,
-                        subtasks: t.subtasks.map((item) =>
-                          item.id === subtask.id
-                            ? { ...item, done }
-                            : item,
-                        ),
-                      },
-                    },
-                    done ? "Subtask completed" : "Subtask reopened",
-                  );
-                }}
-              />
-              <span className={subtask.done ? "struck" : ""}>
-                {subtask.title}
-              </span>
+            <div
+              className="list-subtask-grid-row"
+              style={listGrid}
+              key={subtask.id}
+            >
+              {orderedListColumnIds.map((columnId) =>
+                columnId === "task-name" ? (
+                  <div className="list-subtask-display" key={columnId}>
+                    <span className="list-subtask-indent" aria-hidden="true">↳</span>
+                    <input
+                      type="checkbox"
+                      aria-label={`Complete ${subtask.title}`}
+                      checked={subtask.done}
+                      disabled={busy}
+                      onChange={(event) => {
+                        const done = event.target.checked;
+                        void mutate(
+                          {
+                            action: "saveTask",
+                            task: {
+                              ...t,
+                              subtasks: t.subtasks.map((item) =>
+                                item.id === subtask.id
+                                  ? { ...item, done, status: done ? "Done" : "To do" }
+                                  : item,
+                              ),
+                            },
+                          },
+                          done ? "Subtask completed" : "Subtask reopened",
+                        );
+                      }}
+                    />
+                    <input
+                      type="text"
+                      className={`list-subtask-inline-title ${subtask.done ? "struck" : ""}`}
+                      aria-label={`Edit subtask ${subtask.title}`}
+                      defaultValue={subtask.title}
+                      maxLength={250}
+                      disabled={busy}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          event.currentTarget.blur();
+                        }
+                        if (event.key === "Escape") {
+                          event.currentTarget.value = subtask.title;
+                          event.currentTarget.blur();
+                        }
+                      }}
+                      onBlur={(event) => {
+                        const title = event.currentTarget.value.trim();
+                        if (!title) {
+                          event.currentTarget.value = subtask.title;
+                          return;
+                        }
+                        if (title === subtask.title) return;
+                        void mutate(
+                          {
+                            action: "saveTask",
+                            task: {
+                              ...t,
+                              subtasks: t.subtasks.map((item) =>
+                                item.id === subtask.id
+                                  ? { ...item, title }
+                                  : item,
+                              ),
+                            },
+                          },
+                          "Subtask renamed",
+                        );
+                      }}
+                    />
+                  </div>
+                 ) : (
+                  <div key={columnId} className="list-subtask-edit-cell">
+                    {(() => {
+                      const saveSubtaskField = (patch: Partial<typeof subtask>, message: string) => {
+                        void mutate({
+                          action: "saveTask",
+                          task: {
+                            ...t,
+                            subtasks: t.subtasks.map((item) =>
+                              item.id === subtask.id ? { ...item, ...patch } : item,
+                            ),
+                          },
+                        }, message);
+                      };
+                      if (columnId === "assignee") return (
+                        <select aria-label={`Assignee for ${subtask.title}`}
+                          value={subtask.assignee || ""} disabled={busy}
+                          onChange={(e) => saveSubtaskField({ assignee: e.target.value }, "Subtask assignee updated")}
+                        >
+                          <option value="">Unassigned</option>
+                          {people.map((person) => <option key={person.id} value={person.name}>{person.name}</option>)}
+                        </select>
+                      );
+                      if (columnId === "due-date") return (
+                        <input type="date" aria-label={`Due date for ${subtask.title}`}
+                          className="list-subtask-click-date"
+                          value={subtask.due || ""} disabled={busy}
+                          onClick={(e) => {
+                            if (!busy) {
+                              try { e.currentTarget.showPicker(); } catch { /* Browser may restrict native picker. */ }
+                            }
+                          }}
+                          onChange={(e) => saveSubtaskField({ due: e.target.value }, "Subtask due date updated")}
+                        />
+                      );
+                      if (columnId === "priority") return (
+                        <select aria-label={`Priority for ${subtask.title}`}
+                          value={subtask.priority || ""} disabled={busy}
+                          onChange={(e) => saveSubtaskField({ priority: e.target.value ? (e.target.value as "Low" | "Medium" | "High") : undefined }, "Subtask priority updated")}
+                        >
+                          <option value="">None</option>
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      );
+                      if (columnId === "task-progress") return (
+                        <select aria-label={`Progress for ${subtask.title}`}
+                          value={subtask.status || (subtask.done ? "Done" : "To do")}
+                          disabled={busy}
+                          onChange={(e) => {
+                            const status = e.target.value;
+                            saveSubtaskField({ status: status as "To do" | "In progress" | "In review" | "Done", done: status === "Done" }, "Subtask progress updated");
+                          }}
+                        >
+                          <option value="To do">To do</option>
+                          <option value="In progress">In progress</option>
+                          <option value="In review">In review</option>
+                          <option value="Done">Done</option>
+                        </select>
+                      );
+                      if (!columnId.startsWith("field:")) return null;
+                      const field = customFields.find((item) => item.projectId === t.projectId && `field:${item.id}` === columnId);
+                      if (!field) return null;
+                      const value = subtask.customValues?.[field.id] || "";
+                      const saveValue = (next: string) => {
+                        if (next === value) return;
+                        saveSubtaskField({ customValues: { ...(subtask.customValues || {}), [field.id]: next } }, `${field.name} updated`);
+                      };
+                      if (field.type === "Choice") return (
+                        <select aria-label={`${field.name} for ${subtask.title}`}
+                          value={value} disabled={busy} onChange={(e) => saveValue(e.target.value)}
+                        >
+                          <option value="">None</option>
+                          {field.options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                        </select>
+                      );
+                      // STEP 18F.6D - SMART URL LINKS (inline subtask Text columns).
+                      const fieldUrl = field.type === "Text" ? smartTextFieldUrl(value) : null;
+                      return (
+                        <div className="ml-list-url-cell" key={`${subtask.id}-${field.id}-${value}`}>
+                          <input
+                            aria-label={`${field.name} for ${subtask.title}`}
+                            type={field.type === "Date" ? "date" : field.type === "Number" ? "number" : "text"}
+                            defaultValue={value} disabled={busy}
+                            maxLength={field.type === "Text" ? 5000 : undefined}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
+                              if (e.key === "Escape") { e.currentTarget.value = value; e.currentTarget.blur(); }
+                            }}
+                            onBlur={(e) => saveValue(e.currentTarget.value)}
+                          />
+                          {fieldUrl && (
+                            <a className="ml-list-url-open" href={fieldUrl} target="_blank" rel="noopener noreferrer"
+                              title="Visit Link" aria-label={`Visit link in ${field.name} for ${subtask.title}`}
+                              onClick={(event) => event.stopPropagation()}>
+                              <ExternalLink size={14} aria-hidden="true" />
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ),
+              )}
+              <div className="list-subtask-actions-spacer" aria-hidden="true" />
             </div>
           ))}
         </div>
@@ -7695,26 +8019,138 @@ onDragOver={(e) => e.preventDefault()}
       <Dialog
         open={!!draft}
         onOpenChange={(open) => {
-          if (!open && !busy) setDraft(null);
+          if (!open && !busy) void closeTaskWithAutosave();
         }}
       >
-        <DialogContent className="task-dialog">
-          <DialogTitle>
-            {tasks.some((t) => t.id === draft?.id)
-              ? "Task details"
-              : "A new small step"}
-          </DialogTitle>
-          <DialogDescription>
-            Give your work a clear next step.
-          </DialogDescription>
-          {draft && (
+        <DialogContent
+          className={`task-dialog ml-v2-task-detail-panel${taskPanelV2Preview && draft ? " ml-v2-task-detail-panel--preview" : ""}`}
+        >
+          <div className="ml-v2-task-panel-heading">
+            <DialogTitle>
+              {tasks.some((t) => t.id === draft?.id)
+                ? "Task details"
+                : "New task"}
+            </DialogTitle>
+            <DialogDescription>
+              {tasks.some((t) => t.id === draft?.id)
+                ? "Manage this task and its details."
+                : "Create a task and organize its details."}
+            </DialogDescription>
+          </div>
+          {draft && taskPanelV2Preview && (
+            <TaskDetailPanelV2
+              completionAction={tasks.some((t) => t.id === draft.id) ? (
+                <Button type="button" variant="outline" size="sm" className="ml-v2-standard-button" disabled={busy || taskTitleAutosave.state === "saving"} onClick={() => void completeV2Task()}>
+                  {draft.status === "Done" ? "Mark incomplete" : "Mark complete"}
+                </Button>
+              ) : null}
+              toolbarActions={
+                <>
+                {!tasks.some((t) => t.id === draft.id) && (
+                  <><Button type="button" variant="outline" size="sm" className="ml-v2-standard-button" disabled={busy} onClick={() => void closeTaskWithAutosave()}>Cancel</Button>
+                  <Button type="button" size="sm" className="ml-v2-standard-button" disabled={busy || !draft.title.trim()} onClick={() => void createV2Task()}>Create Task</Button></>
+                )}
+                <Button type="button" variant="outline" size="sm" className="ml-v2-standard-button" disabled={busy} onClick={() => {
+                  void (async () => {
+                    if (!tasks.some((t) => t.id === draft.id)) { setTaskPanelV2Preview(false); return; }
+                    if (!draft.title.trim()) { setError("A task title cannot be empty."); return; }
+                    if (taskTitleAutosave.state === "error") return;
+                    if (taskTitleAutosave.hasPending() && !(await taskTitleAutosave.flush())) return;
+                    setTaskPanelV2Preview(false);
+                  })();
+                }}>Original Editor</Button>
+                </>
+              }
+              onClose={() => void closeTaskWithAutosave()}
+              title={<div className="ml-task-detail-v2__title-editor">
+                <Input aria-label="Task title" className="ml-task-detail-v2__title-input" value={draft.title} maxLength={250} placeholder="What needs to get done?" onChange={(e) => changeV2TaskTitle(e.target.value)} />
+                <div className="ml-task-detail-v2__save-status" role="status" aria-live="polite">
+                  {!tasks.some((t) => t.id === draft.id) ? "Not created yet" : taskTitleAutosave.state === "saving" ? "Saving..." : taskTitleAutosave.state === "unsaved" ? "Unsaved changes" : taskTitleAutosave.state === "error" ? "Save failed" : "Saved"}
+                  {tasks.some((t) => t.id === draft.id) && taskTitleAutosave.state === "error" && <Button className="ml-v2-standard-button" type="button" size="sm" variant="outline" onClick={() => void taskTitleAutosave.retry()}>Retry</Button>}
+                </div>
+                {error && <p className="inline-error" role="alert">{error}</p>}
+              </div>}
+              assignee={<NativeSelect aria-label="Assignee" value={draft.assignee} onChange={(e) => updateV2Task({ assignee: e.target.value }, true)}>
+                <option value="">Unassigned</option>
+                {draft.assignee && !people.some((p) => p.name === draft.assignee) && <option value={draft.assignee}>{draft.assignee} (not in People)</option>}
+                {people.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </NativeSelect>}
+              dueDate={<div className="ml-task-detail-v2__date-row">
+                <Input aria-label="Due date" type="date" value={draft.due} onChange={(e) => updateV2Task({ due: e.target.value }, true)} />
+                <Input aria-label="Start time" type="time" step={60} value={draft.dueTime} onChange={(e) => updateV2Task({ dueTime: e.target.value }, true)} />
+                <Input aria-label="End time" type="time" step={60} value={draft.endTime} min={draft.dueTime || undefined} onChange={(e) => updateV2Task({ endTime: e.target.value }, true)} />
+              </div>}
+              project={<NativeSelect aria-label="Project" value={draft.projectId} onChange={(e) => updateV2Task({ projectId: e.target.value, sectionId: "", customValues: {} }, true)}>
+                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </NativeSelect>}
+              section={<NativeSelect aria-label="Section" value={draft.sectionId} onChange={(e) => updateV2Task({ sectionId: e.target.value }, true)}>
+                <option value="">No section</option>
+                {sections.filter((s) => s.projectId === draft.projectId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </NativeSelect>}
+              fields={[
+                { id: "priority", label: "Priority", value: <NativeSelect aria-label="Priority" value={draft.priority} onChange={(e) => updateV2Task({ priority: e.target.value as Task["priority"] }, true)}>{["Low", "Medium", "High"].map((p) => <option key={p} value={p}>{filterLabels.priority[p as Task["priority"]] || p}</option>)}</NativeSelect> },
+                { id: "progress", label: "Task Progress", value: <NativeSelect aria-label="Task Progress" value={draft.status} onChange={(e) => {
+                  const status = e.target.value as Status;
+                  if (status === "Done" && draft.status !== "Done" && tasks.some((t) => t.id === draft.id)) { void completeV2Task(); return; }
+                  updateV2Task({ status }, true);
+                }}>{workflowOptions.map((option) => <option key={option.id} value={option.label}>{option.label}</option>)}</NativeSelect> },
+                { id: "classification", label: "Classification", value: <NativeSelect aria-label="Classification" value={draft.classification ?? "Task"} onChange={(e) => updateV2Task({ classification: e.target.value }, true)}>{classificationOptions.map((v) => <option key={v} value={v}>{v}</option>)}</NativeSelect> },
+                { id: "recurrence", label: "Repeat", value: <div className="ml-task-detail-v2__date-row"><NativeSelect aria-label="Repeat" value={draft.recurrenceUnit || "none"} onChange={(e) => updateV2Task({ recurrenceUnit: e.target.value as Task["recurrenceUnit"] }, true)}><option value="none">Does not repeat</option><option value="days">Days</option><option value="weeks">Weeks</option><option value="months">Months</option><option value="years">Years</option></NativeSelect>{draft.recurrenceUnit !== "none" && <Input aria-label="Repeat interval" type="number" min={1} max={999} value={draft.recurrenceInterval || 1} onChange={(e) => updateV2Task({ recurrenceInterval: Math.max(1, Number(e.target.value) || 1) }, true)} />}</div> },
+                ...customFields.filter((f) => f.projectId === draft.projectId).map((field) => ({ id: field.id, label: field.name, value: field.type === "Choice" ? <NativeSelect aria-label={field.name} value={draft.customValues[field.id] || ""} onChange={(e) => updateV2Task({ customValues: { ...draft.customValues, [field.id]: e.target.value } }, true)}><option value="">None</option>{field.options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}</NativeSelect> : <Input aria-label={field.name} type={field.type === "Date" ? "date" : field.type === "Number" ? "number" : "text"} maxLength={field.type === "Text" ? 5000 : undefined} value={draft.customValues[field.id] || ""} onChange={(e) => updateV2Task({ customValues: { ...draft.customValues, [field.id]: e.target.value } })} /> })),
+              ]}
+              description={<Textarea aria-label="Description" rows={5} maxLength={10000} placeholder="Add details, context, or useful links..." value={draft.description} onChange={(e) => updateV2Task({ description: e.target.value })} />}
+              subtasks={<div className="ml-task-detail-v2__stack">
+                <small>{draft.subtasks.filter((s) => s.done).length} of {draft.subtasks.length} completed</small>
+                {draft.subtasks.map((s) => <div className="ml-task-detail-v2__subtask" key={s.id}>
+                  <input type="checkbox" aria-label={`Complete ${s.title}`} checked={s.done} onChange={(e) => updateV2Task({ subtasks: draft.subtasks.map((x) => x.id === s.id ? { ...x, done: e.target.checked } : x) }, true)} />
+                  <Input aria-label="Subtask title" maxLength={250} value={s.title} onChange={(e) => updateV2Task({ subtasks: draft.subtasks.map((x) => x.id === s.id ? { ...x, title: e.target.value } : x) })} />
+                  <Button type="button" variant="ghost" size="sm" className="ml-v2-standard-button" aria-label={`Remove ${s.title}`} onClick={() => updateV2Task({ subtasks: draft.subtasks.filter((x) => x.id !== s.id) }, true)}>Remove</Button>
+                </div>)}
+                <div className="ml-task-detail-v2__inline">
+                  <Input aria-label="New subtask" placeholder="Add a subtask..." maxLength={250} value={subtask} onChange={(e) => setSubtask(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && subtask.trim()) { e.preventDefault(); updateV2Task({ subtasks: [...draft.subtasks, { id: crypto.randomUUID(), title: subtask.trim(), done: false }] }, true); setSubtask(""); } }} />
+                  <Button type="button" variant="outline" size="sm" className="ml-v2-standard-button" disabled={!subtask.trim()} onClick={() => { updateV2Task({ subtasks: [...draft.subtasks, { id: crypto.randomUUID(), title: subtask.trim(), done: false }] }, true); setSubtask(""); }}>Add</Button>
+                </div>
+              </div>}
+              attachments={!tasks.some((t) => t.id === draft.id) ? <small>Create the task before adding attachments.</small> : <div className="ml-task-detail-v2__stack ml-task-detail-v2__attachments" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length) void addV2Attachments(e.dataTransfer.files); }} onPaste={(e) => { const files = Array.from(e.clipboardData.files).filter((f) => f.type.startsWith("image/")); if (files.length) { e.preventDefault(); void addV2Attachments(files); } }}>
+                <div className="ml-task-detail-v2__attachment-heading"><small>{draft.attachments.length} attachment{draft.attachments.length === 1 ? "" : "s"}</small><Button type="button" variant="ghost" size="sm" className="ml-v2-standard-button" aria-label="Add attachment" onClick={() => attachmentInputRef.current?.click()}>+</Button></div>
+                <input ref={attachmentInputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={(e) => { if (e.target.files) void addV2Attachments(e.target.files); e.target.value = ""; }} />
+                <div className="ml-task-detail-v2__attachment-grid">
+                  {draft.attachments.map((item) => <div className="ml-task-detail-v2__attachment" key={item.id}>
+                    <button type="button" className="ml-task-detail-v2__attachment-preview" aria-label={`Preview ${item.name}`} onClick={() => setV2AttachmentPreview(item.data)}><img src={item.data} alt={item.name} /></button>
+                    <details className="ml-task-detail-v2__attachment-menu"><summary aria-label={`Options for ${item.name}`} title="Attachment options">⋮</summary><div className="ml-task-detail-v2__attachment-menu-items"><button type="button" onClick={(e) => { e.currentTarget.closest("details")?.removeAttribute("open"); downloadV2Attachment(item); }}>Download attachment</button><button type="button" className="ml-task-detail-v2__attachment-delete" onClick={(e) => { e.currentTarget.closest("details")?.removeAttribute("open"); if (window.confirm(`Delete attachment ${item.name}?`)) updateV2Task({ attachments: draft.attachments.filter((a) => a.id !== item.id) }, true); }}>Delete attachment</button></div></details>
+                    <span title={item.name}>{item.name}</span>
+                  </div>)}
+                  {<button type="button" className="ml-task-detail-v2__attachment-add" aria-label="Add images" onClick={() => attachmentInputRef.current?.click()}><span>+</span><small>Add image</small></button>}
+                </div>
+                <small className="ml-task-detail-v2__attachment-hint">Drop PNG, JPEG or WebP images here, or paste a screenshot with Ctrl+V.</small>
+                {v2AttachmentPreview && <div className="ml-task-detail-v2__lightbox" role="dialog" aria-modal="true" aria-label="Attachment preview" onClick={() => setV2AttachmentPreview(null)}><button type="button" aria-label="Close preview" onClick={() => setV2AttachmentPreview(null)}>✕</button><img src={v2AttachmentPreview} alt="Full-size attachment preview" onClick={(e) => e.stopPropagation()} /></div>}
+              </div>}
+              activity={comments.filter((c) => c.task_id === draft.id).map((c) => <div key={c.id} className="comment"><div><small>{new Date(c.created_at).toLocaleString()}</small><p>{c.body}</p></div></div>)}
+              commentEditor={!tasks.some((t) => t.id === draft.id) ? <small>Create the task before posting comments.</small> : <div className="ml-task-detail-v2__inline"><Input aria-label="Comment" maxLength={4000} placeholder="Leave a comment..." value={comment} onChange={(e) => setComment(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && comment.trim()) void postV2Comment(); }} /><Button type="button" variant="outline" size="sm" className="ml-v2-standard-button" disabled={!comment.trim() || busy} onClick={() => void postV2Comment()}>Post</Button></div>}
+            />
+          )}
+          {draft && !taskPanelV2Preview && (
+            <div className="ml-v2-task-panel-original-switch">
+              <Button className="ml-v2-standard-button"
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={busy}
+                onClick={() => setTaskPanelV2Preview(true)}
+              >
+                Preview V2
+              </Button>
+            </div>
+          )}
+          {draft && !taskPanelV2Preview && (
             <form onSubmit={saveTask} className="editor-form ml-v2-task-editor-form">
-              <label>
-                Task name
+              <label className="ml-v2-task-panel-title-field">
+                <span className="ml-v2-task-panel-title-label">Task name</span>
                 <Input
                   autoFocus
                   required
                   maxLength={250}
+                  className="ml-v2-task-panel-title-input"
                   value={draft.title}
                   placeholder="What needs to get done?"
                   onChange={(e) =>
@@ -8533,7 +8969,7 @@ onDragOver={(e) => e.preventDefault()}
               <div className="attachments-editor">
                 <strong>
                   Attachments / Screenshots{" "}
-                  <small>{draft.attachments.length}/5</small>
+                  <small>{draft.attachments.length} attached</small>
                 </strong>
 
                 <input
@@ -9130,7 +9566,7 @@ onDragOver={(e) => e.preventDefault()}
                   <Button
                     type="button"
                     variant="ghost"
-                    className="delete-button"
+                    className="delete-button ml-v2-standard-button"
                     disabled={busy}
                     onClick={async () => {
                       if (!confirmDelete) {
@@ -9150,7 +9586,7 @@ onDragOver={(e) => e.preventDefault()}
                     {confirmDelete ? "Confirm delete" : "Delete"}
                   </Button>
                 )}
-                <Button
+                <Button className="ml-v2-standard-button"
                   type="button"
                   variant="outline"
                   onClick={() => setSectionDraft(null)}
@@ -9158,7 +9594,7 @@ onDragOver={(e) => e.preventDefault()}
                 >
                   Cancel
                 </Button>
-                <Button
+                <Button className="ml-v2-standard-button"
                   type="submit"
                   disabled={
                     busy ||

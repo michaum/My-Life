@@ -1,0 +1,49 @@
+/* STEP 18F.8F.4 — dark-only, V2-only visual refinement.
+   Intentionally excludes wallpaper, popup portals, calendar/list internals and
+   native controls. Custom wallpaper detection requires a separate DOM audit. */
+html[data-ml-theme="dark"] .ml-v2 {
+  --ml-v2-shadow-sm: 0 4px 18px rgba(0,0,0,.19);
+  --ml-v2-shadow-md: 0 12px 35px rgba(0,0,0,.24);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-nav-item:not(.is-active):not([aria-current="page"]) {
+  background-color: transparent;
+  color: #d5cee6;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-nav-item:not(.is-active):not([aria-current="page"]):hover {
+  background-color: rgba(165,140,246,.18);
+  color: #fff;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-nav-item .ml-v2-nav-text,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-project-navigation .ml-v2-nav-text {
+  color: inherit;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-profile,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-collapse-button {
+  background-color: #302d3d;
+  color: #eee8fa;
+  border-color: rgba(215,204,240,.19);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-profile-copy > span,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-nav-label {
+  color: #bcb3d0;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-v2-sidebar-tools {
+  border-top-color: rgba(215,204,240,.2);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-theme-choice select {
+  background: #302d3d;
+  color: #f2effb;
+  border-color: #665778;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-theme-choice__label,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-sidebar .ml-theme-choice__icon {
+  color: #d5cee6;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-card {
+  box-shadow: var(--ml-v2-shadow-sm);
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-muted,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-heading p {
+  color: #c5bfd4;
+}
+/* Retain pastel identities: no global background override on summary tiles. */
