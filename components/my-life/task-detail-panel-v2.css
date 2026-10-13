@@ -352,3 +352,110 @@ html[data-ml-theme="dark"] .ml-v2-task-detail-panel
   .ml-task-detail-v2__attachment-add > small {
   color: #b8b0ca;
 }
+
+
+/* STEP 18F.8F.25W - OFFICIAL LIGHT MODE TASK DETAIL CONTROLS
+   Only the V2 task detail panel. No layout or functionality changes. */
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 {
+  --ml-task-light-ink: #202331;
+  --ml-task-light-muted: #59627a;
+  --ml-task-light-border: #ddd6f5;
+  --ml-task-light-accent: #7656db;
+  --ml-task-light-soft: #f9faff;
+  background: #fff !important;
+  color: var(--ml-task-light-ink) !important;
+  color-scheme: light;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel {
+  background: #fff !important;
+  color: #202331 !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(
+  .ml-task-detail-v2__toolbar, .ml-task-detail-v2__project-row,
+  .ml-task-detail-v2__fields, .ml-task-detail-v2__field,
+  .ml-task-detail-v2__field > div:first-child
+) { border-color: #e8e2f7 !important; }
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(
+  .ml-task-detail-v2__property > span, .ml-task-detail-v2__field > div:first-child,
+  .ml-task-detail-v2__save-status, .ml-task-detail-v2__attachment-hint,
+  .ml-task-detail-v2__attachment-add > small
+) { color: #59627a !important; }
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(.ml-task-detail-v2__title-input),
+  textarea, select, [role="combobox"], [data-slot="select-trigger"],
+  button.choice-trigger
+) {
+  background-color: #fff !important;
+  color: #202331 !important;
+  border: 1px solid #ddd6f5 !important;
+  border-radius: 7px;
+  box-shadow: none !important;
+  accent-color: #7656db;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(input,textarea)::placeholder {
+  color: #73788c !important;
+  opacity: 1;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea, select, [role="combobox"], [data-slot="select-trigger"],
+  button.choice-trigger
+):hover:not(:disabled):not(:focus-visible) {
+  border-color: #b9a5ef !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea, select, [role="combobox"], [data-slot="select-trigger"],
+  button.choice-trigger
+):focus-visible {
+  border-color: #7656db !important;
+  outline: 2px solid #7656db !important;
+  outline-offset: 1px !important;
+  box-shadow: 0 0 0 3px rgba(118,86,219,.12) !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 .ml-task-detail-v2__title-input {
+  background: transparent !important;
+  color: #202331 !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 button:not(
+  .ml-task-detail-v2__attachment-preview, .ml-task-detail-v2__attachment-delete,
+  .ml-task-detail-v2__lightbox > button
+):not(:disabled) {
+  background-color: #fff !important;
+  color: #6545bf !important;
+  border-color: #ddd6f5 !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 button:not(
+  .ml-task-detail-v2__attachment-preview, .ml-task-detail-v2__attachment-delete,
+  .ml-task-detail-v2__lightbox > button
+):hover:not(:disabled) {
+  background-color: #f2edff !important;
+  border-color: #a78bec !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 button:focus-visible,
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 summary:focus-visible {
+  outline: 2px solid #7656db !important;
+  outline-offset: 2px !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(
+  .ml-task-detail-v2__attachment-preview, .ml-task-detail-v2__attachment-add,
+  .ml-task-detail-v2__attachment-menu summary, .ml-task-detail-v2__attachment-menu-items
+) {
+  background-color: #f9faff !important;
+  border-color: #ddd6f5 !important;
+  color: #202331 !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2 :is(
+  .ml-task-detail-v2__attachment-preview, .ml-task-detail-v2__attachment-add,
+  .ml-task-detail-v2__attachment-menu summary
+):hover { background-color: #f2edff !important; border-color: #a78bec !important; }
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2__attachment-menu-items button:hover {
+  background: #f2edff !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel .ml-task-detail-v2__attachment-menu-items .ml-task-detail-v2__attachment-delete {
+  color: #b42335 !important;
+}

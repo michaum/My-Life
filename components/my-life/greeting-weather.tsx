@@ -433,7 +433,83 @@ export function MyLifeGreetingWeather() {
 
     const original = originalGreetingBackgroundRef.current;
 
+    // STEP 18F.8F.25H: Natural rainfall with independent depth, speed and spacing.
+    let mlOverviewRainFrame = 0;
+    let mlOverviewRainCanvas: HTMLCanvasElement | null = null;
+    const stopOverviewRain = () => {
+      if (mlOverviewRainFrame) cancelAnimationFrame(mlOverviewRainFrame);
+      mlOverviewRainFrame = 0;
+      mlOverviewRainCanvas?.remove();
+      mlOverviewRainCanvas = null;
+    };
+    const startOverviewRain = () => {
+      if (weather?.kind !== "rainy" && weather?.kind !== "stormy") {
+        stopOverviewRain();
+        return;
+      }
+      if (mlOverviewRainCanvas) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const canvas = document.createElement("canvas");
+      canvas.className = "ml-overview-natural-rain";
+      canvas.setAttribute("aria-hidden", "true");
+      card.insertBefore(canvas, card.firstChild);
+      mlOverviewRainCanvas = canvas;
+      const context = canvas.getContext("2d");
+      if (!context) { stopOverviewRain(); return; }
+      type Drop = { x: number; y: number; speed: number; length: number; opacity: number; width: number; drift: number };
+      let width = 0;
+      let height = 0;
+      let drops: Drop[] = [];
+      const reset = () => {
+        const bounds = card.getBoundingClientRect();
+        width = Math.max(1, Math.round(bounds.width));
+        height = Math.max(1, Math.round(bounds.height));
+        const scale = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        context.setTransform(scale, 0, 0, scale, 0, 0);
+        const count = Math.min(115, Math.max(30, Math.round(width * height / 2600)));
+        drops = Array.from({ length: count }, () => {
+          const depth = Math.random();
+          return { x: Math.random() * width, y: Math.random() * height,
+            speed: 90 + depth * 310, length: 3 + depth * 12,
+            opacity: .09 + depth * .25, width: .4 + depth * .7,
+            drift: 12 + depth * 33 };
+        });
+      };
+      reset();
+      let previous = 0;
+      const draw = (now: number) => {
+        if (!canvas.isConnected) { stopOverviewRain(); return; }
+        const bounds = card.getBoundingClientRect();
+        if (Math.abs(bounds.width - width) > 2 || Math.abs(bounds.height - height) > 2) reset();
+        const dt = Math.min((now - (previous || now)) / 1000, .05);
+        previous = now;
+        context.clearRect(0, 0, width, height);
+        context.lineCap = "round";
+        for (const drop of drops) {
+          drop.y += drop.speed * dt;
+          drop.x += drop.drift * dt;
+          if (drop.y > height + drop.length || drop.x > width + 10) {
+            drop.y = -drop.length - Math.random() * height * .3;
+            drop.x = Math.random() * width;
+          }
+          context.strokeStyle = `rgba(218,232,249,${drop.opacity})`;
+          context.lineWidth = drop.width;
+          context.beginPath();
+          context.moveTo(drop.x, drop.y);
+          context.lineTo(drop.x - drop.drift / drop.speed * drop.length, drop.y - drop.length);
+          context.stroke();
+        }
+        mlOverviewRainFrame = requestAnimationFrame(draw);
+      };
+      mlOverviewRainFrame = requestAnimationFrame(draw);
+    };
     const restoreOriginal = () => {
+      stopOverviewRain();
+      delete card.dataset.mlOverviewWeather;
+      delete card.dataset.mlOverviewPeriod;
+      card.querySelector(".ml-overview-weather-atmosphere")?.remove();
       card.style.removeProperty("--ml-greeting-dark-image");
       card.style.removeProperty("--ml-greeting-dark-color");
       card.style.backgroundImage = original.image;
@@ -449,7 +525,29 @@ export function MyLifeGreetingWeather() {
 
       const theme = greetingWeatherBackground(weather);
       const darkTheme = greetingDarkWeatherBackground(weather);
-      card.style.setProperty("--ml-greeting-dark-image", darkTheme.image);
+      // STEP 18F.8F.25C: Weather and daypart both affect the greeting scene.
+      const hour = new Date().getHours();
+      const period = !weather.isDay ? "night" : hour >= 17 ? "evening" : "day";
+      const nightPalette: Record<GreetingWeather["kind"], string> = {
+        sunny: "#202846", cloudy: "#202a40", rainy: "#182a40",
+        snowy: "#28394f", stormy: "#191f37", foggy: "#2c3444", night: "#202846",
+      };
+      const darkImage = period === "night"
+        ? `linear-gradient(125deg, ${nightPalette[weather.kind]}, #343456 60%, #18243d)`
+        : period === "evening"
+          ? `linear-gradient(115deg, #3a355e, ${darkTheme.color} 55%, #7e5875)`
+          : darkTheme.image;
+      card.dataset.mlOverviewWeather = weather.kind;
+      startOverviewRain();
+      card.dataset.mlOverviewPeriod = period;
+      let atmosphere = card.querySelector<HTMLElement>(".ml-overview-weather-atmosphere");
+      if (!atmosphere) {
+        atmosphere = document.createElement("span");
+        atmosphere.className = "ml-overview-weather-atmosphere";
+        atmosphere.setAttribute("aria-hidden", "true");
+        card.insertBefore(atmosphere, card.firstChild);
+      }
+      card.style.setProperty("--ml-greeting-dark-image", darkImage);
       card.style.setProperty("--ml-greeting-dark-color", darkTheme.color);
 
       card.style.backgroundImage = theme.image;

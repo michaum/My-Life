@@ -118,7 +118,7 @@ export function WeeklyCalendar({ today, tasks, occursOnDate, timeForDate, onTask
             return (
           <button key={task.id} type="button"
             onClick={() => onTaskClick(task.id)}
-            style={{ borderLeft: `4px solid ${color}` }}>
+            style={{ borderLeft: `4px solid ${color}`, "--ml-calendar-pastel": color } as React.CSSProperties}>
             <span>{timeForDate?.(task.id, selected)?.dueTime ?? task.dueTime ?? "All day"}</span>
             <strong>{task.title}</strong>
             {task.status === "Done" && (

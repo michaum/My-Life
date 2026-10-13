@@ -6306,7 +6306,7 @@ function smartTextFieldUrl(value: string): string | null {
                             </PopoverTrigger>
                             <PopoverContent
                               align="end"
-                              className="w-48 p-2"
+                              className="w-48 p-2 ml-v2-list-column-popover"
                               onPointerDown={(e) => e.stopPropagation()}
                             >
                               <div className="px-2 py-1 text-xs font-semibold">
@@ -8075,15 +8075,6 @@ onDragOver={(e) => e.preventDefault()}
                   <><Button type="button" variant="outline" size="sm" className="ml-v2-standard-button" disabled={busy} onClick={() => void closeTaskWithAutosave()}>Cancel</Button>
                   <Button type="button" size="sm" className="ml-v2-standard-button" disabled={busy || !draft.title.trim()} onClick={() => void createV2Task()}>Create Task</Button></>
                 )}
-                <Button type="button" variant="outline" size="sm" className="ml-v2-standard-button" disabled={busy} onClick={() => {
-                  void (async () => {
-                    if (!tasks.some((t) => t.id === draft.id)) { setTaskPanelV2Preview(false); return; }
-                    if (!draft.title.trim()) { setError("A task title cannot be empty."); return; }
-                    if (taskTitleAutosave.state === "error") return;
-                    if (taskTitleAutosave.hasPending() && !(await taskTitleAutosave.flush())) return;
-                    setTaskPanelV2Preview(false);
-                  })();
-                }}>Original Editor</Button>
                 </>
               }
               onClose={() => void closeTaskWithAutosave()}

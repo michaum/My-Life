@@ -8988,7 +8988,7 @@
 
 .ml-v2 .ml-v2-workspace:has(.ml-v2-wallpaper-layer[style*="--ml-wallpaper-image"])::before {
   background-image:
-    linear-gradient(to bottom, transparent 0px, transparent 185px, rgba(255,255,255,.72) 250px, white 310px),
+    linear-gradient(to bottom, transparent 0px, transparent 245px, rgba(255,255,255,.20) 285px, rgba(255,255,255,.48) 340px),
     var(--ml-wallpaper-image) !important;
 }
 
@@ -10085,9 +10085,25 @@
 }
 
 .ml-v2 .ml-v2-dashboard-appointments-list > li:hover {
-  background: var(--ml-v2-accent-soft, #eee9ff);
+  background: transparent;
   transform: translateY(-2px);
   box-shadow: 0 5px 14px rgba(101, 64, 196, .12);
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-dashboard-appointments-list > li:hover {
+  background: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(101, 64, 196, .12);
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-dashboard-appointments-list
+.ml-v2-dashboard-appointment-link.ml-v2-standard-button:hover:not(:disabled) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: inherit;
 }
 
 .ml-v2 .ml-v2-dashboard-appointments-list
@@ -10277,7 +10293,7 @@ html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-project-todo-card
   bottom: 0 !important;
   left: auto !important;
 
-  transform: none !important;
+  transform: none;
 
   width: min(720px, 92vw) !important;
   max-width: none !important;
@@ -10308,7 +10324,7 @@ html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-project-todo-card
   bottom: 0 !important;
   left: auto !important;
   right: 0 !important;
-  transform: translate3d(0, 0, 0) !important;
+  transform: none;
   translate: none !important;
   animation: none !important;
 }
@@ -10899,4 +10915,699 @@ html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-referenc
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-workspace:has(.ml-v2-dashboard-reference) .ml-v2-universal-header .ml-v2-dashboard-welcome[style*="--ml-greeting-dark-image"] .ml-v2-dashboard-current-date {
   color: #ffffff !important;
   text-shadow: 0 1px 2px rgba(22, 20, 37, .25) !important;
+}
+
+
+/* STEP 18F.8F.24J - DASHBOARD LOWER WIDGET PURPLE HOVER */
+/* Matches the existing dashboard hover treatment without changing
+   appointment rows, task rows, notes, or click behavior. */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-secondary-grid > .ml-v2-dashboard-appointments-card:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-secondary-grid > .ml-v2-dashboard-project-todo-card:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-secondary-grid > .ml-v2-dashboard-notes-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 111, 242, 0.55) !important;
+  box-shadow: 0 14px 34px rgba(34, 35, 58, 0.075);
+}
+
+
+/* STEP 18F.8F.24Q - MATCH UPPER DASHBOARD HOVER OUTLINES */
+/* Apply the same purple hover border as the three lower cards.
+   Preserve dark backgrounds and existing widget functionality. */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-main-layout .ml-v2-dashboard-widget:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-weekly-calendar:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-project-progress:hover {
+  border-color: rgba(124, 111, 242, 0.55) !important;
+}
+
+/* STEP 18F.8F.25C - Unified Overview polish (dark-only; preserve task colors) */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference {
+  --ml-overview-purple: #8052db;
+  --ml-overview-hover: #353452;
+  --ml-overview-control: #302d43;
+  --ml-overview-control-border: #51496d;
+}
+/* Six outer panels: use one purple ring, without changing their background. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-layout > .ml-v2-dashboard-main-panel:has(> .ml-v2-dashboard-widget):hover > .ml-v2-dashboard-widget,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-layout > .ml-v2-dashboard-main-panel:has(> .ml-v2-weekly-calendar):hover > .ml-v2-weekly-calendar,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-secondary-grid > .ml-v2-dashboard-widget:hover {
+  border-color: var(--ml-overview-purple) !important;
+  box-shadow: 0 0 0 1px rgba(128,82,219,.52), 0 10px 24px rgba(0,0,0,.17) !important;
+}
+/* Upper projects panel may wrap the widget: keep outer hover appearance unified. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-main-layout > .ml-v2-dashboard-main-panel:hover {
+  border-color: var(--ml-overview-purple) !important;
+}
+/* Uniform task/appointment/project/note row hover; keep original labels and pastel accents. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-today-task-row:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > button:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-project-progress-row:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-appointments-list > li:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-project-todo-task:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-note-link:hover {
+  background-color: var(--ml-overview-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(20,14,43,.2);
+}
+/* The event's inline left-border pastel must win over older dark !important border rules. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > button {
+  border-left-color: var(--ml-calendar-pastel) !important;
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+/* Today's Tasks navigation, mini-calendar navigation, and View All controls. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-today-navigation > .ml-v2-standard-button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-heading nav > button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-appointments-view-all,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-project-todo-view-all,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-notes-view-all,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-project-progress-add {
+  background: var(--ml-overview-control) !important;
+  border: 1px solid var(--ml-overview-control-border) !important;
+  border-radius: 8px;
+  color: #f2effb !important;
+  box-shadow: none;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-today-navigation > .ml-v2-standard-button:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-heading nav > button:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-appointments-view-all:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-project-todo-view-all:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-notes-view-all:hover,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-project-progress-add:hover {
+  background: #41365f !important;
+  border-color: var(--ml-overview-purple) !important;
+  color: #fff !important;
+}
+/* Calendar buttons now share the same dimensions and structure as Today's Tasks. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-heading nav > button {
+  min-width: 29px; height: 29px; padding: 5px 7px;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-heading nav > button:last-child {
+  padding: 5px 10px;
+}
+/* Notes preview and project picker: remove bright light-theme form surfaces. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-note-link.ml-v2-standard-button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-project-todo-select {
+  background: #302d43 !important;
+  border: 1px solid #51496d !important;
+  color: #f2effb !important;
+}
+/* Greeting atmospheric effects: CSS-only, noninteractive and reduced-motion safe. */
+.ml-v2-dashboard-welcome[data-ml-overview-weather] { position: relative; overflow: hidden; isolation: isolate; }
+.ml-v2-dashboard-welcome .ml-overview-weather-atmosphere {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .65; background-repeat: repeat;
+}
+.ml-v2-dashboard-welcome > :not(.ml-overview-weather-atmosphere) { position: relative; z-index: 1; }
+.ml-v2-dashboard-welcome[data-ml-overview-weather="rainy"] .ml-overview-weather-atmosphere,
+.ml-v2-dashboard-welcome[data-ml-overview-weather="stormy"] .ml-overview-weather-atmosphere {
+  background-image: repeating-linear-gradient(105deg, transparent 0 23px, rgba(207,233,255,.45) 24px 25px, transparent 26px 50px);
+  background-size: 130px 220px; animation: ml-overview-rain 1.2s linear infinite;
+}
+.ml-v2-dashboard-welcome[data-ml-overview-weather="snowy"] .ml-overview-weather-atmosphere {
+  background-image: radial-gradient(circle, rgba(255,255,255,.9) 1.8px, transparent 2.8px), radial-gradient(circle, rgba(255,255,255,.7) 2px, transparent 3px);
+  background-size: 59px 75px, 93px 112px; background-position: 0 0, 32px 45px;
+  animation: ml-overview-snow 7s linear infinite;
+}
+.ml-v2-dashboard-welcome[data-ml-overview-weather="foggy"] .ml-overview-weather-atmosphere {
+  background-image: radial-gradient(ellipse at 20% 65%, rgba(231,239,255,.55), transparent 65%), radial-gradient(ellipse at 85% 35%, rgba(229,235,249,.42), transparent 70%);
+  background-size: 130% 100%; animation: ml-overview-fog 10s ease-in-out infinite alternate;
+}
+.ml-v2-dashboard-welcome[data-ml-overview-weather="sunny"] .ml-overview-weather-atmosphere {
+  background-image: radial-gradient(circle at 85% 16%, rgba(255,224,123,.7), transparent 27%);
+  animation: ml-overview-sun 6s ease-in-out infinite alternate;
+}
+.ml-v2-dashboard-welcome[data-ml-overview-period="night"] .ml-overview-weather-atmosphere { opacity: .35; }
+@keyframes ml-overview-rain { from { background-position: 0 -220px; } to { background-position: 0 0; } }
+@keyframes ml-overview-snow { from { background-position: 0 -180px, 32px -180px; } to { background-position: 20px 0, 0 0; } }
+@keyframes ml-overview-fog { from { background-position: -15% 0; opacity: .25; } to { background-position: 15% 0; opacity: .7; } }
+@keyframes ml-overview-sun { from { opacity: .45; } to { opacity: .95; } }
+@media (prefers-reduced-motion: reduce) {
+  .ml-v2-dashboard-welcome .ml-overview-weather-atmosphere { animation: none !important; }
+  html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-today-task-row:hover,
+  html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > button:hover,
+  html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-project-progress-row:hover,
+  html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference .ml-v2-dashboard-appointments-list > li:hover { transform: none; }
+}
+
+/* STEP 18F.8F.25F - Local photographic weather, all appearance modes */
+.ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather] {
+  background-color: #35445c !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  transition: background-image 450ms ease, background-color 450ms ease !important;
+}
+/* Dark appearance: cinematic natural photo with legible foreground. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="cloudy"] {
+  background-image: linear-gradient(90deg,rgba(15,22,39,.82),rgba(18,26,44,.38)),url('/images/overview-weather/cloudy.jpg') !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="rainy"] {
+  background-image: linear-gradient(90deg,rgba(15,22,39,.82),rgba(18,26,44,.38)),url('/images/overview-weather/rainy.jpg') !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="snowy"] {
+  background-image: linear-gradient(90deg,rgba(15,22,39,.82),rgba(18,26,44,.38)),url('/images/overview-weather/snowy.jpg') !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="foggy"] {
+  background-image: linear-gradient(90deg,rgba(15,22,39,.82),rgba(18,26,44,.38)),url('/images/overview-weather/foggy.jpg') !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="sunny"] {
+  background-image: linear-gradient(90deg,rgba(15,22,39,.82),rgba(18,26,44,.38)),url('/images/overview-weather/sunny.jpg') !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="stormy"] {
+  background-image: linear-gradient(90deg,rgba(15,22,39,.82),rgba(18,26,44,.38)),url('/images/overview-weather/stormy.jpg') !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="night"] {
+  background-image: linear-gradient(90deg,rgba(15,22,39,.82),rgba(18,26,44,.38)),url('/images/overview-weather/night.jpg') !important;
+}
+/* Non-dark appearance modes: same photographs, softer overlay and readable dark labels. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="cloudy"] {
+  background-image: linear-gradient(90deg,rgba(247,249,255,.90),rgba(240,244,253,.32)),url('/images/overview-weather/cloudy.jpg') !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="rainy"] {
+  background-image: linear-gradient(90deg,rgba(247,249,255,.90),rgba(240,244,253,.32)),url('/images/overview-weather/rainy.jpg') !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="snowy"] {
+  background-image: linear-gradient(90deg,rgba(247,249,255,.90),rgba(240,244,253,.32)),url('/images/overview-weather/snowy.jpg') !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="foggy"] {
+  background-image: linear-gradient(90deg,rgba(247,249,255,.90),rgba(240,244,253,.32)),url('/images/overview-weather/foggy.jpg') !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="sunny"] {
+  background-image: linear-gradient(90deg,rgba(247,249,255,.90),rgba(240,244,253,.32)),url('/images/overview-weather/sunny.jpg') !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="stormy"] {
+  background-image: linear-gradient(90deg,rgba(247,249,255,.90),rgba(240,244,253,.32)),url('/images/overview-weather/stormy.jpg') !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-weather="night"] {
+  background-image: linear-gradient(90deg,rgba(247,249,255,.90),rgba(240,244,253,.32)),url('/images/overview-weather/night.jpg') !important;
+}
+/* Evening/night: dim the same live-weather photo, not a blank grey rectangle. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-period="evening"],
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-welcome[data-ml-overview-period="night"] {
+  background-blend-mode: normal;
+}
+/* All dark Overview action controls use the approved #292e46 surface. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference {
+  --ml-overview-control: #292e46;
+  --ml-overview-control-border: #4d5371;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference :is(
+ .ml-v2-dashboard-appointments-view-all,
+ .ml-v2-dashboard-project-todo-view-all,
+ .ml-v2-dashboard-notes-view-all,
+ .ml-v2-dashboard-note-link.ml-v2-standard-button,
+ .ml-v2-dashboard-project-todo-select,
+ .ml-v2-project-progress-add,
+ .ml-v2-today-navigation > .ml-v2-standard-button,
+ .ml-v2-weekly-calendar-heading nav > button
+) {
+  background: #292e46 !important;
+  background-color: #292e46 !important;
+  border-color: #4d5371 !important;
+  color: #f2effb !important;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference :is(
+ .ml-v2-dashboard-appointments-view-all,
+ .ml-v2-dashboard-project-todo-view-all,
+ .ml-v2-dashboard-notes-view-all,
+ .ml-v2-dashboard-note-link.ml-v2-standard-button,
+ .ml-v2-dashboard-project-todo-select,
+ .ml-v2-project-progress-add,
+ .ml-v2-today-navigation > .ml-v2-standard-button,
+ .ml-v2-weekly-calendar-heading nav > button
+):hover { background-color: #393d59 !important; }
+/* Keep the approved 25C card/row hover behavior unchanged. */
+
+/* STEP 18F.8F.25H - Realistic natural rain, no tiled diagonal CSS stripes. */
+.ml-v2-dashboard-welcome[data-ml-overview-weather="rainy"] .ml-overview-weather-atmosphere,
+.ml-v2-dashboard-welcome[data-ml-overview-weather="stormy"] .ml-overview-weather-atmosphere {
+  background-image: none !important;
+  animation: none !important;
+}
+.ml-v2-dashboard-welcome .ml-overview-natural-rain {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none; opacity: .86;
+}
+.ml-v2-dashboard-welcome[data-ml-overview-period="night"] .ml-overview-natural-rain { opacity: .62; }
+@media (prefers-reduced-motion: reduce) {
+  .ml-v2-dashboard-welcome .ml-overview-natural-rain { display: none; }
+}
+
+
+/* STEP 18F.8F.25O - Light mode greeting readability */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome {
+  background-color: rgba(249, 250, 255, .92) !important;
+  background-blend-mode: normal !important;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome h1,
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome h2 {
+  color: #1d2340 !important;
+  text-shadow: none !important;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome p,
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-welcome .ml-v2-greeting-weather {
+  color: #34415e !important;
+  text-shadow: none !important;
+}
+
+/* STEP 18F.8F.25R - Official Light Mode Overview standard */
+/* Scope: Overview in non-dark appearance modes. Never recolor task/status labels. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference {
+  --ml-overview-light-bg: #f6f7fb;
+  --ml-overview-light-card: #ffffff;
+  --ml-overview-light-soft: #f9faff;
+  --ml-overview-light-text: #202331;
+  --ml-overview-light-muted: #5c6176;
+  --ml-overview-light-accent: #7656db;
+  --ml-overview-light-border: #ddd6f5;
+  --ml-overview-light-hover: #f1ecff;
+  --ml-overview-light-hover-border: #a98bf1;
+  color: var(--ml-overview-light-text);
+}
+
+/* White panels and lavender outlines. Preserve the existing outer-panel
+   contour architecture and its intentional transparent inner widgets. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-main-layout > .ml-v2-dashboard-main-panel,
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-secondary-grid > .ml-v2-dashboard-widget {
+  background-color: #ffffff !important;
+  border-color: #ddd6f5 !important;
+  color: #202331;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-main-layout > .ml-v2-dashboard-main-panel:hover,
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-secondary-grid > .ml-v2-dashboard-widget:hover {
+  border-color: #a98bf1 !important;
+  box-shadow: 0 0 0 1px rgba(118,86,219,.19), 0 8px 22px rgba(64,43,119,.09) !important;
+}
+
+/* Widget titles, ordinary supporting text, and empty states. Do not override
+   user-defined task colors, calendar event accents, or summary-card colors. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+:is(.ml-v2-dashboard-widget-header h2, .ml-v2-weekly-calendar-heading > span,
+    .ml-v2-dashboard-notes-heading) {
+  color: #6545b5;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+:is(.ml-v2-today-tasks-date-label, .ml-v2-dashboard-appointments-heading > span,
+    .ml-v2-dashboard-appointment-date, .ml-v2-dashboard-appointments-empty,
+    .ml-v2-dashboard-notes-empty, .ml-v2-dashboard-project-todo-empty,
+    .ml-v2-weekly-calendar-days button span) {
+  color: #5c6176;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+:is(.ml-v2-weekly-calendar-events > button strong,
+    .ml-v2-project-progress-heading strong) {
+  color: #202331;
+}
+
+/* One control standard for the Overview: white, readable, purple on hover. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-navigation > .ml-v2-standard-button,
+  .ml-v2-weekly-calendar-heading nav > button,
+  .ml-v2-dashboard-appointments-view-all,
+  .ml-v2-dashboard-project-todo-view-all,
+  .ml-v2-dashboard-notes-view-all,
+  .ml-v2-project-progress-add,
+  .ml-v2-dashboard-project-todo-select,
+  .ml-v2-dashboard-note-link.ml-v2-standard-button
+) {
+  background: #ffffff !important;
+  border: 1px solid #ddd6f5 !important;
+  border-radius: 9px;
+  color: #51418a !important;
+  box-shadow: none;
+  transition: background-color 160ms ease, border-color 160ms ease,
+              color 160ms ease, box-shadow 160ms ease;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-navigation > .ml-v2-standard-button,
+  .ml-v2-weekly-calendar-heading nav > button,
+  .ml-v2-dashboard-appointments-view-all,
+  .ml-v2-dashboard-project-todo-view-all,
+  .ml-v2-dashboard-notes-view-all,
+  .ml-v2-project-progress-add,
+  .ml-v2-dashboard-project-todo-select,
+  .ml-v2-dashboard-note-link.ml-v2-standard-button
+):hover:not(:disabled) {
+  background: #f1ecff !important;
+  border-color: #a98bf1 !important;
+  color: #5836b4 !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-navigation > .ml-v2-standard-button,
+  .ml-v2-weekly-calendar-heading nav > button,
+  .ml-v2-dashboard-appointments-view-all,
+  .ml-v2-dashboard-project-todo-view-all,
+  .ml-v2-dashboard-notes-view-all,
+  .ml-v2-project-progress-add,
+  .ml-v2-dashboard-project-todo-select,
+  .ml-v2-dashboard-note-link.ml-v2-standard-button
+):focus-visible {
+  outline: 2px solid #7656db !important;
+  outline-offset: 2px;
+}
+
+/* Active / pressed navigation buttons follow the approved solid accent. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-today-navigation > .ml-v2-standard-button:is(.is-active, [aria-pressed="true"]),
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-weekly-calendar-heading nav > button[aria-pressed="true"] {
+  background: #7656db !important;
+  border-color: #7656db !important;
+  color: #ffffff !important;
+}
+
+/* Calendar: dark dates, solid-purple selected day, readable event surfaces. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-weekly-calendar-days button strong { color: #202331; }
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-weekly-calendar-days button[aria-pressed="true"] strong {
+  background: #7656db;
+  color: #ffffff;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-weekly-calendar-days button:hover { background: #f1ecff; }
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-weekly-calendar-events > button {
+  background-color: #f9faff;
+  border-bottom-color: #e7e0fa;
+}
+/* Keep each calendar event's existing pastel left border and task title color. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-weekly-calendar-events > button:hover { background-color: #f1ecff; }
+
+/* Row interactions: keep custom task name, status, priority and avatar colors. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-task-row,
+  .ml-v2-project-progress-row,
+  .ml-v2-dashboard-project-todo-task,
+  .ml-v2-dashboard-appointments-list > li
+):hover { background-color: #f1ecff; }
+
+/* Form fields and note/appointment links remain legible on white cards. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-project-todo-select { color: #202331 !important; }
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-project-todo-select option { background: #ffffff; color: #202331; }
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-appointment-link.ml-v2-standard-button {
+  background-color: #ffffff;
+  border-color: #ddd6f5;
+  color: #51418a;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-appointment-link.ml-v2-standard-button:hover {
+  background-color: #f1ecff;
+  border-color: #a98bf1;
+  color: #5836b4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+  :is(.ml-v2-today-task-row, .ml-v2-project-progress-row,
+      .ml-v2-dashboard-appointments-list > li):hover { transform: none; }
+}
+
+/* STEP 18F.8F.25S - Light Mode Overview clickable row boxes */
+/* Keep user-defined task text colors and existing calendar accent borders. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-task-row,
+  .ml-v2-project-progress-row,
+  .ml-v2-dashboard-project-todo-task,
+  .ml-v2-dashboard-appointments-list > li,
+  .ml-v2-dashboard-note-link.ml-v2-standard-button
+) {
+  background-color: #f9faff !important;
+  border: 1px solid #e7e0f8 !important;
+  border-radius: 9px;
+  box-shadow: none;
+  transition: background-color 160ms ease, border-color 160ms ease,
+              box-shadow 160ms ease, transform 160ms ease;
+}
+/* A full-width panel on hover, without overriding link-specific text colors. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-task-row,
+  .ml-v2-project-progress-row,
+  .ml-v2-dashboard-project-todo-task,
+  .ml-v2-dashboard-appointments-list > li,
+  .ml-v2-dashboard-note-link.ml-v2-standard-button
+):hover {
+  background-color: #f1ecff !important;
+  border-color: #a98bf1 !important;
+  box-shadow: 0 4px 12px rgba(118,86,219,.09);
+}
+/* Avoid nested appointment-link outlines; the outer list item is the row box. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-appointments-list > li .ml-v2-dashboard-appointment-link {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-appointments-list > li:hover .ml-v2-dashboard-appointment-link {
+  background: transparent !important;
+}
+/* Keyboard access receives the same visible lavender outline. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-task-row,
+  .ml-v2-project-progress-row,
+  .ml-v2-dashboard-project-todo-task,
+  .ml-v2-dashboard-appointments-list > li
+):focus-within {
+  border-color: #7656db !important;
+  box-shadow: 0 0 0 2px rgba(118,86,219,.16);
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+    .ml-v2-today-task-row, .ml-v2-project-progress-row,
+    .ml-v2-dashboard-project-todo-task,
+    .ml-v2-dashboard-appointments-list > li
+  ) { transition: none; }
+}
+
+
+/* STEP 18F.8F.25Y - Dark Mode Board Add Task hover */
+html[data-ml-theme="dark"] .ml-v2 .add-column-task:hover:not(:disabled),
+html[data-ml-theme="dark"] .ml-v2 .add-column-task:focus-visible {
+  background: #302b49 !important;
+  border-color: #9276eb !important;
+  color: #d9ccff !important;
+  box-shadow: 0 0 0 1px rgba(146,118,235,.22) !important;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .add-column-task:hover:not(:disabled) svg,
+html[data-ml-theme="dark"] .ml-v2 .add-column-task:focus-visible svg {
+  color: #b9a4ff !important;
+}
+
+
+/* STEP 18F.8F.25Z - Rounded Overview project task rows */
+.ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-project-todo-task {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+
+/* STEP 18F.8F.26B - Round project task containers and buttons */
+.ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-project-todo-list > li {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.ml-v2 .ml-v2-dashboard-reference
+.ml-v2-dashboard-project-todo-list > li > .ml-v2-dashboard-project-todo-task {
+  border-radius: 8px !important;
+}
+
+/* STEP 18F.8F.26G - Single smooth task panel slide */
+/* Keep Radix's close lifecycle; animate only the side panel's transform. */
+@keyframes ml-v2-task-panel-enter-right {
+  from { transform: translate3d(100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes ml-v2-task-panel-exit-right {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(100%, 0, 0); }
+}
+.ml-v2-task-detail-panel[data-state="open"] {
+  animation: ml-v2-task-panel-enter-right 320ms cubic-bezier(.22,1,.36,1) both !important;
+}
+.ml-v2-task-detail-panel[data-state="closed"] {
+  animation: ml-v2-task-panel-exit-right 260ms cubic-bezier(.4,0,1,1) both !important;
+}
+/* Hide the preview toolbar's redundant X, but retain its underlying callback. */
+.ml-v2-task-detail-panel--preview .ml-task-detail-v2__close {
+  display: none !important;
+}
+/* The Radix close button remains active for autosave-aware closing and Escape. */
+.ml-v2-task-detail-panel--preview > [data-slot="dialog-close"] {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  top: 12px;
+  right: 14px;
+  border: 1px solid var(--ml-v2-border, #dcd7f6);
+  border-radius: 9px;
+  background: var(--ml-v2-surface-soft, #f9faff);
+  color: var(--ml-v2-text, #202331);
+  opacity: 1;
+  cursor: pointer;
+}
+.ml-v2-task-detail-panel--preview > [data-slot="dialog-close"] svg {
+  display: none !important;
+}
+.ml-v2-task-detail-panel--preview > [data-slot="dialog-close"]::before {
+  content: "›";
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1;
+}
+.ml-v2-task-detail-panel--preview > [data-slot="dialog-close"]:is(:hover, :focus-visible) {
+  background: var(--ml-v2-accent-soft, rgba(118,86,219,.14));
+  border-color: var(--ml-v2-accent, #7656db);
+  color: var(--ml-v2-accent, #7656db);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ml-v2-task-detail-panel[data-state="open"],
+  .ml-v2-task-detail-panel[data-state="closed"] {
+    animation: none !important;
+  }
+}
+
+
+/* STEP 18F.8F.26H - Official task panel chevron appearance */
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview > [data-slot="dialog-close"] {
+  background: #303044 !important;
+  border: 1px solid #55516f !important;
+  color: #c5b7ff !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview > [data-slot="dialog-close"]:is(:hover, :focus-visible) {
+  background: #39334f !important;
+  border-color: #9278e9 !important;
+  color: #ded3ff !important;
+}
+
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview > [data-slot="dialog-close"] {
+  background: #f9faff !important;
+  border: 1px solid #dcd7f6 !important;
+  color: #7656db !important;
+  box-shadow: none !important;
+}
+
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview > [data-slot="dialog-close"]:is(:hover, :focus-visible) {
+  background: #eee9ff !important;
+  border-color: #7656db !important;
+}
+
+
+/* STEP 18F.8F.26K - Official List column menus */
+/* Portal-safe selectors: popovers render outside the List View. */
+
+[data-slot="popover-content"].ml-v2-list-column-popover {
+  background: #ffffff !important;
+  color: #202331 !important;
+  border: 1px solid #dcd7f6 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 32px rgba(32, 35, 49, .14) !important;
+}
+
+[data-slot="popover-content"].ml-v2-list-column-popover > div {
+  color: inherit !important;
+}
+
+[data-slot="popover-content"].ml-v2-list-column-popover > button {
+  color: #202331 !important;
+  background: transparent !important;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+[data-slot="popover-content"].ml-v2-list-column-popover > button:hover:not(:disabled),
+[data-slot="popover-content"].ml-v2-list-column-popover > button:focus-visible:not(:disabled) {
+  background: #eee9ff !important;
+  color: #7656db !important;
+}
+
+[data-slot="popover-content"].ml-v2-list-column-popover > button:disabled {
+  opacity: .4 !important;
+  cursor: not-allowed !important;
+}
+
+html[data-ml-theme="dark"] [data-slot="popover-content"].ml-v2-list-column-popover {
+  background: #262633 !important;
+  color: #e8e6f5 !important;
+  border-color: #55516f !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .35) !important;
+}
+
+html[data-ml-theme="dark"] [data-slot="popover-content"].ml-v2-list-column-popover > button {
+  color: #e8e6f5 !important;
+  background: transparent !important;
+}
+
+html[data-ml-theme="dark"] [data-slot="popover-content"].ml-v2-list-column-popover > button:hover:not(:disabled),
+html[data-ml-theme="dark"] [data-slot="popover-content"].ml-v2-list-column-popover > button:focus-visible:not(:disabled) {
+  background: #39334f !important;
+  color: #ded3ff !important;
+}
+
+html[data-ml-theme="dark"] [data-slot="popover-content"].ml-v2-list-column-popover > button:disabled {
+  color: #aaa5bd !important;
+}
+
+
+/* STEP 18F.8F.26L - Dark List column header hover */
+/* Scoped to List View; preserves drag and resize behavior. */
+
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:hover:not(.is-dragging),
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:focus-within:not(.is-dragging) {
+  background: #302b49 !important;
+  color: #e8e6f5 !important;
+  border-color: #55516f !important;
+  box-shadow: none !important;
+}
+
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:hover:not(.is-dragging) > span,
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:focus-within:not(.is-dragging) > span {
+  color: #e8e6f5 !important;
+}
+
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:hover:not(.is-dragging) [data-column-menu],
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:focus-within:not(.is-dragging) [data-column-menu] {
+  background: transparent !important;
+  color: #c5b7ff !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:hover:not(.is-dragging) [data-column-menu] svg,
+html[data-ml-theme="dark"]
+.ml-v2-shell .list-head .draggable-column-head:focus-within:not(.is-dragging) [data-column-menu] svg {
+  color: #c5b7ff !important;
 }
