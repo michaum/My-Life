@@ -11611,3 +11611,1106 @@ html[data-ml-theme="dark"]
 .ml-v2-shell .list-head .draggable-column-head:focus-within:not(.is-dragging) [data-column-menu] svg {
   color: #c5b7ff !important;
 }
+
+/* My Life V2 List Custom Fields - official purple light/dark tokens */
+.ml-v2-field-description, .ml-v2-number-settings { display: block; margin-top: 14px; }
+.ml-v2-number-settings { border: 1px solid #dcd7f6; padding: 14px; border-radius: 12px; }
+.ml-v2-number-preview { margin-top: 10px; font-size: 13px; color: #7656db; }
+.ml-v2-multi-select { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 5px; max-height: 140px; overflow-y: auto; }
+.ml-v2-multi-option { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid #dcd7f6; border-radius: 8px; background: #f9faff; color: #202331; cursor: pointer; font-size: 12px; }
+.ml-v2-multi-option:hover { background: #eee9ff; }
+.ml-v2-option-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.ml-v2-field-cell { min-width: 0; overflow: auto; }
+.ml-v2-column-menu-trigger { opacity: 0; transition: opacity 120ms ease; }
+.list-head > *:hover .ml-v2-column-menu-trigger, .list-head > *:focus-within .ml-v2-column-menu-trigger, .ml-v2-column-menu-trigger[data-state="open"] { opacity: 1; }
+html[data-ml-theme="dark"] .ml-v2-number-settings { border-color: #55516f; }
+html[data-ml-theme="dark"] .ml-v2-number-preview { color: #c3adff; }
+html[data-ml-theme="dark"] .ml-v2-multi-option { background: #262633; color: #e8e6f5; border-color: #55516f; }
+html[data-ml-theme="dark"] .ml-v2-multi-option:hover { background: #39334f; }
+@media (hover: none) { .ml-v2-column-menu-trigger { opacity: 1; } }
+
+/* STEP 18F.8F.27H — native field-type dropdown follows the active theme.
+   Browser/OS native popup rendering may override option colors. */
+html[data-ml-theme="dark"] .editor-form select {
+  color-scheme: dark;
+}
+html[data-ml-theme="dark"] .editor-form select option,
+html[data-ml-theme="dark"] .editor-form select optgroup {
+  background-color: #262633;
+  color: #e8e6f5;
+}
+html[data-ml-theme="light"] .editor-form select {
+  color-scheme: light;
+}
+html[data-ml-theme="light"] .editor-form select option,
+html[data-ml-theme="light"] .editor-form select optgroup {
+  background-color: #ffffff;
+  color: #202331;
+}
+
+
+/* STEP 18F.8F.27L — Custom field UI, official V2 light/dark palette.
+   Scoped to custom fields to avoid changing existing task colors or wallpaper. */
+html:not([data-ml-theme="dark"]) .field-dialog {
+  --ml-field-bg: #ffffff;
+  --ml-field-control: #ffffff;
+  --ml-field-text: #202331;
+  --ml-field-muted: #73788c;
+  --ml-field-border: #d9dce8;
+  --ml-field-hover: #eeeaff;
+  --ml-field-accent: #7656db;
+}
+html[data-ml-theme="dark"] .field-dialog {
+  --ml-field-bg: #262633;
+  --ml-field-control: #303044;
+  --ml-field-text: #e8e6f5;
+  --ml-field-muted: #c2bdd3;
+  --ml-field-border: #55516f;
+  --ml-field-hover: #39334f;
+  --ml-field-accent: #b8a6ff;
+}
+.field-dialog {
+  background: var(--ml-field-bg) !important;
+  color: var(--ml-field-text) !important;
+  border: 1px solid var(--ml-field-border) !important;
+  color-scheme: light;
+}
+html[data-ml-theme="dark"] .field-dialog { color-scheme: dark; }
+.field-dialog :is([data-slot="dialog-title"], h2, legend) { color: var(--ml-field-text) !important; }
+.field-dialog :is([data-slot="dialog-description"], .option-editor > p, .ml-v2-number-preview) { color: var(--ml-field-muted) !important; }
+.field-dialog .editor-form :is(label, legend) { color: var(--ml-field-muted) !important; }
+.field-dialog .editor-form :is(input:not([type="checkbox"]), textarea, select, [data-slot="native-select-trigger"]) {
+  background-color: var(--ml-field-control) !important;
+  color: var(--ml-field-text) !important;
+  border-color: var(--ml-field-border) !important;
+  color-scheme: inherit;
+}
+.field-dialog .editor-form :is(input, textarea)::placeholder { color: var(--ml-field-muted) !important; opacity: .85; }
+.field-dialog .editor-form select option { background: var(--ml-field-control); color: var(--ml-field-text); }
+.field-dialog .editor-form :is(input, textarea, select, button):focus-visible {
+  outline: 2px solid var(--ml-field-accent) !important;
+  outline-offset: 2px;
+}
+.field-dialog .ml-v2-number-settings { border-color: var(--ml-field-border) !important; }
+.field-dialog .ml-v2-number-preview { color: var(--ml-field-accent) !important; }
+.field-dialog :is(.option-editor-list, .option-editor-row, .editor-footer) { border-color: var(--ml-field-border) !important; }
+.field-dialog .option-editor-row > svg, .field-dialog .remove-option { color: var(--ml-field-muted) !important; }
+.field-dialog .remove-option:hover, .field-dialog .add-option:hover { background: var(--ml-field-hover) !important; color: var(--ml-field-accent) !important; }
+.field-dialog .add-option, .field-dialog .editor-footer button:not([type="submit"]) {
+  border-color: var(--ml-field-border) !important;
+}
+/* Popovers are portalled outside the field dialog, so they need their own theme rules. */
+html:not([data-ml-theme="dark"]) :is(.color-palette, .ml-v2-people-field-menu) {
+  --ml-pop-bg: #ffffff; --ml-pop-text: #202331; --ml-pop-border: #d9dce8; --ml-pop-hover: #eeeaff;
+}
+html[data-ml-theme="dark"] :is(.color-palette, .ml-v2-people-field-menu) {
+  --ml-pop-bg: #262633; --ml-pop-text: #e8e6f5; --ml-pop-border: #55516f; --ml-pop-hover: #39334f;
+}
+:is(.color-palette, .ml-v2-people-field-menu) {
+  background: var(--ml-pop-bg) !important; color: var(--ml-pop-text) !important;
+  border: 1px solid var(--ml-pop-border) !important; color-scheme: inherit;
+}
+.ml-v2-people-field-trigger {
+  display: flex; width: 100%; min-height: 34px; justify-content: space-between;
+  align-items: center; gap: 8px; padding: 6px 10px; border-radius: 7px;
+  background: #ffffff; color: #202331; border: 1px solid #d9dce8;
+  text-align: left; font-size: 12px;
+}
+html[data-ml-theme="dark"] .ml-v2-people-field-trigger {
+  background: #303044; color: #e8e6f5; border-color: #55516f;
+}
+.ml-v2-people-field-trigger:hover, .ml-v2-people-field-trigger:focus-visible { border-color: #7656db; outline-color: #7656db; }
+.ml-v2-people-field-menu { width: min(260px, calc(100vw - 24px)); padding: 6px; }
+.ml-v2-people-field-options { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.ml-v2-people-field-options button {
+  display: block; width: 100%; padding: 8px 10px; border-radius: 6px;
+  color: var(--ml-pop-text); text-align: left; font-size: 12px;
+}
+.ml-v2-people-field-options button:hover, .ml-v2-people-field-options button[aria-pressed="true"] { background: var(--ml-pop-hover); }
+html[data-ml-theme="dark"] .ml-v2-multi-select .ml-v2-multi-option { background: #303044; color: #e8e6f5; border-color: #55516f; }
+html[data-ml-theme="dark"] .ml-v2-multi-select .ml-v2-multi-option:hover { background: #39334f; }
+html:not([data-ml-theme="dark"]) .ml-v2-multi-select .ml-v2-multi-option { background: #ffffff; color: #202331; border-color: #d9dce8; }
+html:not([data-ml-theme="dark"]) .ml-v2-multi-select .ml-v2-multi-option:hover { background: #eeeaff; }
+.ml-v2-multi-select input[type="checkbox"] { accent-color: #7656db; }
+
+
+/* STEP 18F.8F.27M — Official MY LIFE V2 List View theme.
+   Strictly scoped: no Board, Calendar, task color badges, wallpaper, or data changes.
+   Reference palette: #171923 #202438 #292e46 #343b58 #626d9a */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap {
+  --ml-list-line: #626d9a;
+  --ml-list-ink: #e8eaf5;
+  --ml-list-muted: #c0c6db;
+  --ml-list-hover: #343b58;
+  --ml-list-accent: #9b86ed;
+  color-scheme: dark;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .task-list {
+  background: #202438;
+  border-color: #626d9a;
+  scrollbar-color: #626d9a #202438;
+  box-shadow: 0 12px 32px rgba(0,0,0,.20);
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar, .list-head, .list-section-head) {
+  background: #202438;
+  color: #e8eaf5;
+  border-color: #626d9a;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-section, .list-row) {
+  background: #202438;
+  color: #e8eaf5;
+  border-color: #626d9a;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row:is(:hover, :focus-within),
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-subtask-grid-row:is(:hover, :focus-within) {
+  background: #343b58;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-section-head :is(strong, span, button),
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-name > button:last-child,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .draggable-column-head {
+  color: #e8eaf5;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .draggable-column-head:hover {
+  background: #343b58;
+  color: #fff;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-subtasks-expanded, .list-subtask-grid-row, .list-subtask-display) {
+  background: #292e46;
+  color: #e8eaf5;
+  border-color: #626d9a;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-subtask-grid-row .list-subtask-empty-cell {
+  border-color: #626d9a;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-row select, .list-row input:not([type="checkbox"]), .list-subtask-edit-cell select, .list-subtask-edit-cell input, .list-subtask-display input.list-subtask-inline-title, .ml-v2-people-field-trigger) {
+  background: #292e46;
+  color: #e8eaf5;
+  border-color: #626d9a;
+  color-scheme: dark;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-row select, .list-row input:not([type="checkbox"]), .list-subtask-edit-cell select, .list-subtask-edit-cell input, .list-subtask-display input.list-subtask-inline-title):is(:hover, :focus) {
+  background: #343b58;
+  color: #fff;
+  border-color: #8e9bc6;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-row select, .list-subtask-edit-cell select) option {
+  background: #292e46;
+  color: #e8eaf5;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .custom-value-cell {
+  color: #d6d9ec;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row .custom-value-cell:hover {
+  background: #343b58;
+  color: #fff;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar, .list-bottom-actions, .list-section-head) .ml-v2-standard-button:not([aria-pressed="true"]),
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .section-add-task {
+  background: #292e46;
+  color: #e8eaf5;
+  border-color: #626d9a;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar, .list-bottom-actions, .list-section-head) .ml-v2-standard-button:not([aria-pressed="true"]):hover,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .section-add-task:hover {
+  background: #343b58;
+  color: #fff;
+  border-color: #8e9bc6;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-bottom-actions {
+  background: #202438;
+  border-color: #626d9a;
+}
+/* Keep the light view in the official white/soft-gray system. */
+html:not([data-ml-theme="dark"]) .ml-v2-shell .list-view-wrap {
+  --ml-list-line: #dfe3ec;
+  --ml-list-ink: #202331;
+  --ml-list-muted: #73788c;
+  --ml-list-hover: #eeeaff;
+  --ml-list-accent: #7656db;
+  color-scheme: light;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-shell .list-view-wrap .task-list {
+  background: #fff;
+  border-color: #dfe3ec;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-shell .list-view-wrap :is(.list-row, .list-section) {
+  background: #fff;
+  color: #202331;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-shell .list-view-wrap .list-row:is(:hover,:focus-within) {
+  background: #eeeaff;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-shell .list-view-wrap :is(.list-head, .list-section-head, .ml-v2-list-action-bar) {
+  background: #f6f7fb;
+  border-color: #dfe3ec;
+  color: #202331;
+}
+
+
+/* STEP 18F.8F.27N — Compact official People picker (portal-safe). */
+html[data-ml-theme="dark"] .ml-v2-people-field-menu {
+  --ml-pop-bg: #202438; --ml-pop-text: #e8eaf5;
+  --ml-pop-border: #626d9a; --ml-pop-hover: #343b58;
+  color-scheme: dark;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-people-field-menu {
+  --ml-pop-bg: #ffffff; --ml-pop-text: #202331;
+  --ml-pop-border: #dfe3ec; --ml-pop-hover: #eeeaff;
+  color-scheme: light;
+}
+.ml-v2-people-field-menu {
+  width: var(--radix-popover-trigger-width, 230px) !important;
+  min-width: var(--radix-popover-trigger-width, 230px) !important;
+  max-width: min(300px, calc(100vw - 20px)) !important;
+  box-sizing: border-box;
+  padding: 4px !important;
+  border-radius: 8px !important;
+  background: var(--ml-pop-bg) !important;
+  border: 1px solid var(--ml-pop-border) !important;
+  box-shadow: 0 10px 28px rgba(0,0,0,.24) !important;
+  z-index: 100 !important;
+}
+.ml-v2-people-field-options {
+  max-height: 232px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0;
+}
+.ml-v2-people-field-options .ml-v2-people-field-option {
+  display: flex !important; align-items: center !important;
+  justify-content: space-between !important; gap: 8px !important;
+  width: 100% !important; min-height: 30px !important;
+  margin: 0 !important; padding: 5px 9px !important;
+  border: 0 !important; border-radius: 5px !important;
+  background: transparent !important;
+  color: var(--ml-pop-text) !important;
+  text-align: left !important; font-size: 12px !important;
+  font-weight: 400 !important; line-height: 18px !important;
+  cursor: pointer;
+}
+.ml-v2-people-field-options .ml-v2-people-field-option span {
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.ml-v2-people-field-options .ml-v2-people-field-option svg {
+  flex: 0 0 auto; color: #9b86ed;
+}
+.ml-v2-people-field-options .ml-v2-people-field-option:hover,
+.ml-v2-people-field-options .ml-v2-people-field-option:focus-visible {
+  background: var(--ml-pop-hover) !important;
+  outline: none !important;
+}
+.ml-v2-people-field-options .ml-v2-people-field-option[aria-selected="true"] {
+  font-weight: 600 !important;
+}
+html[data-ml-theme="dark"] .ml-v2-people-field-trigger {
+  background: #292e46 !important; color: #e8eaf5 !important;
+  border-color: #626d9a !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-people-field-trigger {
+  background: #fff !important; color: #202331 !important;
+  border-color: #dfe3ec !important;
+}
+
+
+/* STEP 18F.8F.27Q — Compact Single/Multi Select, scoped to custom-field pickers */
+.ml-v2-field-select-menu {
+  --ml-select-bg: #fff;
+  --ml-select-hover: #eeeaff;
+  --ml-select-border: #dfe3ec;
+  --ml-select-text: #202331;
+  background: var(--ml-select-bg) !important;
+  border: 1px solid var(--ml-select-border) !important;
+  color: var(--ml-select-text) !important;
+  border-radius: 9px !important;
+  padding: 5px !important;
+  min-width: 190px;
+  max-width: min(320px, 90vw);
+  box-shadow: 0 12px 30px rgba(20,20,45,.16);
+}
+html[data-ml-theme="dark"] .ml-v2-field-select-menu,
+.dark .ml-v2-field-select-menu {
+  --ml-select-bg: #292e46;
+  --ml-select-hover: #343b58;
+  --ml-select-border: #626d9a;
+  --ml-select-text: #e8eaf5;
+  color-scheme: dark;
+}
+.ml-v2-field-select-menu :is(.choice-menu-list,.ml-v2-field-select-options) {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ml-v2-field-select-menu :is(.ml-v2-field-select-option,.choice-menu-option) {
+  width: 100%;
+  min-height: 31px;
+  padding: 6px 9px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  color: var(--ml-select-text) !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  text-align: left;
+  font-size: 12px;
+  box-shadow: none !important;
+}
+.ml-v2-field-select-menu :is(.ml-v2-field-select-option,.choice-menu-option):is(:hover,:focus-visible),
+.ml-v2-field-select-menu .ml-v2-field-select-option[aria-pressed="true"] {
+  background: var(--ml-select-hover) !important;
+}
+.ml-v2-field-select-menu .ml-v2-field-select-dot {
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.ml-v2-field-select-menu .ml-v2-field-select-label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ml-v2-field-select-menu .choice-menu-option > .visible-check,
+.ml-v2-field-select-menu .choice-menu-option > .hidden-check {
+  order: 3;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.ml-v2-field-select-menu .choice-menu-option > .hidden-check {
+  visibility: hidden;
+}
+.ml-v2-field-select-menu :is(.choice-edit-action,.ml-v2-field-select-actions) {
+  border-top: 1px solid var(--ml-select-border) !important;
+  margin-top: 4px;
+  padding-top: 4px;
+  background: transparent !important;
+  color: var(--ml-select-text) !important;
+}
+.ml-v2-field-select-menu :is(.choice-edit-action,.ml-v2-field-select-actions button) {
+  min-height: 30px;
+  width: 100%;
+  border-radius: 6px;
+  padding: 6px 9px !important;
+  color: var(--ml-select-text) !important;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: transparent !important;
+  border: 0;
+  font-size: 12px;
+}
+.ml-v2-field-select-menu :is(.choice-edit-action,.ml-v2-field-select-actions button):hover {
+  background: var(--ml-select-hover) !important;
+}
+.ml-v2-field-select-menu .clear-choice {
+  border-top: 1px solid var(--ml-select-border) !important;
+  margin-top: 4px;
+  border-radius: 0 0 6px 6px !important;
+}
+.ml-v2-field-select-trigger {
+  background: #fff !important;
+  border: 1px solid #dfe3ec !important;
+  color: #202331 !important;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  padding: 5px 9px;
+}
+html[data-ml-theme="dark"] .ml-v2-field-select-trigger,
+.dark .ml-v2-field-select-trigger {
+  background: #292e46 !important;
+  border-color: #626d9a !important;
+  color: #e8eaf5 !important;
+}
+.ml-v2-field-select-trigger .ml-v2-field-select-summary {
+  color: inherit !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* STEP 18F.8F.27R — Display selected Single/Multi choices as dot + text, no input chrome. */
+.ml-v2-field-select-trigger.ml-v2-field-select-trigger--selected,
+html[data-ml-theme="dark"] .ml-v2-field-select-trigger.ml-v2-field-select-trigger--selected,
+.dark .ml-v2-field-select-trigger.ml-v2-field-select-trigger--selected {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  padding: 3px 5px !important;
+  min-height: 28px;
+  height: auto;
+  width: auto;
+  max-width: 100%;
+  text-align: left;
+}
+.ml-v2-field-select-trigger--selected:hover,
+.ml-v2-field-select-trigger--selected:focus-visible {
+  background: rgba(118,86,219,.10) !important;
+  border-radius: 6px;
+}
+html[data-ml-theme="dark"] .ml-v2-field-select-trigger--selected:hover,
+html[data-ml-theme="dark"] .ml-v2-field-select-trigger--selected:focus-visible,
+.dark .ml-v2-field-select-trigger--selected:hover,
+.dark .ml-v2-field-select-trigger--selected:focus-visible {
+  background: #343b58 !important;
+}
+.ml-v2-field-select-trigger--selected .ml-v2-selected-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 10px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 12px;
+}
+.ml-v2-field-select-trigger--selected .ml-v2-selected-value,
+.ml-v2-field-select-trigger--selected .ml-v2-selected-values:not(:has(.ml-v2-selected-value)) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ml-v2-field-select-trigger--selected .ml-v2-field-select-dot {
+  display: inline-block;
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+
+/* STEP 18F.8F.27S — Show choice chevron on hover, focus and open only. */
+.ml-v2-field-select-trigger--selected { position: relative; gap: 8px; }
+.ml-v2-field-select-trigger--selected .ml-v2-choice-hover-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease;
+  color: inherit;
+}
+.ml-v2-field-select-trigger--selected:is(:hover,:focus-visible,[aria-expanded="true"]) .ml-v2-choice-hover-chevron {
+  opacity: 1;
+  visibility: visible;
+}
+.ml-v2-field-select-trigger--selected:is(:hover,:focus-visible,[aria-expanded="true"]) {
+  width: 100%;
+  background: rgba(118,86,219,.10) !important;
+}
+html[data-ml-theme="dark"] .ml-v2-field-select-trigger--selected:is(:hover,:focus-visible,[aria-expanded="true"]),
+.dark .ml-v2-field-select-trigger--selected:is(:hover,:focus-visible,[aria-expanded="true"]) {
+  background: #343b58 !important;
+}
+
+/* MY LIFE V2 - STEP 18F.8F.27T - OFFICIAL LIST VIEW THEME CONSOLIDATION
+   Scope: Projects List View only. Does not change task-value colors, Board or Calendar. */
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap {
+ --ml-list-line:#dfe3ec;--ml-list-ink:#202331;--ml-list-muted:#73788c;--ml-list-hover:#f9faff;--ml-list-accent:#7656db;
+ color:#202331;color-scheme:light;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .task-list {
+ background:#fff !important;border-color:#dfe3ec !important;box-shadow:0 8px 26px rgba(32,35,49,.06);
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.list-head,.list-section-head,.ml-v2-list-action-bar,.list-bottom-actions) {
+ background:#f9faff !important;color:#202331 !important;border-color:#dfe3ec !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.list-row,.list-section) {
+ background:#fff !important;color:#202331 !important;border-color:#dfe3ec !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-row:is(:hover,:focus-within),
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-subtask-grid-row:is(:hover,:focus-within) {
+ background:#f9faff !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.list-subtasks-expanded,.list-subtask-grid-row,.list-subtask-display) {
+ background:#f9faff !important;color:#202331 !important;border-color:#dfe3ec !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.list-head,.list-section-head,.list-row) :is(strong,label) {
+ color:#202331;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.draggable-column-head,.list-name button) {
+ color:#202331;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .draggable-column-head:is(:hover,:focus-visible) {
+ background:#f9faff !important;color:#7656db !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(input:not([type="checkbox"]),select,textarea) {
+ background:#fff;color:#202331;border-color:#dfe3ec;color-scheme:light;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(input:not([type="checkbox"]),select,textarea):is(:hover,:focus-visible) {
+ border-color:#7656db;outline-color:#7656db;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar,.list-section-head,.list-bottom-actions) .ml-v2-standard-button:not([aria-pressed="true"]) {
+ background:#fff !important;color:#202331 !important;border-color:#dfe3ec !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar,.list-section-head,.list-bottom-actions) .ml-v2-standard-button:not([aria-pressed="true"]):hover {
+ background:#f1edff !important;color:#7656db !important;border-color:#cbbff7 !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar,.list-section-head,.list-bottom-actions) .ml-v2-standard-button[aria-pressed="true"] {
+ background:#7656db !important;color:#fff !important;border-color:#7656db !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .section-add-task {
+ background:#fff !important;color:#202331 !important;border-color:#dfe3ec !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .section-add-task:hover {
+ background:#f1edff !important;color:#7656db !important;border-color:#cbbff7 !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap {
+ --ml-list-line:#626d9a;--ml-list-ink:#e8eaf5;--ml-list-muted:#c0c6db;--ml-list-hover:#343b58;--ml-list-accent:#9b86ed;
+ color:#e8eaf5;color-scheme:dark;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .task-list {
+ background:#202438 !important;border-color:#626d9a !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-head,.list-section-head,.ml-v2-list-action-bar,.list-bottom-actions) {
+ background:#202438 !important;color:#e8eaf5 !important;border-color:#626d9a !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-row,.list-section) {
+ background:#202438 !important;color:#e8eaf5 !important;border-color:#626d9a !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-row:is(:hover,:focus-within),
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .list-subtask-grid-row:is(:hover,:focus-within) {
+ background:#343b58 !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-subtasks-expanded,.list-subtask-grid-row,.list-subtask-display) {
+ background:#292e46 !important;color:#e8eaf5 !important;border-color:#626d9a !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.list-head,.list-section-head,.list-row) :is(strong,label),
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.draggable-column-head,.list-name button) {
+ color:#e8eaf5;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .draggable-column-head:is(:hover,:focus-visible) {
+ background:#343b58 !important;color:#fff !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(input:not([type="checkbox"]),select,textarea) {
+ background:#292e46;color:#e8eaf5;border-color:#626d9a;color-scheme:dark;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(input:not([type="checkbox"]),select,textarea):is(:hover,:focus-visible) {
+ border-color:#8e9bc6;outline-color:#9b86ed;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar,.list-section-head,.list-bottom-actions) .ml-v2-standard-button:not([aria-pressed="true"]),
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .section-add-task {
+ background:#292e46 !important;color:#e8eaf5 !important;border-color:#626d9a !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(.ml-v2-list-action-bar,.list-section-head,.list-bottom-actions) .ml-v2-standard-button:not([aria-pressed="true"]):hover,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap .section-add-task:hover {
+ background:#343b58 !important;color:#fff !important;border-color:#8e9bc6 !important;
+}
+/* Preserve the approved no-box selected-value design: reveal arrow/highlight on hover. */
+.ml-v2-shell .list-view-wrap .ml-v2-field-select-trigger:not(:hover):not(:focus-visible):not([aria-expanded="true"]) {
+ background:transparent !important;border-color:transparent !important;box-shadow:none !important;
+}
+.ml-v2-shell .list-view-wrap .ml-v2-field-select-trigger:is(:hover,:focus-visible,[aria-expanded="true"]) {
+ background:var(--ml-list-hover) !important;
+}
+/* Popup menus may be portaled outside List View. Their own approved theme is maintained. */
+html[data-ml-theme="light"] .ml-v2-field-select-menu {
+ --ml-select-bg:#fff;--ml-select-hover:#f1edff;--ml-select-border:#dfe3ec;--ml-select-text:#202331;
+}
+html[data-ml-theme="dark"] .ml-v2-field-select-menu {
+ --ml-select-bg:#292e46;--ml-select-hover:#343b58;--ml-select-border:#626d9a;--ml-select-text:#e8eaf5;
+}
+
+/* STEP 18F.8F.27V - Unified official List View interaction system.
+   Exact reference: Dark hover #343b58, control #292e46, border #626d9a.
+   This intentionally excludes semantic badges, option dots, selected navigation tabs,
+   Board/Calendar, wallpaper, and non-List dialogs. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap {
+  --ml-list-unified-hover: #343b58;
+  --ml-list-unified-control: #292e46;
+  --ml-list-unified-border: #626d9a;
+  --ml-list-unified-text: #e8eaf5;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap {
+  --ml-list-unified-hover: #f9faff;
+  --ml-list-unified-control: #fff;
+  --ml-list-unified-border: #dfe3ec;
+  --ml-list-unified-text: #202331;
+}
+/* All generic action controls use a single hover color. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(
+  .ml-v2-standard-button:not([aria-pressed="true"]),
+  .section-add-task,
+  .list-bottom-actions button,
+  .list-section-head button,
+  .draggable-column-head,
+  .list-name button,
+  .list-row button:not(.choice-pill):not(.priority-pill),
+  .list-subtask-grid-row button,
+  .list-subtask-display button,
+  .ml-v2-field-select-trigger
+):is(:hover,:focus-visible) {
+  background-color: #343b58 !important;
+  color: #e8eaf5 !important;
+  border-color: #626d9a !important;
+  box-shadow: none !important;
+}
+/* The selected dot + label must remain transparent when not interacting. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+.ml-v2-field-select-trigger--selected:not(:hover):not(:focus-visible):not([aria-expanded="true"]) {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* The chevron appears only when the field is interactive. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+.ml-v2-field-select-trigger--selected:is(:hover,:focus-visible,[aria-expanded="true"]) {
+  background: #343b58 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* Normalize all text/number/date/select controls without changing their values. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+:is(input:not([type="checkbox"]):not([type="radio"]),textarea,select):is(:hover,:focus-visible) {
+  background: #343b58 !important;
+  color: #e8eaf5 !important;
+  border-color: #626d9a !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+:is(input:not([type="checkbox"]):not([type="radio"]),textarea,select):focus-visible {
+  outline: 2px solid #626d9a;
+  outline-offset: 1px;
+}
+/* Hover row highlight matches the official hover swatch. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+:is(.list-row,.list-subtask-grid-row):hover {
+  background-color: #343b58 !important;
+}
+/* The section/toolbar buttons have the official control color at rest. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+:is(.list-section-head,.list-bottom-actions,.ml-v2-list-action-bar)
+button:not([aria-pressed="true"]):not(.choice-pill):not(.priority-pill):not(:hover):not(:focus-visible) {
+  background-color: #292e46 !important;
+  color: #e8eaf5 !important;
+  border-color: #626d9a !important;
+}
+/* List column header hover includes the entire clickable header. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+:is(.draggable-column-head,.list-head button):is(:hover,:focus-visible) {
+  background-color: #343b58 !important;
+  color: #e8eaf5 !important;
+}
+/* Match the same interaction rules in Light Mode. */
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(
+  .ml-v2-standard-button:not([aria-pressed="true"]),
+  .section-add-task,
+  .list-bottom-actions button,
+  .list-section-head button,
+  .draggable-column-head,
+  .list-name button,
+  .list-row button:not(.choice-pill):not(.priority-pill),
+  .list-subtask-grid-row button,
+  .list-subtask-display button,
+  .ml-v2-field-select-trigger
+):is(:hover,:focus-visible) {
+  background-color: #f9faff !important;
+  color: #202331 !important;
+  border-color: #dfe3ec !important;
+  box-shadow: none !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap
+:is(input:not([type="checkbox"]):not([type="radio"]),textarea,select):is(:hover,:focus-visible) {
+  background-color: #f9faff !important;
+  color: #202331 !important;
+  border-color: #7656db !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap
+:is(.list-row,.list-subtask-grid-row):hover {
+  background-color: #f9faff !important;
+}
+/* Popovers are portaled: style menu item hovers separately, not globally. */
+html[data-ml-theme="dark"] .ml-v2-field-select-menu
+:is(.ml-v2-field-select-option,.choice-menu-option,.choice-edit-action,.ml-v2-field-select-actions button):is(:hover,:focus-visible) {
+  background-color: #343b58 !important;
+  color: #e8eaf5 !important;
+}
+html[data-ml-theme="light"] .ml-v2-field-select-menu
+:is(.ml-v2-field-select-option,.choice-menu-option,.choice-edit-action,.ml-v2-field-select-actions button):is(:hover,:focus-visible) {
+  background-color: #f9faff !important;
+  color: #202331 !important;
+}
+
+
+/* STEP 18F.8F.27X — Badge/Text option appearance in List View and field editor.
+   Semantic option colors are user-selected and intentionally not overwritten by theme hover rules. */
+.ml-v2-appearance-values {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.ml-v2-appearance-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  font-size: 12px;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.ml-v2-appearance-value > span:last-child {
+  overflow-wrap: anywhere;
+}
+.ml-v2-appearance-value.is-text {
+  color: #202331;
+}
+.ml-v2-appearance-value.is-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: #171923;
+  font-weight: 600;
+  border: 1px solid rgba(25,25,35,.08);
+}
+.ml-v2-appearance-value .ml-v2-field-select-dot {
+  display: inline-block;
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+html[data-ml-theme="dark"] .ml-v2-appearance-value.is-text,
+.dark .ml-v2-appearance-value.is-text {
+  color: #e8eaf5;
+}
+.ml-v2-field-select-trigger .ml-v2-appearance-values {
+  flex: 1;
+  overflow: hidden;
+}
+.ml-v2-field-select-trigger .ml-v2-appearance-value.is-badge {
+  color: #171923 !important;
+}
+.ml-v2-priority-colors {
+  border: 1px solid #dfe3ec;
+  border-radius: 9px;
+  padding: 12px;
+  display: grid;
+  gap: 9px;
+}
+.ml-v2-priority-colors legend {
+  font-weight: 600;
+  padding: 0 5px;
+}
+.ml-v2-priority-color-row {
+  display: grid;
+  grid-template-columns: minmax(60px,1fr) minmax(90px,2fr) 32px;
+  align-items: center;
+  gap: 12px;
+}
+.ml-v2-priority-color-trigger {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(25,25,35,.2);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: #171923;
+  cursor: pointer;
+}
+.ml-v2-display-style-setting {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+html[data-ml-theme="dark"] .ml-v2-priority-colors,
+.dark .ml-v2-priority-colors {
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+html[data-ml-theme="dark"] .ml-v2-priority-color-trigger,
+.dark .ml-v2-priority-color-trigger {
+  border-color: #626d9a;
+}
+
+
+/* STEP 18F.8F.28A — Grouped palette: consistent Light and Dark presentation. */
+.color-palette:has(.ml-v2-grouped-palette) {
+  width: min(460px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px);
+  padding: 12px !important;
+  background: #fff !important;
+  color: #202331 !important;
+  border: 1px solid #dfe3ec !important;
+  border-radius: 11px !important;
+  box-shadow: 0 14px 35px rgba(20, 25, 50, .16) !important;
+}
+.color-palette:has(.ml-v2-grouped-palette) > strong {
+  display: block;
+  margin: 0 0 9px;
+  font-size: 13px;
+}
+.ml-v2-grouped-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ml-v2-grouped-palette-scroll {
+  max-height: min(410px, 55vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 3px;
+  scrollbar-width: thin;
+}
+.ml-v2-grouped-palette-row {
+  display: grid;
+  grid-template-columns: 65px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+}
+.ml-v2-grouped-palette-name {
+  color: #73788c;
+  font-size: 11px;
+  font-weight: 600;
+}
+.ml-v2-grouped-palette-shades {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+}
+.color-palette .ml-v2-grouped-palette-shades button {
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 27px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(32, 35, 49, .13) !important;
+  display: grid;
+  place-items: center;
+  color: #171923;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: transform 120ms ease, outline-color 120ms ease;
+}
+.color-palette .ml-v2-grouped-palette-shades button:is(:hover, :focus-visible) {
+  transform: scale(1.08);
+  outline: 2px solid #7656db;
+  outline-offset: 1px;
+  z-index: 1;
+}
+.color-palette .ml-v2-grouped-palette-shades button[aria-pressed="true"] {
+  outline: 2px solid #7656db;
+  outline-offset: 1px;
+}
+.ml-v2-grouped-palette-footer {
+  border-top: 1px solid #dfe3ec;
+  padding-top: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.ml-v2-grouped-palette-current {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1px solid rgba(32, 35, 49, .2);
+}
+.ml-v2-grouped-palette-footer small { color: #73788c; }
+html[data-ml-theme="dark"] .color-palette:has(.ml-v2-grouped-palette),
+.dark .color-palette:has(.ml-v2-grouped-palette) {
+  background: #202438 !important;
+  color: #e8eaf5 !important;
+  border-color: #626d9a !important;
+  color-scheme: dark;
+}
+html[data-ml-theme="dark"] .ml-v2-grouped-palette-name,
+.dark .ml-v2-grouped-palette-name { color: #c0c6db; }
+html[data-ml-theme="dark"] .ml-v2-grouped-palette-footer,
+.dark .ml-v2-grouped-palette-footer { border-color: #626d9a; }
+html[data-ml-theme="dark"] .ml-v2-grouped-palette-footer small,
+.dark .ml-v2-grouped-palette-footer small { color: #c0c6db; }
+html[data-ml-theme="dark"] .color-palette .ml-v2-grouped-palette-shades button,
+.dark .color-palette .ml-v2-grouped-palette-shades button {
+  border-color: rgba(232, 234, 245, .23) !important;
+}
+@media (max-width: 420px) {
+  .ml-v2-grouped-palette-row { grid-template-columns: 54px minmax(0, 1fr); gap: 4px; }
+  .ml-v2-grouped-palette-shades { gap: 3px; }
+  .color-palette .ml-v2-grouped-palette-shades button { height: 24px !important; }
+}
+
+
+/* STEP 18F.8F.28B — Fix legacy brand.css grid overriding grouped palette.
+   The legacy .color-palette > div sets a five-column 30px grid. */
+.color-palette > .ml-v2-grouped-palette {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.color-palette .ml-v2-grouped-palette-scroll {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.color-palette .ml-v2-grouped-palette-row {
+  display: grid !important;
+  grid-template-columns: 65px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 7px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.color-palette .ml-v2-grouped-palette-name {
+  display: block !important;
+  white-space: nowrap;
+  overflow: visible !important;
+  min-width: 0;
+}
+.color-palette .ml-v2-grouped-palette-shades {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.color-palette .ml-v2-grouped-palette-footer {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+@media (max-width: 420px) {
+  .color-palette .ml-v2-grouped-palette-row {
+    grid-template-columns: 54px minmax(0, 1fr) !important;
+    gap: 4px !important;
+  }
+  .color-palette .ml-v2-grouped-palette-shades { gap: 3px !important; }
+}
+
+
+/* STEP 18F.8F.29 - EDIT TASK FIELD OPTIONS AND THEMES */
+.ml-v2-field-select-menu .ml-v2-field-edit-action {
+  display:flex; align-items:center; gap:8px; width:100%;
+  padding:10px 12px; margin:5px 0 0; border-top:1px solid var(--ml-task-border,#dcd7f6);
+  text-align:left; font-size:12px; border-radius:0 0 7px 7px;
+}
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview {
+  --ml-task-border:#dcd7f6; background:#fff !important; color:#202331 !important;
+  border-color:#dcd7f6 !important;
+}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview {
+  --ml-task-border:#626d9a; background:#202438 !important; color:#e8eaf5 !important;
+  border-color:#626d9a !important;
+}
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 {
+  color:#202331;
+}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 {
+  color:#e8eaf5;
+}
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 :is(input:not([type="checkbox"]),textarea,select,.choice-trigger,.ml-v2-field-select-trigger,.ml-v2-people-field-trigger) {
+  background:#fff !important; color:#202331 !important; border-color:#c9c8dd !important;
+}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 :is(input:not([type="checkbox"]),textarea,select,.choice-trigger,.ml-v2-field-select-trigger,.ml-v2-people-field-trigger) {
+  background:#292e46 !important; color:#e8eaf5 !important; border-color:#626d9a !important;
+}
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 :is(input,textarea,select,.choice-trigger,.ml-v2-field-select-trigger):is(:hover,:focus-visible) {
+  border-color:#7656db !important;
+}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 :is(input,textarea,select,.choice-trigger,.ml-v2-field-select-trigger):is(:hover,:focus-visible) {
+  border-color:#a78bfa !important; background:#343b58 !important;
+}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 :is(input,textarea)::placeholder {color:#b4bbd3 !important;}
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 :is(input,textarea)::placeholder {color:#73788c !important;}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 select option {background:#292e46;color:#e8eaf5;}
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview .ml-task-detail-v2 select option {background:#fff;color:#202331;}
+html[data-ml-theme="dark"] .ml-v2-field-select-menu .ml-v2-field-edit-action {color:#e8eaf5;border-color:#626d9a;}
+html[data-ml-theme="light"] .ml-v2-field-select-menu .ml-v2-field-edit-action {color:#202331;border-color:#dcd7f6;}
+html[data-ml-theme="dark"] .ml-v2-field-select-menu .ml-v2-field-edit-action:hover {background:#343b58;}
+html[data-ml-theme="light"] .ml-v2-field-select-menu .ml-v2-field-edit-action:hover {background:#f9faff;}
+
+
+/* STEP 18F.8F.29B - FINAL TASK THEME */
+html[data-ml-theme="light"] .ml-v2-task-detail-panel,
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel {
+  --ml-task-bg:#fff; --ml-task-input:#fff; --ml-task-fg:#202331;
+  --ml-task-border:#dcd7f6; --ml-task-muted:#73788c; --ml-task-hover:#f9faff;
+  background:var(--ml-task-bg)!important; color:var(--ml-task-fg)!important;
+  border-color:var(--ml-task-border)!important; color-scheme:light;
+}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel {
+  --ml-task-bg:#202438; --ml-task-input:#292e46; --ml-task-fg:#e8eaf5;
+  --ml-task-border:#626d9a; --ml-task-muted:#c0c6db; --ml-task-hover:#343b58;
+  background:var(--ml-task-bg)!important; color:var(--ml-task-fg)!important;
+  border-color:var(--ml-task-border)!important; color-scheme:dark;
+}
+.ml-v2-task-detail-panel :is(.ml-task-detail-v2,.ml-v2-task-editor-form) {color:var(--ml-task-fg)!important;}
+.ml-v2-task-detail-panel :is(input:not([type="checkbox"]),textarea,select,[data-slot="native-select-trigger"],.ml-v2-task-theme-select) {
+  background-color:var(--ml-task-input)!important; color:var(--ml-task-fg)!important;
+  border:1px solid var(--ml-task-border)!important; color-scheme:inherit;
+}
+.ml-v2-task-detail-panel :is(input:not([type="checkbox"]),textarea,select,.ml-v2-task-theme-select):is(:hover,:focus-visible) {
+  border-color:#7656db!important;
+}
+.ml-v2-task-detail-panel :is(input,textarea)::placeholder {color:var(--ml-task-muted)!important;opacity:1;}
+.ml-v2-task-detail-panel select option {background:var(--ml-task-input);color:var(--ml-task-fg);}
+.ml-v2-task-detail-panel :is(.ml-task-detail-v2__save-status,.ml-v2-task-panel-heading [data-slot="dialog-description"]) {color:var(--ml-task-muted)!important;}
+.ml-v2-task-detail-panel :is(.ml-task-detail-v2__row,.ml-task-detail-v2__field-row) {border-color:var(--ml-task-border);}
+.ml-v2-task-theme-select {
+  min-height:36px;min-width:150px;max-width:100%;display:inline-flex;align-items:center;
+  justify-content:space-between;gap:15px;padding:0 12px;border-radius:6px;
+  font-size:12px;text-align:left;cursor:pointer;
+}
+.ml-v2-task-theme-select svg {flex:none;opacity:.7;}
+.ml-v2-task-theme-menu {
+  width:var(--radix-popover-trigger-width);min-width:175px;max-width:min(350px,calc(100vw - 24px));
+  padding:5px!important;background:#fff!important;color:#202331!important;
+  border:1px solid #dcd7f6!important;border-radius:8px!important;
+  box-shadow:0 12px 28px #17192330!important;z-index:10000;
+}
+.ml-v2-task-theme-menu-list {max-height:min(320px,55vh);overflow:auto;}
+.ml-v2-task-theme-menu-option {
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  padding:9px 10px;border-radius:5px;text-align:left;font-size:12px;color:inherit;
+}
+.ml-v2-task-theme-menu-option:is(:hover,:focus-visible),.ml-v2-task-theme-menu-option[aria-current="true"] {background:#eeeaff;}
+html[data-ml-theme="dark"] .ml-v2-task-theme-menu {background:#292e46!important;color:#e8eaf5!important;border-color:#626d9a!important;}
+html[data-ml-theme="dark"] .ml-v2-task-theme-menu-option:is(:hover,:focus-visible),
+html[data-ml-theme="dark"] .ml-v2-task-theme-menu-option[aria-current="true"] {background:#343b58;}
+html[data-ml-theme="light"] .field-dialog,html:not([data-ml-theme="dark"]) .field-dialog {
+  --ml-field-bg:#fff;--ml-field-control:#fff;--ml-field-text:#202331;
+  --ml-field-muted:#73788c;--ml-field-border:#dcd7f6;--ml-field-hover:#f9faff;--ml-field-accent:#7656db;
+}
+html[data-ml-theme="dark"] .field-dialog {
+  --ml-field-bg:#202438;--ml-field-control:#292e46;--ml-field-text:#e8eaf5;
+  --ml-field-muted:#c0c6db;--ml-field-border:#626d9a;--ml-field-hover:#343b58;--ml-field-accent:#a78bfa;
+}
+
+
+/* STEP 18F.8F.29C - EDIT TASK CONTENT BACKGROUND
+   The inner task detail layout should not paint an independent surface.
+   Inherit the official theme from the slide-out panel without touching
+   controls, user-selected badge colors, or task data. */
+html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview,
+html:not([data-ml-theme="dark"]) .ml-v2-task-detail-panel--preview {
+  --ml-task-content-bg: #ffffff;
+  background-color: var(--ml-task-content-bg) !important;
+}
+html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview {
+  --ml-task-content-bg: #202438;
+  background-color: var(--ml-task-content-bg) !important;
+}
+.ml-v2-task-detail-panel--preview > .ml-task-detail-v2 {
+  background: var(--ml-task-content-bg) !important;
+  background-color: var(--ml-task-content-bg) !important;
+  box-shadow: none;
+}
+/* Make the major layout wrappers transparent; leave inputs and badges alone. */
+.ml-v2-task-detail-panel--preview .ml-task-detail-v2 > :is(header,main,section,footer),
+.ml-v2-task-detail-panel--preview .ml-task-detail-v2__content,
+.ml-v2-task-detail-panel--preview .ml-task-detail-v2__body {
+  background-color: transparent !important;
+}

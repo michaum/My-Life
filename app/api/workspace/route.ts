@@ -238,6 +238,7 @@ const nativeColumnSettingsSchema = z.object({
   displayStyle: z.enum(["name", "avatar", "text", "badge"]).optional(),
   dateFormat: z.enum(["default", "short", "long", "iso"]).optional(),
   progressStyle: z.enum(["bar", "percentage"]).optional(),
+  priorityColors: z.object({ Low: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), Medium: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), High: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional() }).optional(),
 });
 
 const listColumnSettingsSchema = z.record(
@@ -262,11 +263,34 @@ const fieldSchema = z.object({
   id: z.string().min(1).max(100),
   projectId: z.string().min(1).max(100),
   name: z.string().trim().min(1).max(100),
-  type: z.enum(["Text", "Number", "Date", "Choice"]),
+  type: z.enum(["Text", "Number", "Date", "Choice", "MultiSelect", "People"]),
+  description: z.string().max(500).optional(),
+  numberFormat: z.enum(["Number", "Percentage", "Currency", "Custom Label", "None"]).optional(),
+  decimals: z.number().int().min(0).max(6).optional(),
+  currency: z.string().max(3).optional(),
+  customLabel: z.string().max(40).optional(),
+  displayStyle: z.enum(["text", "badge"]).optional(),
   options: z
     .array(z.union([z.string().trim().min(1).max(100), choiceSchema]))
     .max(30),
 });
+function unpackFieldOptions(raw: unknown) {
+  if (Array.isArray(raw)) return { options: normalizeOptions(raw) };
+  if (!raw || typeof raw !== "object") return { options: [] };
+  const obj = raw as Record<string, unknown>;
+  return {
+    options: normalizeOptions(obj.options),
+    description: typeof obj.description === "string" ? obj.description : "",
+    numberFormat: typeof obj.numberFormat === "string" ? obj.numberFormat : "Number",
+    decimals: typeof obj.decimals === "number" ? obj.decimals : 2,
+    currency: typeof obj.currency === "string" ? obj.currency : "CAD",
+    customLabel: typeof obj.customLabel === "string" ? obj.customLabel : "",
+    displayStyle: obj.displayStyle === "badge" ? "badge" : "text",
+  };
+}
+function packFieldOptions(field: z.infer<typeof fieldSchema>, options: ReturnType<typeof normalizeOptions>) {
+  return JSON.stringify({ options, description: field.description || "", numberFormat: field.numberFormat || "Number", decimals: field.decimals ?? 2, currency: field.currency || "CAD", customLabel: field.customLabel || "", displayStyle: field.displayStyle || "text" });
+}
 function normalizeOptions(raw: unknown) {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((option, index) => {
@@ -392,7 +416,7 @@ export async function GET(request: Request) {
           return {
             ...f,
             projectId: f.project_id,
-            options: normalizeOptions(parsed),
+            ...unpackFieldOptions(parsed),
           };
         }),
         people: people.results.map((person: any) => ({ ...person, smsEnabled: Boolean(person.sms_enabled), avatarData: person.avatar_data ?? null })),
@@ -742,7 +766,7 @@ export async function POST(request: Request) {
       const choiceMatches = (
         fieldRows.results as Array<{ id: string; options: string }>
       ).flatMap((field) =>
-        normalizeOptions(JSON.parse(field.options)).map((option) => ({
+        unpackFieldOptions(JSON.parse(field.options)).options.map((option) => ({
           fieldId: field.id,
           ...option,
           labelKey: option.label.trim().toLowerCase(),
@@ -786,7 +810,7 @@ export async function POST(request: Request) {
       ]);
     } else if (b.action === "saveCustomField") {
       const f = fieldSchema.parse(b.field),
-        options = f.type === "Choice" ? normalizeOptions(f.options) : [];
+        options = f.type === "Choice" || f.type === "MultiSelect" ? normalizeOptions(f.options) : [];
       if (
         !(await db
           .prepare("SELECT id FROM projects WHERE id=?")
@@ -802,7 +826,7 @@ export async function POST(request: Request) {
           .bind(f.id)
           .first<{ options: string }>(),
         oldOptions = previous
-          ? normalizeOptions(JSON.parse(previous.options))
+          ? unpackFieldOptions(JSON.parse(previous.options)).options
           : [];
       await db.batch([
         db
@@ -814,7 +838,7 @@ export async function POST(request: Request) {
             f.projectId,
             f.name,
             f.type,
-            JSON.stringify(options),
+            packFieldOptions(f, options),
             now,
           ),
         ...oldOptions.map((option) =>
@@ -937,7 +961,7 @@ export async function POST(request: Request) {
           .bind(fieldId, "Choice")
           .first<{ options: string }>();
         const option = field
-          ? normalizeOptions(JSON.parse(field.options)).find(
+          ? unpackFieldOptions(JSON.parse(field.options)).options.find(
               (item) => item.id === value || item.label === value,
             )
           : undefined;

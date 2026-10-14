@@ -203,8 +203,14 @@ type CustomField = {
   id: string;
   projectId: string;
   name: string;
-  type: "Text" | "Number" | "Date" | "Choice";
+  type: "Text" | "Number" | "Date" | "Choice" | "MultiSelect" | "People";
   options: ChoiceOption[];
+  description?: string;
+  numberFormat?: "Number" | "Percentage" | "Currency" | "Custom Label" | "None";
+  decimals?: number;
+  currency?: string;
+  customLabel?: string;
+  displayStyle?: "text" | "badge";
 };
 function normalizeOptions(value: unknown): ChoiceOption[] {
   if (!Array.isArray(value)) return [];
@@ -216,6 +222,53 @@ function normalizeOptions(value: unknown): ChoiceOption[] {
       typeof (item as ChoiceOption).label === "string" &&
       typeof (item as ChoiceOption).color === "string",
   );
+}
+
+type FieldStorage = Pick<CustomField, "options" | "description" | "numberFormat" | "decimals" | "currency" | "customLabel" | "displayStyle">;
+function unpackFieldOptions(value: unknown): FieldStorage {
+  if (Array.isArray(value)) return { options: normalizeOptions(value) };
+  if (!value || typeof value !== "object") return { options: [] };
+  const obj = value as Record<string, unknown>;
+  return {
+    options: normalizeOptions(obj.options),
+    description: typeof obj.description === "string" ? obj.description : "",
+    numberFormat: ["Number", "Percentage", "Currency", "Custom Label", "None"].includes(String(obj.numberFormat)) ? obj.numberFormat as FieldStorage["numberFormat"] : "Number",
+    decimals: typeof obj.decimals === "number" ? Math.max(0, Math.min(6, obj.decimals)) : 2,
+    currency: typeof obj.currency === "string" ? obj.currency : "CAD",
+    customLabel: typeof obj.customLabel === "string" ? obj.customLabel : "",
+    displayStyle: obj.displayStyle === "badge" ? "badge" : "text",
+  };
+}
+function packFieldOptions(field: CustomField): string {
+  return JSON.stringify({
+    options: field.type === "Choice" || field.type === "MultiSelect" ? normalizeOptions(field.options) : [],
+    description: field.description || "",
+    numberFormat: field.numberFormat || "Number",
+    decimals: Math.max(0, Math.min(6, Number(field.decimals ?? 2))),
+    currency: field.currency || "CAD",
+    customLabel: field.customLabel || "",
+    displayStyle: field.displayStyle || "text",
+  });
+}
+function multiIds(value: string): string[] {
+  if (!value) return [];
+  try { const parsed: unknown = JSON.parse(value); return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : []; }
+  catch { return [value]; }
+}
+function formatCustomNumber(value: string, field: CustomField): string {
+  if (!value) return "—";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return value;
+  const digits = Math.max(0, Math.min(6, field.decimals ?? 2));
+  const format = field.numberFormat || "Number";
+  if (format === "None") return value;
+  if (format === "Percentage") return `${number.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+  if (format === "Currency") {
+    try { return new Intl.NumberFormat(undefined, { style: "currency", currency: field.currency || "CAD", minimumFractionDigits: digits, maximumFractionDigits: digits }).formatToParts(number).map((part, index, parts) => part.type === "currency" && parts.slice(index + 1).some(next => next.type === "integer") ? `${part.value} ` : part.value).join("").replace(/ {2,}/g, " "); }
+    catch { return number.toFixed(digits); }
+  }
+  const display = number.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return format === "Custom Label" ? `${display} ${field.customLabel || ""}`.trim() : display;
 }
 
 const statuses: Status[] = ["To do", "In progress", "In review", "Done"];
@@ -342,7 +395,81 @@ const choicePalette = [
   "#d7a0ec",
   "#c2b2f0",
   "#a9b0b2",
+  // Pink shades shared by Light and Dark Mode
+  "#ffe0ef",
+  "#ffc1dc",
+  "#ff9ac9",
+  "#ff77b7",
+  "#ff4fa3",
+  "#ff0066",
+  "#e85aa9",
+  "#d63384",
+  "#c21870",
+  "#f6a6d7",
+  "#e6a0c4",
+  "#b565a7",
 ];
+
+
+// STEP 18F.8F.28A — Shared grouped palette for every color picker.
+const myLifePaletteFamilies = [
+  { name: "Red", shades: ["#FEE2E2", "#FCA5A5", "#F87171", "#EF4444", "#DC2626", "#991B1B"] },
+  { name: "Orange", shades: ["#FFEDD5", "#FDBA74", "#FB923C", "#F97316", "#EA580C", "#9A3412"] },
+  { name: "Amber", shades: ["#FEF3C7", "#FCD34D", "#FBBF24", "#F59E0B", "#D97706", "#92400E"] },
+  { name: "Yellow", shades: ["#FEF9C3", "#FDE047", "#FACC15", "#EAB308", "#CA8A04", "#854D0E"] },
+  { name: "Lime", shades: ["#ECFCCB", "#BEF264", "#A3E635", "#84CC16", "#65A30D", "#3F6212"] },
+  { name: "Green", shades: ["#DCFCE7", "#86EFAC", "#4ADE80", "#22C55E", "#16A34A", "#166534"] },
+  { name: "Mint", shades: ["#D1FAE5", "#6EE7B7", "#34D399", "#10B981", "#059669", "#065F46"] },
+  { name: "Teal", shades: ["#CCFBF1", "#5EEAD4", "#2DD4BF", "#14B8A6", "#0D9488", "#115E59"] },
+  { name: "Cyan", shades: ["#CFFAFE", "#67E8F9", "#22D3EE", "#06B6D4", "#0891B2", "#155E75"] },
+  { name: "Blue", shades: ["#DBEAFE", "#93C5FD", "#60A5FA", "#3B82F6", "#2563EB", "#1E40AF"] },
+  { name: "Indigo", shades: ["#E0E7FF", "#A5B4FC", "#818CF8", "#6366F1", "#4F46E5", "#3730A3"] },
+  { name: "Purple", shades: ["#F3E8FF", "#D8B4FE", "#C084FC", "#A855F7", "#9333EA", "#6B21A8"] },
+  { name: "Violet", shades: ["#EDE9FE", "#C4B5FD", "#A78BFA", "#8B5CF6", "#7C3AED", "#5B21B6"] },
+  { name: "Pink", shades: ["#FCE7F3", "#F9A8D4", "#F472B6", "#EC4899", "#DB2777", "#9D174D"] },
+  { name: "Rose", shades: ["#FFE4E6", "#FDA4AF", "#FB7185", "#F43F5E", "#E11D48", "#9F1239"] },
+  { name: "Brown", shades: ["#F5E6D3", "#D6B48A", "#B98A5D", "#96633C", "#78472B", "#4A2C1C"] },
+  { name: "Gray", shades: ["#F3F4F6", "#D1D5DB", "#9CA3AF", "#6B7280", "#4B5563", "#1F2937"] },
+  { name: "Slate", shades: ["#F1F5F9", "#CBD5E1", "#94A3B8", "#64748B", "#475569", "#1E293B"] },
+] as const;
+
+function MyLifeGroupedColorPalette({ selected, onSelect, label = "Color" }: {
+  selected?: string;
+  onSelect: (color: string) => void;
+  label?: string;
+}) {
+  const selectedHex = selected?.toLowerCase();
+  const isInFamilies = myLifePaletteFamilies.some(group =>
+    group.shades.some(color => color.toLowerCase() === selectedHex));
+  return (
+    <div className="ml-v2-grouped-palette" aria-label={`${label} palette`}>
+      <div className="ml-v2-grouped-palette-scroll">
+        {myLifePaletteFamilies.map(group => (
+          <div key={group.name} className="ml-v2-grouped-palette-row">
+            <span className="ml-v2-grouped-palette-name">{group.name}</span>
+            <div className="ml-v2-grouped-palette-shades">
+              {group.shades.map(color => (
+                <button type="button" key={color} title={`${group.name} ${color}`}
+                  aria-label={`${label}: ${group.name} ${color}`}
+                  aria-pressed={selectedHex === color.toLowerCase()}
+                  style={{ backgroundColor: color }}
+                  onClick={() => onSelect(color)}>
+                  {selectedHex === color.toLowerCase() && <Check size={14} strokeWidth={3} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="ml-v2-grouped-palette-footer">
+        <span className="ml-v2-grouped-palette-current" style={{ backgroundColor: selected || "#FFFFFF" }} />
+        <span>{selected || "No color selected"}</span>
+        {selected && !isInFamilies && <small>Existing custom color preserved</small>}
+      </div>
+    </div>
+  );
+}
+
 const colors = [
   "#7656db",
   "#727272",
@@ -371,6 +498,47 @@ const todayKey = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+
+function ListOptionAppearance({ options, style = "text", multiple = false }: {
+  options: ChoiceOption[];
+  style?: "text" | "badge";
+  multiple?: boolean;
+}) {
+  return <span className={`ml-v2-appearance-values ${multiple ? "is-multi" : ""}`}>
+    {options.map(option => <span key={option.id}
+      className={`ml-v2-appearance-value ${style === "badge" ? "is-badge" : "is-text"}`}
+      style={style === "badge" ? { backgroundColor: option.color } : undefined}>
+      {style !== "badge" && <span className="ml-v2-field-select-dot" style={{ backgroundColor: option.color }} />}
+      <span>{option.label}</span>
+    </span>)}
+  </span>;
+}
+
+// STEP 18F.8F.29B — App-rendered dropdown; avoids OS-native popup theme mismatch.
+function TaskThemeSelect({ label, value, options, onChange }: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(option => option.value === value);
+  return <Popover open={open} onOpenChange={setOpen}>
+    <PopoverTrigger asChild>
+      <button type="button" className="ml-v2-task-theme-select" aria-label={label} aria-expanded={open}>
+        <span>{selected?.label ?? "No section"}</span><ChevronDown size={15} aria-hidden="true" />
+      </button>
+    </PopoverTrigger>
+    <PopoverContent align="start" sideOffset={4} className="ml-v2-task-theme-menu">
+      <div className="ml-v2-task-theme-menu-list" role="group" aria-label={label}>
+        {options.map(option => <button type="button" key={option.value} className="ml-v2-task-theme-menu-option" aria-current={option.value === value ? "true" : undefined} onClick={() => { onChange(option.value); setOpen(false); }}>
+          <span>{option.label}</span>{option.value === value && <Check size={15} aria-hidden="true" />}
+        </button>)}
+      </div>
+    </PopoverContent>
+  </Popover>;
+}
+
 function ChoiceDropdown({
   value,
   options,
@@ -378,9 +546,11 @@ function ChoiceDropdown({
   onEdit,
   label,
   disabled = false,
+  displayStyle = "text",
 }: {
   value: string;
   options: ChoiceOption[];
+  displayStyle?: "text" | "badge";
   onChange: (value: string) => void;
   onEdit?: () => void;
   label: string;
@@ -395,33 +565,30 @@ function ChoiceDropdown({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="choice-trigger"
+          className={`choice-trigger ${label === "Status" ? "" : `ml-v2-field-select-trigger ${selected ? "ml-v2-field-select-trigger--selected" : ""}`}`}
           aria-label={label}
           aria-expanded={open}
           disabled={disabled}
         >
           <span>
             {selected ? (
-              <span
-                className="choice-pill"
-                style={{ background: selected.color }}
-              >
-                {selected.label}
-              </span>
+              label === "Status"
+                ? <span className="choice-pill" style={{ background: selected.color }}>{selected.label}</span>
+                : <ListOptionAppearance options={[selected]} style={displayStyle} />
             ) : (
               <span className="choice-placeholder">Not set</span>
             )}
           </span>
-          <ChevronDown size={15} />
+          {label === "Status" || !selected ? <ChevronDown size={15} /> : <ChevronDown size={15} className="ml-v2-choice-hover-chevron" aria-hidden="true" />}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className={`choice-menu ${label === "Status" ? "ml-v2-status-choice-menu" : ""}`}>
+      <PopoverContent align="start" className={`choice-menu ${label === "Status" ? "ml-v2-status-choice-menu" : "ml-v2-field-select-menu ml-v2-single-select-menu"}`}>
         <div className="choice-menu-list">
           {options.map((option) => (
             <button
               type="button"
               key={option.id}
-              className="choice-menu-option"
+              className={`choice-menu-option ${label === "Status" ? "" : "ml-v2-field-select-option"}`}
               onClick={() => {
                 onChange(option.id);
                 setOpen(false);
@@ -433,12 +600,9 @@ function ChoiceDropdown({
                   selected?.id === option.id ? "visible-check" : "hidden-check"
                 }
               />
-              <span
-                className="choice-pill"
-                style={{ background: option.color }}
-              >
-                {option.label}
-              </span>
+              {label !== "Status" && <span className="ml-v2-field-select-dot" style={{ backgroundColor: option.color }} />}
+              {label === "Status" ? <span className="choice-pill" style={{ background: option.color }}>{option.label}</span>
+                : <span className="ml-v2-field-select-label">{option.label}</span>}
             </button>
           ))}
           {selected && (
@@ -530,6 +694,7 @@ export default function Taskflow() {
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
       progressStyle?: "bar" | "percentage";
+      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
     }>>>({});
   const [nativeColumnDraft, setNativeColumnDraft] = useState<{
     projectId: string;
@@ -539,6 +704,7 @@ export default function Taskflow() {
     displayStyle?: "name" | "avatar" | "text" | "badge";
     dateFormat?: "default" | "short" | "long" | "iso";
     progressStyle?: "bar" | "percentage";
+    priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
   } | null>(null);
   // CM.7N - Expand/collapse subtasks without changing task data.
   const [expandedListSubtasks, setExpandedListSubtasks] =
@@ -1269,7 +1435,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         return {
           ...f,
           projectId: f.project_id,
-          options: normalizeOptions(parsed),
+          ...unpackFieldOptions(parsed),
         };
       }),
       people: people.map((person: any) => ({
@@ -1297,6 +1463,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
       progressStyle?: "bar" | "percentage";
+      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
     }>>,
     };
   }
@@ -1347,7 +1514,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           parsed = JSON.parse(choiceRows[0].options);
         } catch {}
 
-        const option = normalizeOptions(parsed).find(
+        const option = unpackFieldOptions(parsed).options.find(
           (item) => item.id === value || item.label === value,
         );
 
@@ -1594,7 +1761,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           parsed = JSON.parse(field.options);
         } catch {}
 
-        return normalizeOptions(parsed).map((option) => ({
+        return unpackFieldOptions(parsed).options.map((option) => ({
           fieldId: field.id,
           ...option,
           labelKey: option.label.trim().toLowerCase(),
@@ -1656,13 +1823,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       if (previousRows.length) {
         try {
           oldOptions = normalizeOptions(
-            JSON.parse(previousRows[0].options),
+            unpackFieldOptions(JSON.parse(previousRows[0].options)).options,
           );
         } catch {}
       }
 
       const options =
-        f.type === "Choice" ? normalizeOptions(f.options) : [];
+        f.type === "Choice" || f.type === "MultiSelect" ? normalizeOptions(f.options) : [];
 
       await db.execute(
         `INSERT INTO custom_fields(
@@ -1678,7 +1845,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           f.projectId,
           f.name,
           f.type,
-          JSON.stringify(options),
+          packFieldOptions({ ...f, options }),
           now,
         ],
       );
@@ -1821,6 +1988,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
       progressStyle?: "bar" | "percentage";
+      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
     }>>;
     };
 
@@ -1872,7 +2040,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       for (const f of data.customFields) {
         const options =
-          f.type === "Choice" ? normalizeOptions(f.options) : [];
+          f.type === "Choice" || f.type === "MultiSelect" ? normalizeOptions(f.options) : [];
 
         await db.execute(
           `INSERT INTO custom_fields(
@@ -1883,7 +2051,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             f.projectId,
             f.name,
             f.type,
-            JSON.stringify(options),
+            packFieldOptions({ ...f, options }),
             f.created_at ?? now,
           ],
         );
@@ -2108,6 +2276,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
       progressStyle?: "bar" | "percentage";
+      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
     }>>;
     };
     if (!r.ok) throw new Error(d.error);
@@ -3647,6 +3816,7 @@ function newPerson() {
       name: "",
       type: "Text",
       options: [],
+      description: "", numberFormat: "Number", decimals: 2, currency: "CAD", customLabel: "",
     });
     setConfirmDelete(false);
   }
@@ -3673,7 +3843,7 @@ function newPerson() {
             ? { dateFormat: nativeColumnDraft.dateFormat ?? "default" }
             : {}),
           ...(nativeColumnDraft.columnId === "priority"
-            ? { displayStyle: nativeColumnDraft.displayStyle ?? "text" }
+            ? { displayStyle: nativeColumnDraft.displayStyle ?? "text", priorityColors: nativeColumnDraft.priorityColors ?? {} }
             : {}),
           ...(nativeColumnDraft.columnId === "task-progress"
             ? {
@@ -3780,7 +3950,7 @@ function newPerson() {
     const field = {
       ...fieldDraft,
       options:
-        fieldDraft.type === "Choice"
+        (fieldDraft.type === "Choice" || fieldDraft.type === "MultiSelect")
           ? fieldDraft.options
               .map((option) => ({ ...option, label: option.label.trim() }))
               .filter((option) => option.label)
@@ -3950,10 +4120,82 @@ function smartTextFieldUrl(value: string): string | null {
   }
 }
 
+  // STEP 18F.8F.29 - EDIT TASK FIELD OPTIONS AND THEMES
+  function customFieldControl(field: CustomField, value: string, onChange: (value: string) => void) {
+    if (field.type === "MultiSelect") {
+      const selectedIds = multiIds(value);
+      return (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" className={`ml-v2-field-select-trigger ${selectedIds.length ? "ml-v2-field-select-trigger--selected" : ""}`} disabled={busy} aria-label={field.name}>
+              {selectedIds.length ? (
+                <ListOptionAppearance options={selectedIds.map(id => field.options.find(item => item.id === id)).filter((option): option is ChoiceOption => Boolean(option))} style={field.displayStyle || "text"} multiple />
+              ) : <span className="ml-v2-field-select-summary">None</span>}
+              {!selectedIds.length ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronDown size={14} className="ml-v2-choice-hover-chevron" aria-hidden="true" />}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" sideOffset={4} className="ml-v2-field-select-menu">
+            <div className="ml-v2-field-select-options" aria-label={field.name}>
+              {field.options.map(option => {
+                const selected = selectedIds.includes(option.id);
+                return (
+                  <button key={option.id} type="button" className="ml-v2-field-select-option"
+                    aria-pressed={selected} disabled={busy}
+                    onClick={() => onChange(JSON.stringify(selected
+                      ? selectedIds.filter(id => id !== option.id)
+                      : [...selectedIds, option.id]))}>
+                    <span className="ml-v2-field-select-dot" style={{ backgroundColor: option.color }} />
+                    <span className="ml-v2-field-select-label">{option.label}</span>
+                    {selected && <Check size={14} aria-hidden="true" />}
+                  </button>
+                );
+              })}
+            </div>
+            {selectedIds.length > 0 && <div className="ml-v2-field-select-actions">
+              <button type="button" disabled={busy} onClick={() => onChange(JSON.stringify([]))}>
+                <X size={14} /> Clear selection
+              </button>
+            </div>}
+            <button type="button" className="choice-edit-action ml-v2-field-edit-action"
+              disabled={busy} onClick={() => editField(field)}>
+              <Pencil size={14} /> Edit options
+            </button>
+          </PopoverContent>
+        </Popover>
+      );
+    }
+    if (field.type === "People") return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button" className="ml-v2-people-field-trigger" disabled={busy}
+            aria-label={field.name}>
+            <span>{people.find(person => person.id === value)?.name || "None"}</span>
+            <ChevronDown size={14} aria-hidden="true" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" sideOffset={4} className="ml-v2-people-field-menu">
+          <div className="ml-v2-people-field-options" role="listbox" aria-label={field.name}>
+            <button type="button" className="ml-v2-people-field-option" aria-selected={!value} role="option" onClick={() => onChange("")}>
+              <span>None</span>{!value && <Check size={13} aria-hidden="true" />}
+            </button>
+            {people.map(person => (
+              <button key={person.id} type="button" className="ml-v2-people-field-option" aria-selected={person.id === value} role="option"
+                onClick={() => onChange(person.id)}><span>{person.name}</span>{person.id === value && <Check size={13} aria-hidden="true" />}</button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+    return null;
+  }
+
   function fieldValue(task: Task, field: CustomField) {
     const value = task.customValues[field.id] || "";
     if (!value) return "—";
     if (field.type === "Date") return dateText(value);
+    if (field.type === "Number") return formatCustomNumber(value, field);
+    if (field.type === "MultiSelect") return multiIds(value).map(id => field.options.find(o => o.id === id)?.label || id).join(", ") || "—";
+    if (field.type === "People") return people.find(person => person.id === value)?.name || value;
     if (field.type === "Choice")
       return (
         field.options.find(
@@ -4586,11 +4828,13 @@ function smartTextFieldUrl(value: string): string | null {
                 </span>
               )
             ) : columnId === "priority" &&
-            listColumnSettings[project?.id ?? ""]?.priority?.displayStyle === "badge" ? (
-              <span className={`priority priority-${t.priority.toLowerCase()}`}>
-                <span />
-                {t.priority}
-              </span>
+            (listColumnSettings[project?.id ?? ""]?.priority?.displayStyle === "badge" ||
+             listColumnSettings[project?.id ?? ""]?.priority?.displayStyle === "text") ? (
+              <ListOptionAppearance
+                options={[{ id: t.priority, label: t.priority, color:
+                  listColumnSettings[t.projectId]?.priority?.priorityColors?.[t.priority] ||
+                  ({ Low: "#7ed3ab", Medium: "#ffc857", High: "#ff8a8a" } as const)[t.priority] }]}
+                style={listColumnSettings[t.projectId]?.priority?.displayStyle === "badge" ? "badge" : "text"} />
             ) : showAssigneeAvatar ? (
                 renderAssigneeAvatar(t.assignee)
               ) : columnId === "assignee" && Boolean(t.assignee) ? (
@@ -4608,11 +4852,17 @@ function smartTextFieldUrl(value: string): string | null {
 
         if (!field) return null;
 
+        if (field.type === "MultiSelect" || field.type === "People") {
+          return <div key={columnId} className="ml-v2-field-cell">{customFieldControl(field, t.customValues[field.id] || "", value => {
+            void mutate({ action: "saveTask", task: { ...t, customValues: { ...t.customValues, [field.id]: value } } }, `${field.name} updated`);
+          })}</div>;
+        }
         if (field.type === "Choice") {
           return (
             <ChoiceDropdown
               key={columnId}
               label={`${field.name} for ${t.title}`}
+              displayStyle={field.displayStyle || "text"}
               value={t.customValues[field.id] || ""}
               options={field.options}
               disabled={busy}
@@ -4785,17 +5035,21 @@ function smartTextFieldUrl(value: string): string | null {
                           onChange={(e) => saveSubtaskField({ due: e.target.value }, "Subtask due date updated")}
                         />
                       );
-                      if (columnId === "priority") return (
-                        <select aria-label={`Priority for ${subtask.title}`}
-                          value={subtask.priority || ""} disabled={busy}
-                          onChange={(e) => saveSubtaskField({ priority: e.target.value ? (e.target.value as "Low" | "Medium" | "High") : undefined }, "Subtask priority updated")}
-                        >
-                          <option value="">None</option>
-                          <option value="Low">Low</option>
-                          <option value="Medium">Medium</option>
-                          <option value="High">High</option>
-                        </select>
-                      );
+                      if (columnId === "priority") {
+                        const prioritySettings = listColumnSettings[t.projectId]?.priority;
+                        const options = (["Low", "Medium", "High"] as const).map(level => ({
+                          id: level, label: level,
+                          color: prioritySettings?.priorityColors?.[level] ||
+                            ({ Low: "#7ed3ab", Medium: "#ffc857", High: "#ff8a8a" } as const)[level],
+                        }));
+                        return <ChoiceDropdown label={`Priority for ${subtask.title}`}
+                          value={subtask.priority || ""} options={options}
+                          displayStyle={prioritySettings?.displayStyle === "badge" ? "badge" : "text"}
+                          disabled={busy}
+                          onChange={next => saveSubtaskField({
+                            priority: next ? (next as "Low" | "Medium" | "High") : undefined,
+                          }, "Subtask priority updated")} />;
+                      }
                       if (columnId === "task-progress") return (
                         <select aria-label={`Progress for ${subtask.title}`}
                           value={subtask.status || (subtask.done ? "Done" : "To do")}
@@ -4819,13 +5073,11 @@ function smartTextFieldUrl(value: string): string | null {
                         if (next === value) return;
                         saveSubtaskField({ customValues: { ...(subtask.customValues || {}), [field.id]: next } }, `${field.name} updated`);
                       };
+                      if (field.type === "MultiSelect" || field.type === "People") return customFieldControl(field, value, saveValue);
                       if (field.type === "Choice") return (
-                        <select aria-label={`${field.name} for ${subtask.title}`}
-                          value={value} disabled={busy} onChange={(e) => saveValue(e.target.value)}
-                        >
-                          <option value="">None</option>
-                          {field.options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-                        </select>
+                        <ChoiceDropdown label={`${field.name} for ${subtask.title}`}
+                          value={value} options={field.options} displayStyle={field.displayStyle || "text"}
+                          disabled={busy} onChange={saveValue} onEdit={() => editField(field)} />
                       );
                       // STEP 18F.6D - SMART URL LINKS (inline subtask Text columns).
                       const fieldUrl = field.type === "Text" ? smartTextFieldUrl(value) : null;
@@ -6286,6 +6538,7 @@ function smartTextFieldUrl(value: string): string | null {
                               <button
                                 type="button"
                                 data-column-menu="true"
+                                className="ml-v2-column-menu-trigger"
                                 aria-label={`Options for ${label}`}
                                 title={`${label} column options`}
                                 onPointerDown={(e) => e.stopPropagation()}
@@ -8099,10 +8352,7 @@ onDragOver={(e) => e.preventDefault()}
               project={<NativeSelect aria-label="Project" value={draft.projectId} onChange={(e) => updateV2Task({ projectId: e.target.value, sectionId: "", customValues: {} }, true)}>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </NativeSelect>}
-              section={<NativeSelect aria-label="Section" value={draft.sectionId} onChange={(e) => updateV2Task({ sectionId: e.target.value }, true)}>
-                <option value="">No section</option>
-                {sections.filter((s) => s.projectId === draft.projectId).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </NativeSelect>}
+              section={<TaskThemeSelect label="Section" value={draft.sectionId} onChange={(value) => updateV2Task({ sectionId: value }, true)} options={[{ value: "", label: "No section" }, ...sections.filter((s) => s.projectId === draft.projectId).map((s) => ({ value: s.id, label: s.name }))]} />}
               fields={[
                 { id: "priority", label: "Priority", value: <NativeSelect aria-label="Priority" value={draft.priority} onChange={(e) => updateV2Task({ priority: e.target.value as Task["priority"] }, true)}>{["Low", "Medium", "High"].map((p) => <option key={p} value={p}>{filterLabels.priority[p as Task["priority"]] || p}</option>)}</NativeSelect> },
                 { id: "progress", label: "Task Progress", value: <NativeSelect aria-label="Task Progress" value={draft.status} onChange={(e) => {
@@ -8112,7 +8362,10 @@ onDragOver={(e) => e.preventDefault()}
                 }}>{workflowOptions.map((option) => <option key={option.id} value={option.label}>{option.label}</option>)}</NativeSelect> },
                 { id: "classification", label: "Classification", value: <NativeSelect aria-label="Classification" value={draft.classification ?? "Task"} onChange={(e) => updateV2Task({ classification: e.target.value }, true)}>{classificationOptions.map((v) => <option key={v} value={v}>{v}</option>)}</NativeSelect> },
                 { id: "recurrence", label: "Repeat", value: <div className="ml-task-detail-v2__date-row"><NativeSelect aria-label="Repeat" value={draft.recurrenceUnit || "none"} onChange={(e) => updateV2Task({ recurrenceUnit: e.target.value as Task["recurrenceUnit"] }, true)}><option value="none">Does not repeat</option><option value="days">Days</option><option value="weeks">Weeks</option><option value="months">Months</option><option value="years">Years</option></NativeSelect>{draft.recurrenceUnit !== "none" && <Input aria-label="Repeat interval" type="number" min={1} max={999} value={draft.recurrenceInterval || 1} onChange={(e) => updateV2Task({ recurrenceInterval: Math.max(1, Number(e.target.value) || 1) }, true)} />}</div> },
-                ...customFields.filter((f) => f.projectId === draft.projectId).map((field) => ({ id: field.id, label: field.name, value: field.type === "Choice" ? <NativeSelect aria-label={field.name} value={draft.customValues[field.id] || ""} onChange={(e) => updateV2Task({ customValues: { ...draft.customValues, [field.id]: e.target.value } }, true)}><option value="">None</option>{field.options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}</NativeSelect> : <Input aria-label={field.name} type={field.type === "Date" ? "date" : field.type === "Number" ? "number" : "text"} maxLength={field.type === "Text" ? 5000 : undefined} value={draft.customValues[field.id] || ""} onChange={(e) => updateV2Task({ customValues: { ...draft.customValues, [field.id]: e.target.value } })} /> })),
+                ...customFields.filter((f) => f.projectId === draft.projectId).map((field) => ({ id: field.id, label: field.name, value: (field.type === "MultiSelect" || field.type === "People") ? customFieldControl(field, draft.customValues[field.id] || "", value => updateV2Task({ customValues: { ...draft.customValues, [field.id]: value } }, true)) : field.type === "Choice" ? <ChoiceDropdown label={field.name} value={draft.customValues[field.id] || ""}
+                  options={field.options} displayStyle={field.displayStyle || "text"} disabled={busy}
+                  onChange={value => updateV2Task({ customValues: { ...draft.customValues, [field.id]: value } }, true)}
+                  onEdit={() => editField(field)} /> : <Input aria-label={field.name} type={field.type === "Date" ? "date" : field.type === "Number" ? "number" : "text"} maxLength={field.type === "Text" ? 5000 : undefined} value={draft.customValues[field.id] || ""} onChange={(e) => updateV2Task({ customValues: { ...draft.customValues, [field.id]: e.target.value } })} /> })),
               ]}
               description={<Textarea aria-label="Description" rows={5} maxLength={10000} placeholder="Add details, context, or useful links..." value={draft.description} onChange={(e) => updateV2Task({ description: e.target.value })} />}
               subtasks={<div className="ml-task-detail-v2__stack">
@@ -8802,20 +9055,7 @@ onDragOver={(e) => e.preventDefault()}
                     </PopoverTrigger>
                     <PopoverContent align="start" className="color-palette">
                       <strong>Task color</strong>
-                      <div>
-                        {choicePalette.map((color) => (
-                          <button
-                            type="button"
-                            key={color}
-                            aria-label={`Choose ${color}`}
-                            aria-pressed={draft.color === color}
-                            style={{ background: color }}
-                            onClick={() => setDraft({ ...draft, color })}
-                          >
-                            {draft.color === color && <Check size={14} />}
-                          </button>
-                        ))}
-                      </div>
+                      <MyLifeGroupedColorPalette selected={draft.color} label="Task color" onSelect={color => setDraft({ ...draft, color })} />
                       <button
                         type="button"
                         className="reset-task-color"
@@ -8929,7 +9169,7 @@ onDragOver={(e) => e.preventDefault()}
                   .map((field) => (
                     <label key={field.id}>
                       {field.name}
-                      {field.type === "Choice" ? (
+                      {field.type === "MultiSelect" || field.type === "People" ? customFieldControl(field, draft.customValues[field.id] || "", value => setDraft({ ...draft, customValues: { ...draft.customValues, [field.id]: value } })) : field.type === "Choice" ? (
                         <ChoiceDropdown
                           label={field.name}
                           value={draft.customValues[field.id] || ""}
@@ -9823,6 +10063,32 @@ onDragOver={(e) => e.preventDefault()}
                   </select>
                 </label>
               )}
+              {nativeColumnDraft.columnId === "priority" && (
+                <fieldset className="ml-v2-priority-colors">
+                  <legend>Priority badge and text colors</legend>
+                  {(["Low", "Medium", "High"] as const).map(level => {
+                    const currentColor = nativeColumnDraft.priorityColors?.[level] ||
+                      ({ Low: "#7ed3ab", Medium: "#ffc857", High: "#ff8a8a" } as const)[level];
+                    return <div key={level} className="ml-v2-priority-color-row">
+                      <span>{level}</span>
+                      <ListOptionAppearance options={[{ id: level, label: level, color: currentColor }]}
+                        style={nativeColumnDraft.displayStyle === "badge" ? "badge" : "text"} />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button type="button" className="ml-v2-priority-color-trigger"
+                            aria-label={`Change ${level} color`} style={{ backgroundColor: currentColor }}>
+                            <ChevronDown size={13} />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="color-palette">
+                          <strong>{level} color</strong>
+                          <MyLifeGroupedColorPalette selected={currentColor} label={`${level} priority`} onSelect={color => setNativeColumnDraft({ ...nativeColumnDraft, priorityColors: { ...nativeColumnDraft.priorityColors, [level]: color } })} />
+                        </PopoverContent>
+                      </Popover>
+                    </div>;
+                  })}
+                </fieldset>
+              )}
               {nativeColumnDraft.columnId === "task-progress" && (
                 <label>
                   Task Progress display
@@ -9911,28 +10177,7 @@ onDragOver={(e) => e.preventDefault()}
                         </PopoverTrigger>
                         <PopoverContent align="start" className="color-palette">
                           <strong>Color</strong>
-                          <div>
-                            {choicePalette.map((color) => (
-                              <button
-                                type="button"
-                                key={color}
-                                aria-label={`Choose ${color}`}
-                                aria-pressed={option.color === color}
-                                style={{ background: color }}
-                                onClick={() =>
-                                  setStatusDraft(
-                                    statusDraft.map((item) =>
-                                      item.id === option.id
-                                        ? { ...item, color }
-                                        : item,
-                                    ),
-                                  )
-                                }
-                              >
-                                {option.color === color && <Check size={14} />}
-                              </button>
-                            ))}
-                          </div>
+                          <MyLifeGroupedColorPalette selected={option.color} label={`${option.label} status`} onSelect={color => setStatusDraft(statusDraft.map(item => item.id === option.id ? { ...item, color } : item))} />
                         </PopoverContent>
                       </Popover>
                       <Input
@@ -10017,7 +10262,7 @@ onDragOver={(e) => e.preventDefault()}
                         ...fieldDraft,
                         type,
                         options:
-                          type === "Choice" && fieldDraft.options.length === 0
+                          (type === "Choice" || type === "MultiSelect") && fieldDraft.options.length === 0
                             ? [
                                 {
                                   id: crypto.randomUUID(),
@@ -10032,11 +10277,54 @@ onDragOver={(e) => e.preventDefault()}
                     <option>Text</option>
                     <option>Number</option>
                     <option>Date</option>
-                    <option>Choice</option>
+                    <option value="Choice">Single Select</option>
+                    <option value="MultiSelect">Multi Select</option>
+                    <option value="People">People</option>
                   </NativeSelect>
                 </label>
               </div>
-              {fieldDraft.type === "Choice" && (
+              <label className="ml-v2-field-description">
+                Description (optional)
+                <Textarea maxLength={500} rows={2} placeholder="What is this field for?"
+                  value={fieldDraft.description || ""}
+                  onChange={event => setFieldDraft({ ...fieldDraft, description: event.target.value })} />
+              </label>
+              {fieldDraft.type === "Number" && (
+                <fieldset className="ml-v2-number-settings">
+                  <legend>Number formatting</legend>
+                  <div className="form-grid">
+                    <label>Format
+                      <NativeSelect value={fieldDraft.numberFormat || "Number"}
+                        onChange={event => setFieldDraft({ ...fieldDraft, numberFormat: event.target.value as CustomField["numberFormat"] })}>
+                        {["Number", "Percentage", "Currency", "Custom Label", "None"].map(format => <option key={format}>{format}</option>)}
+                      </NativeSelect>
+                    </label>
+                    <label>Decimal places (0–6)
+                      <NativeSelect value={String(fieldDraft.decimals ?? 2)} onChange={event => setFieldDraft({ ...fieldDraft, decimals: Number(event.target.value) })}>
+                        {[0,1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
+                      </NativeSelect>
+                    </label>
+                    {fieldDraft.numberFormat === "Currency" && <label>Currency code
+                      <Input maxLength={3} value={fieldDraft.currency || "CAD"} onChange={event => setFieldDraft({ ...fieldDraft, currency: event.target.value.toUpperCase() })} />
+                    </label>}
+                    {fieldDraft.numberFormat === "Custom Label" && <label>Custom label
+                      <Input maxLength={40} value={fieldDraft.customLabel || ""} onChange={event => setFieldDraft({ ...fieldDraft, customLabel: event.target.value })} />
+                    </label>}
+                  </div>
+                  <p className="ml-v2-number-preview">Example: {formatCustomNumber("1234.5", fieldDraft)}</p>
+                </fieldset>
+              )}
+              {(fieldDraft.type === "Choice" || fieldDraft.type === "MultiSelect") && (
+                <label className="ml-v2-display-style-setting">
+                  Display in List View
+                  <NativeSelect value={fieldDraft.displayStyle || "text"}
+                    onChange={event => setFieldDraft({ ...fieldDraft, displayStyle: event.target.value as "text" | "badge" })}>
+                    <option value="text">Colored dot + text</option>
+                    <option value="badge">Colored badge</option>
+                  </NativeSelect>
+                </label>
+              )}
+              {(fieldDraft.type === "Choice" || fieldDraft.type === "MultiSelect") && (
                 <fieldset className="option-editor">
                   <legend>Options</legend>
                   <p>Choose a name and color for each item in this list.</p>
@@ -10060,31 +10348,7 @@ onDragOver={(e) => e.preventDefault()}
                             className="color-palette"
                           >
                             <strong>Color</strong>
-                            <div>
-                              {choicePalette.map((color) => (
-                                <button
-                                  type="button"
-                                  key={color}
-                                  aria-label={`Choose ${color}`}
-                                  aria-pressed={option.color === color}
-                                  style={{ background: color }}
-                                  onClick={() =>
-                                    setFieldDraft({
-                                      ...fieldDraft,
-                                      options: fieldDraft.options.map((item) =>
-                                        item.id === option.id
-                                          ? { ...item, color }
-                                          : item,
-                                      ),
-                                    })
-                                  }
-                                >
-                                  {option.color === color && (
-                                    <Check size={14} />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
+                            <MyLifeGroupedColorPalette selected={option.color} label={`${option.label} option`} onSelect={color => setFieldDraft({ ...fieldDraft, options: fieldDraft.options.map(item => item.id === option.id ? { ...item, color } : item) })} />
                           </PopoverContent>
                         </Popover>
                         <Input
@@ -10185,7 +10449,7 @@ onDragOver={(e) => e.preventDefault()}
                   disabled={
                     busy ||
                     !fieldDraft.name.trim() ||
-                    (fieldDraft.type === "Choice" &&
+                    ((fieldDraft.type === "Choice" || fieldDraft.type === "MultiSelect") &&
                       !fieldDraft.options.some((option) => option.label.trim()))
                   }
                 >
