@@ -7,20 +7,20 @@
  */
 
 .ml-v2 {
-  --ml-v2-bg: #f6f7fb;
-  --ml-v2-surface: rgba(255, 255, 255, 0.88);
-  --ml-v2-surface-solid: #ffffff;
-  --ml-v2-surface-soft: #f9faff;
+  --ml-v2-bg: var(--ml-color-background);
+  --ml-v2-surface: var(--ml-color-surface);
+  --ml-v2-surface-solid: var(--ml-color-surface);
+  --ml-v2-surface-soft: var(--ml-color-surface-soft);
 
-  --ml-v2-text: #202331;
-  --ml-v2-text-soft: #73788c;
+  --ml-v2-text: var(--ml-color-text);
+  --ml-v2-text-soft: var(--ml-color-text-muted);
   --ml-v2-text-faint: #9ca1b2;
 
-  --ml-v2-border: rgba(34, 39, 57, 0.08);
-  --ml-v2-border-strong: rgba(34, 39, 57, 0.13);
+  --ml-v2-border: var(--ml-color-border);
+  --ml-v2-border-strong: var(--ml-button-hover-border);
 
-  --ml-v2-accent: #7c6ff2;
-  --ml-v2-accent-soft: #eeeaff;
+  --ml-v2-accent: var(--ml-color-accent);
+  --ml-v2-accent-soft: var(--ml-button-hover-bg);
   --ml-v2-lavender: #a58cf6;
   --ml-v2-blue: #79a9f7;
   --ml-v2-green: #73c9a3;
@@ -51,8 +51,8 @@
 .ml-v2 {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 78% 2%, rgba(124, 111, 242, 0.07), transparent 28rem),
-    radial-gradient(circle at 20% 100%, rgba(245, 139, 181, 0.05), transparent 30rem),
+    radial-gradient(circle at 78% 2%, rgba(118, 86, 219, 0.07), transparent 28rem),
+    radial-gradient(circle at 20% 100%, rgba(165, 140, 246, 0.05), transparent 30rem),
     var(--ml-v2-bg);
   color: var(--ml-v2-text);
 }
@@ -3502,10 +3502,11 @@
     border-color 160ms ease;
 }
 
+/* STEP 18F.8F.75A.222 - Approved Calendar hover tokens. */
 .ml-v2 .calendar-heading .calendar-view-switcher button:not(:disabled):hover {
-  background: #eee8ff;
-  color: #6545b5;
-  border-color: #c9b9f5;
+  background: var(--ml-button-hover-bg);
+  color: var(--ml-button-hover-text);
+  border-color: var(--ml-button-hover-border);
 }
 
 .ml-v2 .calendar-heading .calendar-view-switcher button[data-variant="default"],
@@ -3530,9 +3531,9 @@
 }
 
 .ml-v2 .calendar-heading > div > button:not(:disabled):hover {
-  border-color: #c9b9f5;
-  background: #eee8ff;
-  color: #6545b5;
+  border-color: var(--ml-button-hover-border);
+  background: var(--ml-button-hover-bg);
+  color: var(--ml-button-hover-text);
 }
 
 .ml-v2 .calendar-heading > div > button:not(:disabled):active {
@@ -5020,11 +5021,9 @@
   color: #ffffff;
 }
 
-/* Preserve project icon colors when inactive. */
-.ml-v2-sidebar .ml-v2-project-navigation
-.ml-v2-nav-item:not(.is-active) .ml-v2-nav-icon {
-  color: inherit;
-}
+/* STEP 18F.8F.75A.202 - Preserve each project's saved icon color.
+   The sidebar supplies the color directly on the icon element.
+   Do not replace that color with the navigation text color. */
 
 .ml-v2-sidebar .ml-v2-nav-item.is-active .ml-v2-nav-badge {
   background: rgba(255, 255, 255, 0.22);
@@ -9674,21 +9673,21 @@
    ========================================================== */
 
 .ml-v2 .ml-v2-sidebar {
-  --ml-sidebar-white: #fffdfb;
-  --ml-sidebar-lavender: #f0eaff;
-  --ml-sidebar-purple: #7954e8;
-  --ml-sidebar-text: #665b80;
-  --ml-sidebar-hover-text: #6545b5;
-  background: #fffaf4;
-  border-right-color: #eae1ed;
+  --ml-sidebar-white: var(--ml-color-surface);
+  --ml-sidebar-lavender: var(--ml-button-hover-bg);
+  --ml-sidebar-purple: var(--ml-color-accent);
+  --ml-sidebar-text: var(--ml-color-text);
+  --ml-sidebar-hover-text: var(--ml-color-accent);
+  background: var(--ml-color-surface);
+  border-right-color: var(--ml-color-border);
 }
 
 .ml-v2 .ml-v2-sidebar .ml-v2-nav-item:not(.is-active) {
-  background: rgba(255, 255, 255, 0.76);
+  background: var(--ml-color-surface);
 }
 
 .ml-v2 .ml-v2-sidebar .ml-v2-nav-item.is-active {
-  background: #7954e8;
+  background: var(--ml-color-accent);
   color: #ffffff;
 }
 
@@ -9711,7 +9710,8 @@
 
 @media (hover: hover) {
   .ml-v2 .ml-v2-sidebar .ml-v2-nav-item:not(.is-active):not(:disabled):hover {
-    background: #f0eaff;
+    background: var(--ml-button-hover-bg);
+    color: var(--ml-color-accent);
   }
 }
 
@@ -11252,6 +11252,8 @@ html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
   transition: background-color 160ms ease, border-color 160ms ease,
               color 160ms ease, box-shadow 160ms ease;
 }
+/* STEP 18F.8F.75A.219 - Official Light Mode Dashboard action hover.
+   Keep selected navigation controls solid purple. */
 html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
   .ml-v2-today-navigation > .ml-v2-standard-button,
   .ml-v2-weekly-calendar-heading nav > button,
@@ -11261,10 +11263,10 @@ html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
   .ml-v2-project-progress-add,
   .ml-v2-dashboard-project-todo-select,
   .ml-v2-dashboard-note-link.ml-v2-standard-button
-):hover:not(:disabled) {
-  background: #f1ecff !important;
-  border-color: #a98bf1 !important;
-  color: #5836b4 !important;
+):hover:not(:disabled):not([aria-pressed="true"]):not(.is-active) {
+  background: var(--ml-button-hover-bg) !important;
+  border-color: var(--ml-button-hover-border) !important;
+  color: var(--ml-button-hover-text) !important;
 }
 html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
   .ml-v2-today-navigation > .ml-v2-standard-button,
@@ -11574,6 +11576,24 @@ html[data-ml-theme="dark"] [data-slot="popover-content"].ml-v2-list-column-popov
   color: #aaa5bd !important;
 }
 
+
+/* STEP 18F.8F.75A.198 - Dark List header active interaction.
+   Hover remains #343b58; pressed/dragging uses the approved #626d9a.
+   Scoped to List headers only, preserving Light Mode and sidebar. */
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+.list-head .draggable-column-head.is-dragging,
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+.list-head .draggable-column-head:active {
+  background-color: #626d9a !important;
+  color: #ffffff !important;
+  border-color: #626d9a !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
+.list-head .draggable-column-head:is(.is-dragging,:active) :is(span,small,button,svg) {
+  color: #ffffff !important;
+}
 
 /* STEP 18F.8F.26L - Dark List column header hover */
 /* Scoped to List View; preserves drag and resize behavior. */
@@ -12130,13 +12150,34 @@ html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.list-subtasks-expa
  background:#f9faff !important;color:#202331 !important;border-color:#dfe3ec !important;
 }
 html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.list-head,.list-section-head,.list-row) :is(strong,label) {
- color:#202331;
+ color:var(--ml-color-text);
 }
-html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(.draggable-column-head,.list-name button) {
- color:#202331;
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-head :is(.draggable-column-head,.custom-column-head,.add-column-head) {
+ color:var(--ml-color-text);
 }
-html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .draggable-column-head:is(:hover,:focus-visible) {
- background:#f9faff !important;color:#7656db !important;
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-head :is(.draggable-column-head,.custom-column-head,.add-column-head) :is(span,small) {
+ color:inherit;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-name button {
+ color:var(--ml-color-text);
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-head .draggable-column-head:is(:hover,:focus-within):not(.is-dragging) {
+ background-color:var(--ml-button-hover-bg) !important;
+ color:var(--ml-color-accent) !important;
+ border-color:var(--ml-button-hover-border) !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-head .draggable-column-head:is(:hover,:focus-within):not(.is-dragging) :is(span,small) {
+ color:inherit;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-head .draggable-column-head.is-dragging {
+ background-color:var(--ml-color-accent) !important;
+ color:#ffffff !important;
+ border-color:var(--ml-color-accent) !important;
+ opacity:1 !important;
+ box-shadow:0 6px 16px rgba(70,50,135,.18) !important;
+}
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap .list-head .draggable-column-head.is-dragging :is(span,small,button,svg) {
+ color:#ffffff !important;
 }
 html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(input:not([type="checkbox"]),select,textarea) {
  background:#fff;color:#202331;border-color:#dfe3ec;color-scheme:light;
@@ -12237,7 +12278,6 @@ html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap :is(
   .section-add-task,
   .list-bottom-actions button,
   .list-section-head button,
-  .draggable-column-head,
   .list-name button,
   .list-row button:not(.choice-pill):not(.priority-pill),
   .list-subtask-grid-row button,
@@ -12295,12 +12335,8 @@ html[data-ml-theme="dark"] .ml-v2-shell .list-view-wrap
   color: #e8eaf5 !important;
 }
 /* Match the same interaction rules in Light Mode. */
+/* STEP 18F.8F.75A.215 - Preserve field and task interactions. */
 html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(
-  .ml-v2-standard-button:not([aria-pressed="true"]),
-  .section-add-task,
-  .list-bottom-actions button,
-  .list-section-head button,
-  .draggable-column-head,
   .list-name button,
   .list-row button:not(.choice-pill):not(.priority-pill),
   .list-subtask-grid-row button,
@@ -12310,6 +12346,19 @@ html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(
   background-color: #f9faff !important;
   color: #202331 !important;
   border-color: #dfe3ec !important;
+  box-shadow: none !important;
+}
+
+/* Standard List action buttons use the approved Light Mode tokens. */
+html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap :is(
+  .ml-v2-standard-button:not([aria-pressed="true"]),
+  .section-add-task,
+  .list-bottom-actions button:not([aria-pressed="true"]):not(.choice-pill):not(.priority-pill),
+  .list-section-head button:not([aria-pressed="true"]):not(.choice-pill):not(.priority-pill)
+):is(:hover,:focus-visible) {
+  background-color: var(--ml-button-hover-bg) !important;
+  color: var(--ml-button-hover-text) !important;
+  border-color: var(--ml-button-hover-border) !important;
   box-shadow: none !important;
 }
 html[data-ml-theme="light"] .ml-v2-shell .list-view-wrap
@@ -12713,4 +12762,819 @@ html[data-ml-theme="dark"] .ml-v2-task-detail-panel--preview {
 .ml-v2-task-detail-panel--preview .ml-task-detail-v2__content,
 .ml-v2-task-detail-panel--preview .ml-task-detail-v2__body {
   background-color: transparent !important;
+}
+
+
+/* STEP 18F.8F.75A.226 - Calendar Dark Mode surfaces
+   STEP 18F.8F.75A.229 - Approved navy palette alignment
+   Official existing theme tokens only.
+   Standalone Calendar surfaces and text, not task/event cards,
+   user-selected colors, date selection, or drag/drop indicators.
+   Light Mode remains unchanged. */
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-wrap {
+  background: #20243b;
+  border-color: #626d9a;
+  color: var(--ml-color-text);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading {
+  background: #20243b;
+  border-bottom-color: #626d9a;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading h2 {
+  color: var(--ml-color-text);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading .calendar-view-switcher {
+  background: #292e46;
+  border-color: #626d9a;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading
+.calendar-view-switcher button:not([data-variant="default"]),
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading > div > button {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading
+.calendar-view-switcher button:not([data-variant="default"]):not(:disabled):hover,
+html[data-ml-theme="dark"] .ml-v2 .calendar-heading > div > button:not(:disabled):hover {
+  background: #343b58;
+  border-color: #8e9bc6;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-grid {
+  background: #20243b;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .weekday {
+  background: #292e46;
+  border-color: #626d9a;
+  color: var(--ml-color-text-muted);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day {
+  background: #20243b;
+  border-color: #626d9a;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day:hover {
+  background: #292e46;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day.other-month {
+  background: #171923;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-day > span:not(.today),
+html[data-ml-theme="dark"] .ml-v2 .calendar-day.other-month > span {
+  color: var(--ml-color-text-muted);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline {
+  background: #20243b;
+  border-color: #626d9a;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-header,
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-time-header,
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-date-header,
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-hours {
+  background: #292e46;
+  border-color: #626d9a;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-date-header,
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-hour-label {
+  color: var(--ml-color-text-muted);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-date-header strong:not(.today) {
+  color: var(--ml-color-text);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-hour-label {
+  border-bottom-color: #626d9a;
+}
+
+/* STEP 18F.8F.75A.233 - Dark Mode timeline divisions.
+   Four quarter-hour segments per hour; preserve navy surfaces. */
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-day {
+  background-color: #20243b;
+  background-image: linear-gradient(
+    to bottom,
+    transparent calc(25% - 1px),
+    #343b58 calc(25% - 1px),
+    #343b58 25%,
+    transparent 25%,
+    transparent calc(50% - 1px),
+    #626d9a calc(50% - 1px),
+    #626d9a 50%,
+    transparent 50%,
+    transparent calc(75% - 1px),
+    #343b58 calc(75% - 1px),
+    #343b58 75%,
+    transparent 75%
+  );
+  background-size: 100% 64px;
+  border-right-color: #626d9a;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-day:hover {
+  background-color: #292e46;
+}
+
+
+/* STEP 18F.8F.75A.231 - Approved Dark Mode today column.
+   Applies only to the current-day timeline column.
+   Preserve purple date badge, view buttons, and task colors. */
+html[data-ml-theme="dark"] .ml-v2 .calendar-timeline-day.today {
+  background-color: #292e46;
+}
+
+
+/* STEP 18F.8F.75A.238 - People dialog official Dark Mode buttons.
+   Portal-safe; preserve Light Mode and existing photo functionality. */
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button:hover:not(:disabled) {
+  background: #343b58;
+  border-color: #8e9bc6;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog .ml-v2-standard-button:active:not(:disabled) {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+}
+
+
+/* STEP 18F.8F.75A.242 - People photo controls and SMS alignment.
+   Shared photo dimensions, official Light/Dark palette, no underline.
+   Preserve native file input, checkbox behavior, and People records. */
+
+.ml-v2-people-dialog .ml-person-photo-actions
+:is(.ml-person-photo-browse, .ml-person-photo-remove).ml-v2-standard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 132px;
+  min-height: 36px;
+  padding: 8px 10px;
+  margin: 0;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ml-v2-people-dialog .ml-person-photo-actions
+:is(.ml-person-photo-browse, .ml-person-photo-remove).ml-v2-standard-button:hover {
+  text-decoration: none;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2-people-dialog
+.ml-person-photo-actions
+:is(.ml-person-photo-browse, .ml-person-photo-remove).ml-v2-standard-button {
+  background: #ffffff;
+  border-color: #ddd6f0;
+  color: #665b80;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2-people-dialog
+.ml-person-photo-actions
+:is(.ml-person-photo-browse, .ml-person-photo-remove).ml-v2-standard-button:hover {
+  background: #eee8ff;
+  border-color: #c9b9f5;
+  color: #6545b5;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-actions
+:is(.ml-person-photo-browse, .ml-person-photo-remove).ml-v2-standard-button {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2-people-dialog
+.ml-person-photo-actions
+:is(.ml-person-photo-browse, .ml-person-photo-remove).ml-v2-standard-button:hover {
+  background: #343b58;
+  border-color: #8e9bc6;
+  color: #ffffff;
+}
+
+.ml-v2-people-dialog .editor-form label.checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+}
+
+.ml-v2-people-dialog .editor-form label.checkbox-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #7656db;
+}
+
+
+/* STEP 18F.8F.75A.244 - People footer official Light Mode hover.
+   Match photo button hover without changing Dark Mode or active states. */
+html:not([data-ml-theme="dark"]) .ml-v2-people-dialog
+.editor-footer .ml-v2-standard-button:hover:not(:disabled):not(:active) {
+  background: #eee8ff !important;
+  border-color: #c9b9f5 !important;
+  color: #6545b5 !important;
+  text-decoration: none !important;
+}
+
+
+/* STEP 18F.8F.75A.246 - People photo controls pressed state.
+   Match footer buttons in Light and Dark Mode.
+   Keep hover, focus, file input, and SMS behavior unchanged. */
+html .ml-v2-people-dialog .ml-person-photo-actions
+:is(.ml-person-photo-browse, .ml-person-photo-remove).ml-v2-standard-button:active {
+  background: #7656db !important;
+  border-color: #7656db !important;
+  color: #ffffff !important;
+  text-decoration: none !important;
+}
+
+/* STEP 18F.8F.75A.250 - Notes official Dark Mode.
+   Reuse the approved V2 navy/purple theme and preserve Light Mode,
+   Notes functionality, wallpaper, and user-selected content. */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-workspace {
+  color: var(--ml-v2-text);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folders,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-main {
+  background: #20243b;
+  border-color: #454b67;
+  color: #e8eaf5;
+  box-shadow: none;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #c9cde3;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search input,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-title-input,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-content-input {
+  background: transparent;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search input::placeholder,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-title-input::placeholder,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-content-input::placeholder {
+  color: #aeb5d0;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-title-input {
+  border-bottom-color: #454b67;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list {
+  border-color: #454b67;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item {
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item:hover:not(.is-selected) {
+  background: #292e46;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item.is-selected {
+  background: #343b58;
+  border-color: #626d9a;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item span,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-muted,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-empty p {
+  color: #b8bfd8;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-empty-icon {
+  background: #343b58;
+  color: #c4b5fd;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-editor-top {
+  color: #c4b5fd;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-editor-top button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-secondary-button,
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-editor-top button:hover:not(:disabled),
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-secondary-button:hover:not(:disabled),
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button:hover:not(:disabled) {
+  background: #343b58;
+  border-color: #8e9bc6;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-move-label select {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list .ml-v2-notes-folder-entry {
+  background: #20243b;
+  color: #c9cde3;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list .ml-v2-notes-folder-entry:not(.is-active):hover {
+  background: #343b58;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list .ml-v2-notes-folder-entry.is-active {
+  background: #343b58;
+  border-color: #626d9a;
+  color: #d6caff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-main-actions .ml-v2-add-button {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+  box-shadow: none;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-main-actions .ml-v2-add-button:not(:disabled):hover {
+  background: #343b58;
+  border-color: #8e9bc6;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+/* STEP 18F.8F.75A.253 - Notes Dark Mode interactions.
+   Match the approved Task Editor hover/focus/pressed behavior.
+   Scope to Notes only; preserve Light Mode and saved content. */
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search {
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search:hover {
+  border-color: #a78bfa;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search:focus-within {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, .55);
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-search input {
+  outline: none;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list
+.ml-v2-notes-folder-entry {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list
+.ml-v2-notes-folder-entry:hover {
+  border-color: #8e9bc6;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list
+.ml-v2-notes-folder-entry:active {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folder-list
+.ml-v2-notes-folder-entry:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item {
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item:hover {
+  border-color: #8e9bc6;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item:active {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-list-item:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-workspace
+:is(
+  .ml-v2-add-button,
+  .ml-v2-notes-secondary-button,
+  .ml-v2-icon-button,
+  .ml-v2-notes-editor-top button
+):active:not(:disabled) {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-workspace
+:is(
+  .ml-v2-add-button,
+  .ml-v2-notes-secondary-button,
+  .ml-v2-icon-button,
+  .ml-v2-notes-editor-top button
+):focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+:is(.ml-v2-notes-title-input, .ml-v2-notes-content-input) {
+  border-radius: 4px;
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+:is(.ml-v2-notes-title-input, .ml-v2-notes-content-input):hover {
+  box-shadow: inset 0 0 0 1px #8e9bc6;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+:is(.ml-v2-notes-title-input, .ml-v2-notes-content-input):focus {
+  box-shadow: inset 0 0 0 2px #a78bfa;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-move-label select:hover {
+  border-color: #a78bfa;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-move-label select:focus-visible {
+  border-color: #a78bfa;
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+/* STEP 18F.8F.75A.255 - Notes Dark Mode selected folder.
+   Match approved purple selection styling on first state update.
+   Preserve folder navigation, autosave, and Light Mode. */
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folder-list .ml-v2-notes-folder-entry.is-active,
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folder-list .ml-v2-notes-folder-entry.is-active:hover,
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folder-list .ml-v2-notes-folder-entry.is-active:focus {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folder-list .ml-v2-notes-folder-entry.is-active svg,
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folder-list .ml-v2-notes-folder-entry.is-active span {
+  color: #ffffff;
+}
+
+/* STEP 18F.8F.75A.257 - Notes search and folder + button.
+   Consistent Light/Dark hover, focus and pressed states.
+   Scope to Notes; preserve keyboard accessibility and saved data. */
+
+/* Search field - Light Mode */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-notes-search {
+  background: #ffffff;
+  border-color: #ddd6f0;
+  color: #665b80;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-notes-search:hover {
+  border-color: #a78bfa;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-notes-search:focus-within {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167,139,250,.40);
+}
+
+/* Search field - both themes */
+.ml-v2 .ml-v2-notes-search input {
+  outline: none;
+}
+
+.ml-v2 .ml-v2-notes-search:focus-within input {
+  outline: none;
+}
+
+/* Folder + button - shared geometry and motion */
+.ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 14px;
+  background-image: none;
+  box-shadow: none;
+  transform: none;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button:hover:not(:disabled),
+.ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Folder + button - Light Mode */
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-panel-heading .ml-v2-icon-button {
+  background: #ffffff;
+  border-color: #ddd6f0;
+  color: #665b80;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-panel-heading .ml-v2-icon-button:hover:not(:disabled):not(:active) {
+  background: #eee8ff;
+  border-color: #c9b9f5;
+  color: #6545b5;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-panel-heading .ml-v2-icon-button:active:not(:disabled) {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+}
+
+/* Folder + button - Dark Mode */
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-panel-heading .ml-v2-icon-button {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-panel-heading .ml-v2-icon-button:hover:not(:disabled):not(:active) {
+  background: #343b58;
+  border-color: #8e9bc6;
+  color: #ffffff;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-panel-heading .ml-v2-icon-button:active:not(:disabled) {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+}
+
+/* Preserve white + icon while pressed in both themes */
+.ml-v2 .ml-v2-notes-panel-heading
+.ml-v2-icon-button:active:not(:disabled) svg {
+  color: #ffffff;
+}
+
+/* Mouse clicks should not leave a permanent focus decoration.
+   Keyboard navigation still receives a visible focus ring. */
+.ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.ml-v2 .ml-v2-notes-panel-heading .ml-v2-icon-button:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+/* STEP 18F.8F.75A.261 - Notes Add Folder form.
+   Official Light/Dark field and button interactions.
+   Preserve inline geometry, folder logic, and disabled behavior. */
+
+/* Shared Add Folder field */
+.ml-v2 .ml-v2-notes-folders
+input[aria-label="Folder name"] {
+  box-sizing: border-box;
+  outline: none;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* Light Mode field */
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"] {
+  background: #ffffff;
+  border-color: #ddd6f0;
+  color: #202331;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"]:hover {
+  border-color: #a78bfa;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"]:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167,139,250,.40);
+}
+
+/* Dark Mode field */
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"] {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"]:hover {
+  border-color: #a78bfa;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"]:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167,139,250,.55);
+}
+
+/* Shared field placeholder */
+.ml-v2 .ml-v2-notes-folders
+input[aria-label="Folder name"]::placeholder {
+  color: #9ca1b2;
+  opacity: 1;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"]::placeholder {
+  color: #b4bbd3;
+}
+
+/* Shared Add Folder button geometry */
+.ml-v2 .ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button) {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  box-shadow: none;
+  transform: none;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+/* Light Mode buttons */
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button) {
+  background: #ffffff;
+  border-color: #ddd6f0;
+  color: #665b80;
+}
+
+html:not([data-ml-theme="dark"]) .ml-v2
+.ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button):hover:not(:disabled):not(:active) {
+  background: #eee8ff;
+  border-color: #c9b9f5;
+  color: #6545b5;
+}
+
+/* Dark Mode buttons */
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button) {
+  background: #292e46;
+  border-color: #626d9a;
+  color: #e8eaf5;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button):hover:not(:disabled):not(:active) {
+  background: #343b58;
+  border-color: #8e9bc6;
+  color: #ffffff;
+}
+
+/* Both themes - pressed and keyboard focus */
+.ml-v2 .ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button):active:not(:disabled) {
+  background: #7656db;
+  border-color: #7656db;
+  color: #ffffff;
+  box-shadow: none;
+  transform: none;
+}
+
+.ml-v2 .ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button):focus:not(:focus-visible) {
+  outline: none;
+}
+
+.ml-v2 .ml-v2-notes-folders form
+:is(.ml-v2-add-button, .ml-v2-notes-secondary-button):focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+/* Preserve existing disabled Create behavior */
+.ml-v2 .ml-v2-notes-folders form
+.ml-v2-add-button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* STEP 18F.8F.75A.264 - Notes Add Folder field border.
+   Inline border removed from JSX; CSS owns border geometry.
+   STEP 261 controls Light/Dark hover and focus colors. */
+
+.ml-v2 .ml-v2-notes-folders
+input[aria-label="Folder name"] {
+  border: 1px solid #ddd6f0;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"] {
+  border-color: #626d9a;
+}
+
+/* STEP 18F.8F.75A.267 - Dark Mode Notes Folder Name hover.
+   Dark-only. Preserve approved Light Mode and Notes behavior. */
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"]:hover:not(:focus) {
+  border-color: #a78bfa;
+  box-shadow: none;
+}
+
+html[data-ml-theme="dark"] .ml-v2
+.ml-v2-notes-folders input[aria-label="Folder name"]:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 2px rgba(167, 139, 250, .55);
 }

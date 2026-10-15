@@ -1812,7 +1812,9 @@ html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form legend {
   text-align: left;
 }
 .column-manager > button:not([data-slot="button"]):hover {
-  background: #f3f6ef;
+  background: #f2edff;
+  border-color: #bba4ff;
+  color: #7656db;
 }
 .column-manager > button > span,
 .column-manager > button > small {

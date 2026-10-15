@@ -254,6 +254,7 @@ const defaultFilterLabels = {
   priority: { High: "High", Medium: "Medium", Low: "Low" },
   sort: {
     Default: "Sort: default",
+    "Smart / Urgency": "Smart / Urgency",
     "Due date": "Due date",
     Priority: "Priority",
     Name: "Name",
@@ -1050,6 +1051,7 @@ export async function POST(request: Request) {
     } else if (b.action === "comment") {
       const c = z
         .object({
+          id: z.string().min(1),
           taskId: z.string().min(1),
           body: z.string().trim().min(1).max(4000),
         })
@@ -1066,9 +1068,9 @@ export async function POST(request: Request) {
         );
       await db
         .prepare(
-          "INSERT INTO comments(id,task_id,body,created_at) VALUES(?,?,?,?)",
+          "INSERT INTO comments(id,task_id,body,created_at) VALUES(?,?,?,?) ON CONFLICT(id) DO NOTHING",
         )
-        .bind(crypto.randomUUID(), c.taskId, c.body, now)
+        .bind(c.id, c.taskId, c.body, now)
         .run();
     } else return Response.json({ error: "Unknown action" }, { status: 400 });
     return Response.json({ ok: true });

@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { PeopleProfileHoverCard } from "../components/my-life/people-profile-hover-card";
 import * as React from "react";
 "use client";
@@ -186,6 +187,42 @@ type FilterLabels = {
   priority: { High: string; Medium: string; Low: string };
   sort: { Default: string; "Smart / Urgency": string; "Due date": string; Priority: string; Name: string };
 };
+
+function normalizeFilterLabels(value: unknown): FilterLabels {
+  const defaults = defaultFilterLabels;
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const normalizeGroup = <T extends Record<string, string>>(
+    defaultsGroup: T,
+    candidate: unknown,
+  ): T => {
+    const provided =
+      candidate && typeof candidate === "object" && !Array.isArray(candidate)
+        ? (candidate as Record<string, unknown>)
+        : {};
+
+    return Object.fromEntries(
+      Object.entries(defaultsGroup).map(([key, fallback]) => {
+        const current = provided[key];
+        return [
+          key,
+          typeof current === "string" && current.trim()
+            ? current
+            : fallback,
+        ];
+      }),
+    ) as T;
+  };
+
+  return {
+    priority: normalizeGroup(defaults.priority, source.priority),
+    sort: normalizeGroup(defaults.sort, source.sort),
+  };
+}
+
 type Comment = {
   id: string;
   task_id: string;
@@ -714,6 +751,8 @@ export default function Taskflow() {
   const listColumnDragStartOrderRef = useRef<string[] | null>(null);
   const listColumnDragCurrentOrderRef = useRef<string[] | null>(null);
   const listColumnDragMovedRef = useRef(false);
+  // STEP 212 - Pointer position of the previous column swap.
+  const listColumnLastSwapXRef = useRef<number | null>(null);
   const [listColumnDragging, setListColumnDragging] = useState<string | null>(null);
   const [columnMenuOpen, setColumnMenuOpen] = useState<string | null>(null);
   // STEP 18F.23I.40J-R1 - Default landing page is Overview.
@@ -860,7 +899,7 @@ export default function Taskflow() {
   async function postV2Comment() {
     if (!draft || !comment.trim() || busy) return;
     if (taskTitleAutosave.hasPending() && !(await taskTitleAutosave.flush())) return;
-    if (await mutate({ action: "comment", taskId: draft.id, body: comment.trim() }, "Comment added")) {
+    if (await mutate({ action: "comment", id: crypto.randomUUID(), taskId: draft.id, body: comment.trim() }, "Comment added")) {
       setComment("");
     }
   }
@@ -951,6 +990,25 @@ export default function Taskflow() {
 
   const desktopSyncInProgressRef = useRef(false);
   const desktopSyncRequestedRef = useRef(false);
+  const desktopWorkspaceOperationRef = useRef<Promise<void>>(Promise.resolve());
+
+  async function withDesktopWorkspaceLock<T>(
+    operation: () => Promise<T>,
+  ): Promise<T> {
+    const previous = desktopWorkspaceOperationRef.current;
+    let release!: () => void;
+    const next = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    desktopWorkspaceOperationRef.current = next;
+
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
+  }
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
 
   async function addTaskAttachments(files: FileList | File[]) {
@@ -1338,8 +1396,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   }
 
   async function loadLocalWorkspace() {
-    const db = await Database.load("sqlite:mylife.db");
+    await Database.load("sqlite:mylife.db");
 
+    // Match the row typing used by the original SQL plugin selects.
+    // SQLite value conversion will be verified separately.
     const [
       projects,
       tasks,
@@ -1351,20 +1411,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       taskAttachments,
       taskRecurrenceExceptions,
       workspaceSettings,
-    ] = await Promise.all([
-      db.select<any[]>("SELECT * FROM projects ORDER BY created_at"),
-      db.select<any[]>("SELECT * FROM tasks ORDER BY sort_order, created_at"),
-      db.select<any[]>("SELECT * FROM comments ORDER BY created_at"),
-      db.select<any[]>("SELECT * FROM sections ORDER BY sort_order, created_at"),
-      db.select<any[]>("SELECT * FROM custom_fields ORDER BY created_at"),
-      db.select<any[]>("SELECT id,name,phone,sms_enabled,avatar_data FROM people ORDER BY name COLLATE NOCASE"),
-      db.select<any[]>("SELECT * FROM task_values ORDER BY task_id, field_id"),
-      db.select<any[]>("SELECT * FROM task_attachments ORDER BY created_at"),
-      db.select<any[]>(
-        "SELECT * FROM task_recurrence_exceptions ORDER BY created_at",
-      ),
-      db.select<any[]>("SELECT status_options,filter_labels,list_column_order,list_column_widths,list_column_settings FROM workspace WHERE id='initialized'"),
-    ]);
+    ] = await invoke<any[][]>(
+      "read_sqlite_workspace_snapshot",
+    );
 
     const valuesByTask = new Map<string, Record<string, string>>();
     for (const row of taskValues) {
@@ -1446,9 +1495,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       statusOptions: JSON.parse(
         String(workspaceSettings[0]?.status_options || "[]"),
       ) as ChoiceOption[],
-      filterLabels: JSON.parse(
-        String(workspaceSettings[0]?.filter_labels || "{}"),
-      ) as FilterLabels,
+      filterLabels: normalizeFilterLabels(
+        JSON.parse(String(workspaceSettings[0]?.filter_labels || "{}")),
+      ),
       listColumnOrder: JSON.parse(
         String(workspaceSettings[0]?.list_column_order || "{}"),
       ) as Record<string, string[]>,
@@ -1528,14 +1577,21 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       }
     }
 
-    await db.execute(
+    const taskStatements: Array<{
+      sql: string;
+      values: unknown[];
+    }> = [];
+
+    const queueTaskStatement = async (
+      sql: string,
+      values: unknown[] = [],
+    ): Promise<void> => {
+      taskStatements.push({ sql, values });
+    };
+
+    await queueTaskStatement(
       `INSERT INTO tasks(
-        id,project_id,section_id,title,description,status,color,priority,
-        assignee,due,due_time,end_time,recurrence_unit,recurrence_interval,
-        emoji,font_family,font_size,font_style,font_color,board_font_color,
-        list_font_color,calendar_font_color,overview_font_color,sort_order,
-        subtasks,created_at
-      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        id,project_id,section_id,title,description,status,color,priority,classification,assignee,due,due_time,end_time,recurrence_unit,recurrence_interval,emoji,font_family,font_size,font_style,font_color,board_font_color,list_font_color,calendar_font_color,overview_font_color,sort_order,subtasks,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET
         project_id=excluded.project_id,
         section_id=excluded.section_id,
@@ -1544,6 +1600,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         status=excluded.status,
         color=excluded.color,
         priority=excluded.priority,
+        classification=excluded.classification,
         assignee=excluded.assignee,
         due=excluded.due,
         due_time=excluded.due_time,
@@ -1570,6 +1627,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         t.status,
         t.color,
         t.priority,
+        t.classification ?? "Task",
         t.assignee,
         t.due,
         t.dueTime,
@@ -1591,18 +1649,18 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       ],
     );
 
-    await db.execute("DELETE FROM task_values WHERE task_id=?", [t.id]);
-    await db.execute("DELETE FROM task_attachments WHERE task_id=?", [t.id]);
+    await queueTaskStatement("DELETE FROM task_values WHERE task_id=?", [t.id]);
+    await queueTaskStatement("DELETE FROM task_attachments WHERE task_id=?", [t.id]);
 
     for (const [fieldId, value] of values) {
-      await db.execute(
+      await queueTaskStatement(
         "INSERT INTO task_values(task_id,field_id,value) VALUES(?,?,?)",
         [t.id, fieldId, value],
       );
     }
 
     for (const attachment of t.attachments ?? []) {
-      await db.execute(
+      await queueTaskStatement(
         `INSERT INTO task_attachments(
           id,task_id,name,mime_type,data,created_at
         ) VALUES(?,?,?,?,?,?)`,
@@ -1617,10 +1675,15 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       );
     }
 
-    await db.execute(
+    await queueTaskStatement(
       "INSERT INTO sync_queue(id,payload,created_at,attempts) VALUES(?,?,?,0)",
       [crypto.randomUUID(), JSON.stringify(payload), now],
     );
+
+    await invoke("execute_sqlite_transaction", {
+      statements: taskStatements,
+      requireEmptyQueue: false,
+    });
   }
 
 
@@ -1630,10 +1693,22 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     const action = payload.action as string | undefined;
     const now = new Date().toISOString();
 
+    const mutationStatements: Array<{
+      sql: string;
+      values: unknown[];
+    }> = [];
+
+    const queueMutationStatement = async (
+      sql: string,
+      values: unknown[] = [],
+    ): Promise<void> => {
+      mutationStatements.push({ sql, values });
+    };
+
     if (action === "saveProject") {
       const p = payload.project;
 
-      await db.execute(
+      await queueMutationStatement(
         `INSERT INTO projects(id,name,description,color,sidebar_font_color,icon,created_at)
          VALUES(?,?,?,?,?,?,?)
          ON CONFLICT(id) DO UPDATE SET
@@ -1661,12 +1736,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       );
 
       for (const task of taskRows) {
-        await db.execute("DELETE FROM comments WHERE task_id=?", [task.id]);
-        await db.execute("DELETE FROM task_values WHERE task_id=?", [task.id]);
-        await db.execute("DELETE FROM task_attachments WHERE task_id=?", [task.id]);
+        await queueMutationStatement("DELETE FROM comments WHERE task_id=?", [task.id]);
+        await queueMutationStatement("DELETE FROM task_values WHERE task_id=?", [task.id]);
+        await queueMutationStatement("DELETE FROM task_attachments WHERE task_id=?", [task.id]);
       }
 
-      await db.execute("DELETE FROM tasks WHERE project_id=?", [id]);
+      await queueMutationStatement("DELETE FROM tasks WHERE project_id=?", [id]);
 
       const fieldRows = await db.select<any[]>(
         "SELECT id FROM custom_fields WHERE project_id=?",
@@ -1674,16 +1749,16 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       );
 
       for (const field of fieldRows) {
-        await db.execute("DELETE FROM task_values WHERE field_id=?", [field.id]);
+        await queueMutationStatement("DELETE FROM task_values WHERE field_id=?", [field.id]);
       }
 
-      await db.execute("DELETE FROM custom_fields WHERE project_id=?", [id]);
-      await db.execute("DELETE FROM sections WHERE project_id=?", [id]);
-      await db.execute("DELETE FROM projects WHERE id=?", [id]);
+      await queueMutationStatement("DELETE FROM custom_fields WHERE project_id=?", [id]);
+      await queueMutationStatement("DELETE FROM sections WHERE project_id=?", [id]);
+      await queueMutationStatement("DELETE FROM projects WHERE id=?", [id]);
     } else if (action === "savePerson") {
       const person = payload.person;
 
-      await db.execute(
+      await queueMutationStatement(
         `INSERT INTO people(id,name,phone,sms_enabled,avatar_data,created_at)
          VALUES(?,?,?,?,?,?)
          ON CONFLICT(id) DO UPDATE SET
@@ -1701,7 +1776,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         ],
       );
     } else if (action === "deletePerson") {
-      await db.execute("DELETE FROM people WHERE id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM people WHERE id=?", [payload.id]);
     } else if (action === "saveSection") {
       const s = payload.section;
 
@@ -1714,7 +1789,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         throw new Error("Project no longer exists.");
       }
 
-      await db.execute(
+      await queueMutationStatement(
         `INSERT INTO sections(id,project_id,name,sort_order,created_at)
          VALUES(?,?,?,?,?)
          ON CONFLICT(id) DO UPDATE SET
@@ -1724,14 +1799,14 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       );
     } else if (action === "reorderSections") {
       for (let index = 0; index < payload.ids.length; index += 1) {
-        await db.execute(
+        await queueMutationStatement(
           "UPDATE sections SET sort_order=? WHERE id=? AND project_id=?",
           [index, payload.ids[index], payload.projectId],
         );
       }
     } else if (action === "reorderListTasks") {
       for (const item of payload.items) {
-        await db.execute(
+        await queueMutationStatement(
           "UPDATE tasks SET section_id=?,sort_order=? WHERE id=? AND project_id=?",
           [item.sectionId, item.sortOrder, item.id, payload.projectId],
         );
@@ -1769,7 +1844,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       });
 
       for (const item of payload.items) {
-        await db.execute(
+        await queueMutationStatement(
           `UPDATE tasks
            SET section_id=?,sort_order=?,status=?
            WHERE id=? AND project_id=?`,
@@ -1787,7 +1862,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         for (const option of choiceMatches) {
           if (option.labelKey !== sectionName) continue;
 
-          await db.execute(
+          await queueMutationStatement(
             `INSERT INTO task_values(task_id,field_id,value)
              VALUES(?,?,?)
              ON CONFLICT(task_id,field_id)
@@ -1797,10 +1872,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         }
       }
     } else if (action === "deleteSection") {
-      await db.execute("UPDATE tasks SET section_id='' WHERE section_id=?", [
+      await queueMutationStatement("UPDATE tasks SET section_id='' WHERE section_id=?", [
         payload.id,
       ]);
-      await db.execute("DELETE FROM sections WHERE id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM sections WHERE id=?", [payload.id]);
     } else if (action === "saveCustomField") {
       const f = payload.field;
 
@@ -1831,7 +1906,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       const options =
         f.type === "Choice" || f.type === "MultiSelect" ? normalizeOptions(f.options) : [];
 
-      await db.execute(
+      await queueMutationStatement(
         `INSERT INTO custom_fields(
            id,project_id,name,type,options,created_at
          )
@@ -1851,41 +1926,41 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       );
 
       for (const option of oldOptions) {
-        await db.execute(
+        await queueMutationStatement(
           "UPDATE task_values SET value=? WHERE field_id=? AND value=?",
           [option.id, f.id, option.label],
         );
       }
     } else if (action === "deleteCustomField") {
-      await db.execute("DELETE FROM task_values WHERE field_id=?", [payload.id]);
-      await db.execute("DELETE FROM custom_fields WHERE id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM task_values WHERE field_id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM custom_fields WHERE id=?", [payload.id]);
     } else if (action === "saveStatusOptions") {
-      await db.execute(
+      await queueMutationStatement(
         "UPDATE workspace SET status_options=? WHERE id='initialized'",
         [JSON.stringify(payload.options)],
       );
     } else if (action === "saveFilterLabels") {
-      await db.execute(
+      await queueMutationStatement(
         "UPDATE workspace SET filter_labels=? WHERE id='initialized'",
         [JSON.stringify(payload.labels)],
       );
     } else if (action === "saveListColumnOrder") {
-      await db.execute(
+      await queueMutationStatement(
         "UPDATE workspace SET list_column_order=? WHERE id='initialized'",
         [JSON.stringify(payload.order)],
       );
     } else if (action === "saveListColumnWidths") {
-      await db.execute(
+      await queueMutationStatement(
         "UPDATE workspace SET list_column_widths=? WHERE id='initialized'",
         [JSON.stringify(payload.widths)],
       );
     } else if (action === "saveListColumnSettings") {
-      await db.execute(
+      await queueMutationStatement(
         "UPDATE workspace SET list_column_settings=? WHERE id='initialized'",
         [JSON.stringify(payload.settings)],
       );
     } else if (action === "saveRecurrenceException") {
-    await db.execute(
+    await queueMutationStatement(
       `INSERT INTO task_recurrence_exceptions(
         id,task_id,original_date,moved_date,moved_due_time,moved_end_time,created_at
       ) VALUES(?,?,?,?,?,?,?)
@@ -1905,15 +1980,15 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       ],
     );
   } else if (action === "deleteRecurrenceExceptionsForTask") {
-    await db.execute(
+    await queueMutationStatement(
       "DELETE FROM task_recurrence_exceptions WHERE task_id=?",
       [payload.taskId],
     );
   } else if (action === "deleteTask") {
-      await db.execute("DELETE FROM comments WHERE task_id=?", [payload.id]);
-      await db.execute("DELETE FROM task_values WHERE task_id=?", [payload.id]);
-      await db.execute("DELETE FROM task_attachments WHERE task_id=?", [payload.id]);
-      await db.execute("DELETE FROM tasks WHERE id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM comments WHERE task_id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM task_values WHERE task_id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM task_attachments WHERE task_id=?", [payload.id]);
+      await queueMutationStatement("DELETE FROM tasks WHERE id=?", [payload.id]);
     } else if (action === "comment") {
       const taskRows = await db.select<any[]>(
         "SELECT id FROM tasks WHERE id=?",
@@ -1924,18 +1999,23 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         throw new Error("Task no longer exists.");
       }
 
-      await db.execute(
+      await queueMutationStatement(
         "INSERT INTO comments(id,task_id,body,created_at) VALUES(?,?,?,?)",
-        [crypto.randomUUID(), payload.taskId, payload.body, now],
+        [payload.id, payload.taskId, payload.body, now],
       );
     } else {
       return false;
     }
 
-    await db.execute(
+    await queueMutationStatement(
       "INSERT INTO sync_queue(id,payload,created_at,attempts) VALUES(?,?,?,0)",
       [crypto.randomUUID(), JSON.stringify(payload), now],
     );
+
+    await invoke("execute_sqlite_transaction", {
+      statements: mutationStatements,
+      requireEmptyQueue: false,
+    });
 
     return true;
   }
@@ -1974,6 +2054,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     const data = (await r.json()) as {
       projects: any[];
       tasks: any[];
+      taskRecurrenceExceptions: TaskRecurrenceException[];
       comments: any[];
       sections: any[];
       customFields: any[];
@@ -1992,22 +2073,49 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }>>;
     };
 
-    const now = new Date().toISOString();
-      await db.execute("DELETE FROM comments");
-      await db.execute("DELETE FROM task_values");
-      await db.execute("DELETE FROM task_attachments");
-      await db.execute("DELETE FROM tasks");
-      await db.execute("DELETE FROM custom_fields");
-      await db.execute("DELETE FROM sections");
-      await db.execute("DELETE FROM projects");
-      await db.execute("DELETE FROM people");
+    if (
+      !Array.isArray(data.taskRecurrenceExceptions) ||
+      data.taskRecurrenceExceptions.some(
+        (exception) =>
+          !exception ||
+          typeof exception.id !== "string" ||
+          typeof exception.taskId !== "string" ||
+          typeof exception.originalDate !== "string" ||
+          typeof exception.movedDate !== "string",
+      )
+    ) {
+      throw new Error("Invalid recurrence exceptions in server workspace.");
+    }
 
-      await db.execute(
+    const now = new Date().toISOString();
+      const snapshotStatements: Array<{
+        sql: string;
+        values: unknown[];
+      }> = [];
+
+      const queueSnapshotStatement = async (
+        sql: string,
+        values: unknown[] = [],
+      ): Promise<void> => {
+        snapshotStatements.push({ sql, values });
+      };
+
+      await queueSnapshotStatement("DELETE FROM comments");
+      await queueSnapshotStatement("DELETE FROM task_values");
+      await queueSnapshotStatement("DELETE FROM task_attachments");
+      await queueSnapshotStatement("DELETE FROM task_recurrence_exceptions");
+      await queueSnapshotStatement("DELETE FROM tasks");
+      await queueSnapshotStatement("DELETE FROM custom_fields");
+      await queueSnapshotStatement("DELETE FROM sections");
+      await queueSnapshotStatement("DELETE FROM projects");
+      await queueSnapshotStatement("DELETE FROM people");
+
+      await queueSnapshotStatement(
         "INSERT OR IGNORE INTO workspace(id) VALUES('initialized')",
       );
 
       for (const p of data.projects) {
-        await db.execute(
+        await queueSnapshotStatement(
           `INSERT INTO projects(
              id,name,description,color,sidebar_font_color,icon,created_at
            ) VALUES(?,?,?,?,?,?,?)`,
@@ -2024,7 +2132,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       }
 
       for (const s of data.sections) {
-        await db.execute(
+        await queueSnapshotStatement(
           `INSERT INTO sections(
              id,project_id,name,sort_order,created_at
            ) VALUES(?,?,?,?,?)`,
@@ -2042,7 +2150,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         const options =
           f.type === "Choice" || f.type === "MultiSelect" ? normalizeOptions(f.options) : [];
 
-        await db.execute(
+        await queueSnapshotStatement(
           `INSERT INTO custom_fields(
              id,project_id,name,type,options,created_at
            ) VALUES(?,?,?,?,?,?)`,
@@ -2058,14 +2166,9 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       }
 
       for (const t of data.tasks) {
-        await db.execute(
+        await queueSnapshotStatement(
           `INSERT INTO tasks(
-             id,project_id,section_id,title,description,status,color,priority,
-             assignee,due,due_time,end_time,emoji,font_family,font_size,
-             font_style,font_color,board_font_color,list_font_color,
-             calendar_font_color,overview_font_color,sort_order,subtasks,
-             recurrence_unit,recurrence_interval,created_at
-           ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+             id,project_id,section_id,title,description,status,color,priority,classification,assignee,due,due_time,end_time,emoji,font_family,font_size,font_style,font_color,board_font_color,list_font_color,calendar_font_color,overview_font_color,sort_order,subtasks,recurrence_unit,recurrence_interval,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [
             t.id,
             t.projectId,
@@ -2075,6 +2178,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             t.status ?? "To do",
             t.color ?? "#e5e5e5",
             t.priority ?? "Medium",
+            t.classification ?? "Task",
             t.assignee ?? "",
             t.due ?? "",
             t.dueTime ?? "",
@@ -2099,7 +2203,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         for (const [fieldId, value] of Object.entries(
           t.customValues ?? {},
         )) {
-          await db.execute(
+          await queueSnapshotStatement(
             `INSERT INTO task_values(task_id,field_id,value)
              VALUES(?,?,?)`,
             [t.id, fieldId, value],
@@ -2107,7 +2211,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         }
 
         for (const attachment of t.attachments ?? []) {
-          await db.execute(
+          await queueSnapshotStatement(
             `INSERT INTO task_attachments(
               id,task_id,name,mime_type,data,created_at
             ) VALUES(?,?,?,?,?,?)`,
@@ -2123,8 +2227,25 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         }
       }
 
+      for (const exception of data.taskRecurrenceExceptions) {
+        await queueSnapshotStatement(
+          `INSERT INTO task_recurrence_exceptions(
+            id,task_id,original_date,moved_date,moved_due_time,moved_end_time,created_at
+          ) VALUES(?,?,?,?,?,?,?)`,
+          [
+            exception.id,
+            exception.taskId,
+            exception.originalDate,
+            exception.movedDate,
+            exception.movedDueTime ?? null,
+            exception.movedEndTime ?? null,
+            exception.createdAt ?? now,
+          ],
+        );
+      }
+
       for (const c of data.comments) {
-        await db.execute(
+        await queueSnapshotStatement(
           `INSERT INTO comments(id,task_id,body,created_at)
            VALUES(?,?,?,?)`,
           [
@@ -2137,7 +2258,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       }
 
       for (const person of data.people) {
-        await db.execute(
+        await queueSnapshotStatement(
           `INSERT INTO people(
              id,name,phone,sms_enabled,avatar_data,created_at
            ) VALUES(?,?,?,?,?,?)`,
@@ -2152,7 +2273,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         );
       }
 
-      await db.execute(
+      await queueSnapshotStatement(
         `UPDATE workspace
          SET status_options=?,filter_labels=?,list_column_order=?,list_column_widths=?,list_column_settings=?
          WHERE id='initialized'`,
@@ -2164,12 +2285,17 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           JSON.stringify(data.listColumnSettings ?? {}),
         ],
       );
+      await invoke("execute_sqlite_transaction", {
+        statements: snapshotStatements,
+        requireEmptyQueue: true,
+      });
+
     return true;
   }
 
   async function processSyncQueue() {
     const isDesktop = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
-    if (!isDesktop || !navigator.onLine) return;
+    if (!isDesktop || !navigator.onLine) return false;
 
     const db = await Database.load("sqlite:mylife.db");
 
@@ -2195,7 +2321,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
         });
 
         if (r.status === 401) {
-          return;
+          return false;
         }
 
         if (!r.ok) {
@@ -2213,7 +2339,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             [item.id],
           );
 
-          return;
+          return false;
         }
 
         await db.execute("DELETE FROM sync_queue WHERE id=?", [item.id]);
@@ -2225,16 +2351,31 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           [item.id],
         );
 
-        return;
+        return false;
       }
     }
+
+    const remaining = await db.select<Array<{ count: number }>>(
+      "SELECT COUNT(*) AS count FROM sync_queue",
+    );
+
+    if (Number(remaining[0]?.count ?? 0) > 0) {
+      console.warn("Desktop synchronization paused: new local changes are pending.");
+      return false;
+    }
+
+    return true;
   }
 
+  const workspaceRefreshGenerationRef = useRef(0);
+
   async function refresh() {
+    const generation = ++workspaceRefreshGenerationRef.current;
     const isDesktop = "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
 
     if (isDesktop) {
       const d = await loadLocalWorkspace();
+      if (generation !== workspaceRefreshGenerationRef.current) return d;
       setProjects(d.projects);
       setTasks(d.tasks);
       setTaskRecurrenceExceptions(d.taskRecurrenceExceptions ?? []);
@@ -2280,6 +2421,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }>>;
     };
     if (!r.ok) throw new Error(d.error);
+    if (generation !== workspaceRefreshGenerationRef.current) return d;
     setProjects(d.projects);
     setTasks(d.tasks);
     setTaskRecurrenceExceptions(d.taskRecurrenceExceptions ?? []);
@@ -2342,11 +2484,13 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     }
   }
 
+  const desktopSyncSafetyDisabled = process.env.NODE_ENV === "development";
+
   async function syncDesktopWorkspace() {
     const isDesktop =
       "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
 
-    if (!isDesktop || !navigator.onLine) {
+    if (desktopSyncSafetyDisabled || !isDesktop || !navigator.onLine) {
       return;
     }
 
@@ -2361,9 +2505,18 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       do {
         desktopSyncRequestedRef.current = false;
 
-        await processSyncQueue();
-        await downloadServerWorkspaceToLocal();
-        await refresh();
+        const uploadsCompleted = await processSyncQueue();
+        if (!uploadsCompleted) {
+          console.warn("Desktop synchronization paused: pending uploads were not completed.");
+          return;
+        }
+
+        const downloaded = await withDesktopWorkspaceLock(
+          () => downloadServerWorkspaceToLocal(),
+        );
+        if (downloaded) {
+          await refresh();
+        }
       } while (
         desktopSyncRequestedRef.current &&
         navigator.onLine
@@ -2380,6 +2533,11 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
       if (isDesktop) {
         await initialize();
+
+        // During isolated V2 desktop development, use only local data.
+        if (process.env.NODE_ENV === "development") {
+          return;
+        }
 
         if (!navigator.onLine) {
           return;
@@ -2553,7 +2711,6 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       }
     };
 
-    sync();
     window.addEventListener("online", sync);
 
     return () => {
@@ -2574,18 +2731,21 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
     try {
       const action = (payload as { action?: string }).action;
-      const isDesktop = "__TAURI_INTERNALS__" in window;
+      const isDesktop =
+        "__TAURI_INTERNALS__" in window || "__TAURI__" in window;
 
       if (isDesktop) {
         if (action === "saveTask") {
-          await saveTaskLocally(payload);
+          await withDesktopWorkspaceLock(() => saveTaskLocally(payload));
           await refresh();
           setNotice(message);
           void syncDesktopWorkspace();
           return true;
         }
 
-        const handledLocally = await mutateLocally(payload);
+        const handledLocally = await withDesktopWorkspaceLock(
+          () => mutateLocally(payload),
+        );
 
         if (handledLocally) {
           await refresh();
@@ -2593,6 +2753,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           void syncDesktopWorkspace();
           return true;
         }
+
+        throw new Error(
+          `Desktop action "${action ?? "unknown"}" is not supported locally.`,
+        );
       }
 
       const r = await fetch("/api/workspace", {
@@ -2732,8 +2896,8 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   // CM.7F - Native task columns prepared for new project defaults.
   // Activation follows after header and row rendering are implemented.
   const defaultNativeProjectColumns = [
-    "assignee",
     "due-date",
+    "assignee",
     "priority",
     "task-progress",
   ] as const;
@@ -2819,10 +2983,26 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       return;
     }
 
+    // STEP 212 - Prevent repeated swaps caused by the grid moving
+    // underneath a stationary pointer, especially with resized columns.
+    const lastSwapX = listColumnLastSwapXRef.current;
+    const minimumMovement = 24;
+    if (lastSwapX !== null) {
+      const movement = e.clientX - lastSwapX;
+      if (
+        targetIndex > sourceIndex
+          ? movement < minimumMovement
+          : movement > -minimumMovement
+      ) {
+        return;
+      }
+    }
+
     const nextOrder = [...currentOrder];
     const [moved] = nextOrder.splice(sourceIndex, 1);
     nextOrder.splice(targetIndex, 0, moved);
 
+    listColumnLastSwapXRef.current = e.clientX;
     listColumnDragCurrentOrderRef.current = nextOrder;
     listColumnDragMovedRef.current = true;
 
@@ -2840,6 +3020,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     listColumnDragSourceRef.current = null;
     listColumnDragStartOrderRef.current = null;
     listColumnDragCurrentOrderRef.current = null;
+    listColumnLastSwapXRef.current = null;
     setListColumnDragging(null);
 
     if (!project || !source || !startOrder || !finalOrder) return;
@@ -2981,6 +3162,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     listColumnDragStartOrderRef.current = [...orderedListColumnIds];
     listColumnDragCurrentOrderRef.current = [...orderedListColumnIds];
     listColumnDragMovedRef.current = false;
+    listColumnLastSwapXRef.current = e.clientX;
     setListColumnDragging(columnId);
 
     const handleMove = (event: PointerEvent) => {
@@ -9435,6 +9617,7 @@ onDragOver={(e) => e.preventDefault()}
                           await mutate(
                             {
                               action: "comment",
+                              id: crypto.randomUUID(),
                               taskId: draft.id,
                               body: comment,
                             },
@@ -9888,7 +10071,21 @@ onDragOver={(e) => e.preventDefault()}
                       (item) => `field:${item.id}` === columnId,
                     );
 
-              if (columnId !== "task-name" && !field) return null;
+              const nativeLabels: Record<string, string> = {
+                "task-name": "Task name",
+                "due-date": "Due date",
+                assignee: "Assignee",
+                priority: "Priority",
+                "task-progress": "Task Progress",
+              };
+              const isNative = columnId in nativeLabels;
+              if (!isNative && !field) return null;
+              const columnName = field?.name ??
+                (columnId !== "task-name"
+                  ? listColumnSettings[project?.id ?? ""]?.[columnId]?.name
+                  : undefined) ??
+                nativeLabels[columnId] ??
+                columnId;
 
               return (
                 <button
@@ -9922,27 +10119,41 @@ onDragOver={(e) => e.preventDefault()}
                     }
                   }}
                   onClick={() => {
-                    if (field) editField(field);
+                    if (field) {
+                      editField(field);
+                    } else if (
+                      project &&
+                      (columnId === "assignee" ||
+                        columnId === "due-date" ||
+                        columnId === "priority" ||
+                        columnId === "task-progress")
+                    ) {
+                      setColumnsOpen(false);
+                      setNativeColumnDraft({
+                        projectId: project.id,
+                        columnId,
+                        ...listColumnSettings[project.id]?.[columnId],
+                        name: columnName,
+                      });
+                    }
                   }}
                   title={
-                    field
-                      ? `Drag to move or click to edit ${field.name}`
-                      : "Drag to move Task name"
+                    columnId === "task-name"
+                      ? "Drag to move Task name"
+                      : `Drag to move or click to edit ${columnName}`
                   }
                 >
                   <span>
                     <GripVertical size={16} />
                     <strong>
-                      {columnId === "task-name"
-                        ? "Task name"
-                        : field?.name}
+                      {columnName}
                     </strong>
                   </span>
                   <small>
                     {columnId === "task-name"
                       ? "Built-in"
-                      : field?.type}
-                    {field && <ChevronRight size={14} />}
+                      : field?.type ?? "Native"}
+                    {columnId !== "task-name" && <ChevronRight size={14} />}
                   </small>
                 </button>
               );

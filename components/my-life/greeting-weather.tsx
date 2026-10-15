@@ -527,16 +527,24 @@ export function MyLifeGreetingWeather() {
       const darkTheme = greetingDarkWeatherBackground(weather);
       // STEP 18F.8F.25C: Weather and daypart both affect the greeting scene.
       const hour = new Date().getHours();
-      const period = !weather.isDay ? "night" : hour >= 17 ? "evening" : "day";
-      const nightPalette: Record<GreetingWeather["kind"], string> = {
-        sunny: "#202846", cloudy: "#202a40", rainy: "#182a40",
-        snowy: "#28394f", stormy: "#191f37", foggy: "#2c3444", night: "#202846",
-      };
-      const darkImage = period === "night"
-        ? `linear-gradient(125deg, ${nightPalette[weather.kind]}, #343456 60%, #18243d)`
-        : period === "evening"
-          ? `linear-gradient(115deg, #3a355e, ${darkTheme.color} 55%, #7e5875)`
-          : darkTheme.image;
+      const period = hour >= 21 || hour < 5
+        ? "night"
+        : hour >= 17
+          ? "evening"
+          : hour >= 12
+            ? "afternoon"
+            : "morning";
+      // STEP 18F.8F.75A.289 - Real local weather photographs in Dark Mode.
+      // Preserve weather classification, settings and original Light Mode styling.
+      // Clear skies follow local time; precipitation and cloud conditions
+      // retain their own real weather photographs.
+      const photoKind =
+        weather.kind === "sunny" || weather.kind === "night"
+          ? period === "night" ? "night-time" : period
+          : weather.kind;
+      const darkImage =
+        `linear-gradient(90deg, rgba(15,20,36,.68), rgba(15,20,36,.22)), ` +
+        `url("/images/overview-weather/${photoKind}.jpg")`;
       card.dataset.mlOverviewWeather = weather.kind;
       startOverviewRain();
       card.dataset.mlOverviewPeriod = period;
@@ -558,12 +566,43 @@ export function MyLifeGreetingWeather() {
 
     applyGreetingWeatherBackground();
 
+    // STEP 291D: Refresh daypart without waiting for new weather data.
+    // Only reapply when the period actually changes.
+    const refreshDaypart = () => {
+      if (!weather || !dynamicBackgroundEnabled()) return;
+
+      const hour = new Date().getHours();
+      const nextPeriod = hour >= 21 || hour < 5
+        ? "night"
+        : hour >= 17
+          ? "evening"
+          : hour >= 12
+            ? "afternoon"
+            : "morning";
+
+      if (card.dataset.mlOverviewPeriod !== nextPeriod) {
+        applyGreetingWeatherBackground();
+      }
+    };
+
+    const daypartInterval = window.setInterval(refreshDaypart, 30_000);
+
+    const onDaypartVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshDaypart();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onDaypartVisible);
+
     window.addEventListener(
       "my-life-greeting-preferences-change",
       applyGreetingWeatherBackground
     );
 
     return () => {
+      window.clearInterval(daypartInterval);
+      document.removeEventListener("visibilitychange", onDaypartVisible);
       window.removeEventListener(
         "my-life-greeting-preferences-change",
         applyGreetingWeatherBackground

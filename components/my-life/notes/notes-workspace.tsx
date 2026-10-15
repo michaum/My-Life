@@ -580,7 +580,6 @@ export function MyLifeNotesWorkspace({
                   width: "100%",
                   minWidth: 0,
                   padding: "9px 10px",
-                  border: "1px solid #ded6ee",
                   borderRadius: 9,
                 }}
               />

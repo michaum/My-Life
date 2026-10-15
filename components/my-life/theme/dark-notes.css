@@ -100,9 +100,10 @@ html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-empty-icon {
   background: #39314f;
   color: #c6b0ff;
 }
-/* The folder creation input has inline border styling; override only its surface. */
+/* STEP 18F.8F.75A.277 - Notes folder creation field.
+   Preserve Dark Mode surface and text. Border states are
+   controlled by the approved Notes rules in v2.css. */
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-notes-folders form input {
   background: #292f44;
   color: #f0eff9;
-  border-color: #505672 !important;
 }
