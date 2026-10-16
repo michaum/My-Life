@@ -2915,16 +2915,22 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     : [];
 
   const orderedListColumnIds = [
-    ...savedProjectColumnOrder.filter((id) =>
-      availableListColumnIds.includes(id),
+    "task-name",
+    ...savedProjectColumnOrder.filter(
+      (id) => id !== "task-name" && availableListColumnIds.includes(id),
     ),
     ...availableListColumnIds.filter(
-      (id) => !savedProjectColumnOrder.includes(id),
+      (id) => id !== "task-name" && !savedProjectColumnOrder.includes(id),
     ),
   ];
 
   async function moveListColumn(sourceId: string, targetId: string) {
-    if (!project || sourceId === targetId) return;
+    if (
+      !project ||
+      sourceId === targetId ||
+      sourceId === "task-name" ||
+      targetId === "task-name"
+    ) return;
 
     const sourceIndex = orderedListColumnIds.indexOf(sourceId);
     const targetIndex = orderedListColumnIds.indexOf(targetId);
@@ -2967,7 +2973,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       ?.closest<HTMLElement>("[data-list-column-id]");
 
     const target = targetElement?.dataset.listColumnId;
-    if (!target || target === source) return;
+    if (
+      !target ||
+      target === source ||
+      source === "task-name" ||
+      target === "task-name"
+    ) return;
 
     const currentOrder =
       listColumnDragCurrentOrderRef.current ?? [...orderedListColumnIds];
@@ -3143,7 +3154,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     columnId: string,
     e: React.PointerEvent<HTMLElement>,
   ) {
-    if (!project || busy) return;
+    if (!project || busy || columnId === "task-name") return;
 
     // Preserve normal clicks on custom-field header buttons.
     const customFieldHeader = columnId.startsWith("field:");
@@ -6750,7 +6761,7 @@ function smartTextFieldUrl(value: string): string | null {
                               <button
                                 type="button"
                                 className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent disabled:opacity-40"
-                                disabled={!previousId || busy}
+                                disabled={!previousId || previousId === "task-name" || columnId === "task-name" || busy}
                                 onClick={() => {
                                   setColumnMenuOpen(null);
                                   if (previousId) void moveListColumn(columnId, previousId);
@@ -6761,7 +6772,7 @@ function smartTextFieldUrl(value: string): string | null {
                               <button
                                 type="button"
                                 className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent disabled:opacity-40"
-                                disabled={!nextId || busy}
+                                disabled={!nextId || columnId === "task-name" || busy}
                                 onClick={() => {
                                   setColumnMenuOpen(null);
                                   if (nextId) void moveListColumn(columnId, nextId);
@@ -10091,7 +10102,7 @@ onDragOver={(e) => e.preventDefault()}
                 <button
                   key={columnId}
                   className="column-manager-row"
-                  draggable={!!project && !busy}
+                  draggable={!!project && !busy && columnId !== "task-name"}
                   onDragStart={(e) => {
                     e.stopPropagation();
                     e.dataTransfer.effectAllowed = "move";
@@ -10111,7 +10122,11 @@ onDragOver={(e) => e.preventDefault()}
                     const data =
                       e.dataTransfer.getData("text/plain");
 
-                    if (data.startsWith("column:")) {
+                    if (
+                      columnId !== "task-name" &&
+                      data.startsWith("column:") &&
+                      data.slice(7) !== "task-name"
+                    ) {
                       void moveListColumn(
                         data.slice(7),
                         columnId,
@@ -10139,7 +10154,7 @@ onDragOver={(e) => e.preventDefault()}
                   }}
                   title={
                     columnId === "task-name"
-                      ? "Drag to move Task name"
+                      ? "Permanent first column"
                       : `Drag to move or click to edit ${columnName}`
                   }
                 >
