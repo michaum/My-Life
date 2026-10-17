@@ -6,7 +6,8 @@ import { MyLifeGreetingWeather } from "./greeting-weather";
 import { MyLifeGreetingSettings } from "./greeting-settings";
 import { SmartWallpaper } from "./smart-wallpaper";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { initializeMyLifeTheme } from "./theme/theme-controller";
 import { MyLifeSidebar, type MyLifeNavigationItem } from "./sidebar";
 import {
   MyLifeTopBar,
@@ -44,6 +45,7 @@ type MyLifeAppShellProps = {
   onExport?: () => void;
   onAdminClick?: () => void;
   onHelpClick?: () => void;
+  onSettingsClick?: () => void;
   onLogout?: () => void;
 };
 
@@ -72,8 +74,10 @@ export function MyLifeAppShell({
   onExport,
   onAdminClick,
   onHelpClick,
+  onSettingsClick,
   onLogout,
 }: MyLifeAppShellProps) {
+  useEffect(() => initializeMyLifeTheme(), []);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
 
@@ -113,6 +117,7 @@ export function MyLifeAppShell({
           onExport={onExport}
           onAdminClick={onAdminClick}
           onHelpClick={onHelpClick}
+          onSettingsClick={() => { setMobileNavigationOpen(false); onSettingsClick?.(); }}
           onLogout={onLogout}
           onAccountClick={onAccountClick}
           collapsed={sidebarCollapsed}

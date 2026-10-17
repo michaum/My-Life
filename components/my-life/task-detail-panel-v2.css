@@ -269,7 +269,7 @@
    Scoped to the task detail dialog; Light mode remains unchanged. */
 
 html[data-ml-theme="dark"] .ml-v2-task-detail-panel .ml-task-detail-v2 {
-  background: #262633;
+  background: #202436;
   color: #f2effb;
   border-color: #514b61;
   color-scheme: dark;

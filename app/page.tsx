@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { PeopleProfileHoverCard } from "../components/my-life/people-profile-hover-card";
 import * as React from "react";
+import { createPortal } from "react-dom";
 "use client";
 import "../components/my-life/v2.css";
 import { MyLifeAppShell, MyLifeDashboard } from "../components/my-life";
@@ -68,7 +69,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { TaskCompletionCelebration } from "@/components/my-life/task-completion-celebration";
+import { TaskCompletionCelebration, CompletionAnimationSettings } from "@/components/my-life/task-completion-celebration";
+import { MyLifeThemeSelector } from "@/components/my-life/theme/theme-selector";
 import { MyLifeNotesWorkspace } from "@/components/my-life/notes/notes-workspace";
 import type { GlobalSearchResult } from "@/components/my-life/top-bar";
 import {
@@ -79,7 +81,48 @@ import {
   type ClassificationColors,
 } from "@/components/my-life/classification-colors";
 
-type Status = "To do" | "In progress" | "In review" | "Done";
+// STEP 295X.100D: 12-hour editing; saved values remain HH:mm (24-hour).
+function MyLifeAmPmTimeSelect({ label, value, onChange, minTime }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  minTime?: string;
+}) {
+  const match = /^(\d{2}):(\d{2})$/.exec(value || "");
+  const valid = Boolean(match && Number(match[1]) < 24 && Number(match[2]) < 60);
+  const hour24 = valid ? Number(match![1]) : 0;
+  const minute = valid ? Number(match![2]) : 0;
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 || 12;
+  const commit = (hour: number, mins: number, ampm: string) => {
+    const nextHour = hour % 12 + (ampm === "PM" ? 12 : 0);
+    const next = `${String(nextHour).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+    // Preserve the native end-time control's minimum-time restriction.
+    if (minTime && next < minTime) return;
+    onChange(next);
+  };
+  const style: React.CSSProperties = { minWidth: 0, flex: 1, height: 36, borderRadius: 7, border: "1px solid var(--ml-border, #dcd6f6)", background: "var(--ml-surface, transparent)", color: "inherit", padding: "0 4px", font: "inherit" };
+  return (
+    <div role="group" aria-label={label} style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0, width: "100%" }}>
+      <select aria-label={`${label} hour`} style={style} value={valid ? String(hour12) : ""} onChange={(e) => commit(Number(e.target.value), minute, period)}>
+        {!valid && <option value="">Hour</option>}
+        {Array.from({ length: 12 }, (_, i) => <option key={i} value={i + 1}>{i + 1}</option>)}
+      </select>
+      <span aria-hidden="true">:</span>
+      <select aria-label={`${label} minute`} style={style} value={valid ? String(minute) : ""} onChange={(e) => commit(hour12, Number(e.target.value), period)}>
+        {!valid && <option value="">Min</option>}
+        {Array.from({ length: 60 }, (_, i) => <option key={i} value={i}>{String(i).padStart(2, "0")}</option>)}
+      </select>
+      <select aria-label={`${label} AM or PM`} style={{ ...style, flex: "0 0 58px" }} value={valid ? period : ""} onChange={(e) => commit(hour12, minute, e.target.value)}>
+        {!valid && <option value="">AM/PM</option>}
+        <option value="AM">AM</option><option value="PM">PM</option>
+      </select>
+      {valid && <button type="button" aria-label={`Clear ${label.toLowerCase()}`} title={`Clear ${label.toLowerCase()}`} onClick={() => onChange("")} style={{ flex: "0 0 auto", padding: "0 3px", color: "inherit" }}>×</button>}
+    </div>
+  );
+}
+
+type Status = string; // STEP 295X.73: custom status identifiers are supported.
 type CalendarMode = "day" | "workweek" | "week" | "month";
 type ProjectIcon =
   | "folder"
@@ -146,7 +189,7 @@ type Task = {
   description: string;
   status: Status;
   color: string;
-  priority: "Low" | "Medium" | "High";
+  priority: string;
   assignee: string;
   due: string;
   dueTime: string;
@@ -176,7 +219,7 @@ type Task = {
     done: boolean;
     due?: string;
     assignee?: string;
-    priority?: "Low" | "Medium" | "High";
+    priority?: string;
     status?: string;
     customValues?: Record<string, string>;
   }[];
@@ -576,6 +619,61 @@ function TaskThemeSelect({ label, value, options, onChange }: {
   </Popover>;
 }
 
+
+function NativeColumnSettingsDropdown({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { id: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="ml-v2-native-column-select-trigger"
+          aria-label={label}
+          aria-expanded={open}
+        >
+          <span>{selected?.label ?? value}</span>
+          <ChevronDown size={15} aria-hidden="true" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        className="choice-menu ml-v2-field-select-menu ml-v2-native-column-select-menu"
+      >
+        <div className="choice-menu-list">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              className="choice-menu-option ml-v2-field-select-option"
+              aria-pressed={option.id === value}
+              onClick={() => {
+                onChange(option.id);
+                setOpen(false);
+              }}
+            >
+              <span className="ml-v2-field-select-label">{option.label}</span>
+              {option.id === value && <Check size={15} aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function ChoiceDropdown({
   value,
   options,
@@ -584,6 +682,7 @@ function ChoiceDropdown({
   label,
   disabled = false,
   displayStyle = "text",
+  allowClear = true,
 }: {
   value: string;
   options: ChoiceOption[];
@@ -592,6 +691,7 @@ function ChoiceDropdown({
   onEdit?: () => void;
   label: string;
   disabled?: boolean;
+  allowClear?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     selected = options.find(
@@ -616,7 +716,7 @@ function ChoiceDropdown({
               <span className="choice-placeholder">Not set</span>
             )}
           </span>
-          {label === "Status" || !selected ? <ChevronDown size={15} /> : <ChevronDown size={15} className="ml-v2-choice-hover-chevron" aria-hidden="true" />}
+          {label === "Status" || label === "Task Progress" || !selected ? <ChevronDown size={15} /> : <ChevronDown size={15} className="ml-v2-choice-hover-chevron" aria-hidden="true" />}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className={`choice-menu ${label === "Status" ? "ml-v2-status-choice-menu" : "ml-v2-field-select-menu ml-v2-single-select-menu"}`}>
@@ -642,7 +742,7 @@ function ChoiceDropdown({
                 : <span className="ml-v2-field-select-label">{option.label}</span>}
             </button>
           ))}
-          {selected && (
+          {selected && allowClear && (
             <button
               type="button"
               className="choice-menu-option clear-choice"
@@ -702,6 +802,12 @@ function ShootingStarIcon({ size = 22 }: { size?: number }) {
   );
 }
 
+const DEFAULT_PRIORITY_OPTIONS: ChoiceOption[] = [
+  { id: "Low", label: "Low", color: "#7ed3ab" },
+  { id: "Medium", label: "Medium", color: "#ffc857" },
+  { id: "High", label: "High", color: "#ff8a8a" },
+];
+
 export default function Taskflow() {
   const [celebrationId, setCelebrationId] = useState(0);
   function celebrateTaskCompletion() {
@@ -730,18 +836,69 @@ export default function Taskflow() {
       visible?: boolean;
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
-      progressStyle?: "bar" | "percentage";
-      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
+      progressStyle?: "bar" | "percentage" | "badge";
+      priorityColors?: Record<string, string>;
+      priorityOptions?: ChoiceOption[];
+      repeatOptions?: ChoiceOption[];
     }>>>({});
+  const priorityOptionsFor = (projectId: string): ChoiceOption[] => {
+    const settings = listColumnSettings[projectId]?.priority;
+    return (settings?.priorityOptions?.length ? settings.priorityOptions : DEFAULT_PRIORITY_OPTIONS).map(option => ({
+      ...option,
+      label: settings?.priorityOptions?.length ? option.label : (filterLabels.priority[option.id as keyof FilterLabels["priority"]] || option.label),
+      color: settings?.priorityColors?.[option.id] || option.color,
+    }));
+  };
+  const defaultRepeatOptions: ChoiceOption[] = [
+    { id: "none", label: "Does not repeat", color: "#7656db" },
+    { id: "days", label: "Days", color: "#376bea" },
+    { id: "weeks", label: "Weeks", color: "#21a47d" },
+    { id: "months", label: "Months", color: "#d49b21" },
+    { id: "years", label: "Years", color: "#8662cf" },
+  ];
+  const repeatOptionsFor = (projectId: string): ChoiceOption[] => {
+    const saved = listColumnSettings[projectId]?.repeat?.repeatOptions;
+    if (!saved || saved.length !== 5 ||
+        new Set(saved.map(option => option.id)).size !== 5 ||
+        !defaultRepeatOptions.every(option => saved.some(item => item.id === option.id))) {
+      return defaultRepeatOptions;
+    }
+    return saved;
+  };
+  const openRepeatEditor = (projectId: string) => {
+    setNativeColumnDraft({
+      projectId, columnId: "repeat", name: "Repeat",
+      displayStyle: listColumnSettings[projectId]?.repeat?.displayStyle === "text" ? "text" : "badge",
+      repeatOptions: repeatOptionsFor(projectId).map(option => ({ ...option })),
+    });
+  };
+  const priorityRank = (task: Task) => {
+    if (!task.priority) return Number.MAX_SAFE_INTEGER;
+    const order = priorityOptionsFor(task.projectId).map(option => option.id).reverse();
+    const rank = order.indexOf(task.priority);
+    return rank < 0 ? Number.MAX_SAFE_INTEGER - 1 : rank;
+  };
+  const openPriorityEditor = (projectId: string) => {
+    const settings = listColumnSettings[projectId]?.priority;
+    setNativeColumnDraft({
+      projectId, columnId: "priority", ...settings,
+      name: settings?.name || "Priority",
+      priorityLabels: { ...filterLabels.priority },
+      priorityOptions: priorityOptionsFor(projectId).map(option => ({ ...option })),
+    });
+  };
   const [nativeColumnDraft, setNativeColumnDraft] = useState<{
     projectId: string;
-    columnId: "assignee" | "due-date" | "priority" | "task-progress";
+    columnId: "assignee" | "due-date" | "priority" | "task-progress" | "repeat";
     name: string;
     visible?: boolean;
     displayStyle?: "name" | "avatar" | "text" | "badge";
     dateFormat?: "default" | "short" | "long" | "iso";
-    progressStyle?: "bar" | "percentage";
-    priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
+    progressStyle?: "bar" | "percentage" | "badge";
+    priorityColors?: Record<string, string>;
+      priorityOptions?: ChoiceOption[];
+      repeatOptions?: ChoiceOption[];
+    priorityLabels?: Record<"Low" | "Medium" | "High", string>;
   } | null>(null);
   // CM.7N - Expand/collapse subtasks without changing task data.
   const [expandedListSubtasks, setExpandedListSubtasks] =
@@ -1133,6 +1290,7 @@ const currentPersonName =
   currentUser?.name ??
   "";
 const [accountOpen, setAccountOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 const [currentPassword, setCurrentPassword] = useState("");
 const [newAccountPassword, setNewAccountPassword] = useState("");
@@ -1511,8 +1669,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       visible?: boolean;
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
-      progressStyle?: "bar" | "percentage";
-      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
+      progressStyle?: "bar" | "percentage" | "badge";
+      priorityColors?: Record<string, string>;
+      priorityOptions?: ChoiceOption[];
+      repeatOptions?: ChoiceOption[];
     }>>,
     };
   }
@@ -2068,8 +2228,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       visible?: boolean;
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
-      progressStyle?: "bar" | "percentage";
-      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
+      progressStyle?: "bar" | "percentage" | "badge";
+      priorityColors?: Record<string, string>;
+      priorityOptions?: ChoiceOption[];
+      repeatOptions?: ChoiceOption[];
     }>>;
     };
 
@@ -2416,8 +2578,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
       visible?: boolean;
       displayStyle?: "name" | "avatar" | "text" | "badge";
       dateFormat?: "default" | "short" | "long" | "iso";
-      progressStyle?: "bar" | "percentage";
-      priorityColors?: Partial<Record<"Low" | "Medium" | "High", string>>;
+      progressStyle?: "bar" | "percentage" | "badge";
+      priorityColors?: Record<string, string>;
+      priorityOptions?: ChoiceOption[];
+      repeatOptions?: ChoiceOption[];
     }>>;
     };
     if (!r.ok) throw new Error(d.error);
@@ -2924,6 +3088,15 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     ),
   ];
 
+  // STEP 294S.2 - Visibility affects rendering only.
+  // Saved order, widths, settings and task values are preserved.
+  // Task name is permanently visible.
+  const visibleListColumnIds = orderedListColumnIds.filter(
+    (columnId) =>
+      columnId === "task-name" ||
+      listColumnSettings[project?.id ?? ""]?.[columnId]?.visible !== false,
+  );
+
   async function moveListColumn(sourceId: string, targetId: string) {
     if (
       !project ||
@@ -3264,8 +3437,7 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
             }
 
             const priorityDiff =
-              ["High", "Medium", "Low"].indexOf(a.priority) -
-              ["High", "Medium", "Low"].indexOf(b.priority);
+              priorityRank(a) - priorityRank(b);
 
             return priorityDiff || a.sortOrder - b.sortOrder;
           }
@@ -3273,13 +3445,12 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
           return sort === "Due date"
             ? (a.due || "9999").localeCompare(b.due || "9999")
             : sort === "Priority"
-              ? ["High", "Medium", "Low"].indexOf(a.priority) -
-                ["High", "Medium", "Low"].indexOf(b.priority)
+              ? priorityRank(a) - priorityRank(b)
               : sort === "Name"
                 ? a.title.localeCompare(b.title)
                 : a.sortOrder - b.sortOrder;
         }),
-    [scope, query, priority, statusFilter, taskDateFilter, sort],
+    [scope, query, priority, statusFilter, taskDateFilter, sort, listColumnSettings, filterLabels],
   );
   const completed = scope.filter((t) => t.status === "Done").length,
     overdue = scope.filter(
@@ -3437,6 +3608,10 @@ const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
     });
   }
   function editTask(task: Task) {
+    // STEP 295X.45: Opening a task must not restore the classification manager.
+    setClassificationsManaging(false);
+    setClassificationRenameOld("");
+    setClassificationRenameName("");
     setTaskPanelV2Preview(true);
     setDraft({
       ...task,
@@ -3728,6 +3903,16 @@ function newPerson() {
     }
   }
 
+  // Reorder only the option list. Task classification values remain untouched.
+  function moveClassification(name: string, direction: -1 | 1) {
+    const index = classificationOptions.indexOf(name);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= classificationOptions.length) return;
+    const reordered = [...classificationOptions];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    storeClassificationOptions(reordered);
+  }
+
   function addClassification() {
     const name = newClassificationName.trim();
 
@@ -4013,6 +4198,35 @@ function newPerson() {
     });
     setConfirmDelete(false);
   }
+  // STEP 294U - Persist List column visibility without altering task data.
+  async function setListColumnVisibility(columnId: string, visible: boolean) {
+    if (!project || busy || columnId === "task-name") return;
+
+    const previous = listColumnSettings[project.id]?.[columnId] ?? {};
+    const nextSettings = {
+      ...listColumnSettings,
+      [project.id]: {
+        ...(listColumnSettings[project.id] ?? {}),
+        [columnId]: {
+          ...previous,
+          visible,
+        },
+      },
+    };
+
+    const saved = await mutate(
+      {
+        action: "saveListColumnSettings",
+        settings: nextSettings,
+      },
+      visible ? "Column shown" : "Column hidden",
+    );
+
+    if (saved) {
+      setListColumnSettings(nextSettings);
+    }
+  }
+
   async function saveNativeColumnName(e: FormEvent) {
     e.preventDefault();
     if (!nativeColumnDraft || busy) return;
@@ -4020,7 +4234,42 @@ function newPerson() {
     const name = nativeColumnDraft.name.trim();
     if (!name) return;
 
-    const settings = {
+    if (nativeColumnDraft.columnId === "repeat") {
+      const options = nativeColumnDraft.repeatOptions ?? [];
+      const names = options.map(option => option.label.trim());
+      if (options.length !== 5 || new Set(options.map(option => option.id)).size !== 5 ||
+          !defaultRepeatOptions.every(option => options.some(item => item.id === option.id)) ||
+          names.some(name => !name || name.length > 100) ||
+          new Set(names.map(name => name.toLocaleLowerCase())).size !== 5) {
+        setError("Repeat must keep five uniquely named scheduling options.");
+        return;
+      }
+    }
+    if (nativeColumnDraft.columnId === "priority") {
+      const options = nativeColumnDraft.priorityOptions ?? priorityOptionsFor(nativeColumnDraft.projectId);
+      const names = options.map(option => option.label.trim());
+      if (options.length === 0 || options.length > 30 || names.some(name => !name) ||
+          new Set(names.map(name => name.toLowerCase())).size !== names.length ||
+          new Set(options.map(option => option.id)).size !== options.length) {
+        setError("Priority names must be nonempty and unique (maximum 30).");
+        return;
+      }
+      const used = tasks.filter(task => task.projectId === nativeColumnDraft.projectId)
+        .flatMap(task => [task.priority, ...task.subtasks.map(subtask => subtask.priority || "")]);
+      if (used.some(id => id && !options.some(option => option.id === id))) {
+        setError("Cannot remove a priority that is used by a task or subtask.");
+        return;
+      }
+      const updatedLabels = { ...filterLabels, priority: {
+        Low: options.find(option => option.id === "Low")?.label ?? filterLabels.priority.Low,
+        Medium: options.find(option => option.id === "Medium")?.label ?? filterLabels.priority.Medium,
+        High: options.find(option => option.id === "High")?.label ?? filterLabels.priority.High,
+      }};
+      if (!(await mutate({ action: "saveFilterLabels", labels: updatedLabels }, "Priority names saved"))) return;
+      setFilterLabels(updatedLabels);
+    }
+
+    const settings: typeof listColumnSettings = {
       ...listColumnSettings,
       [nativeColumnDraft.projectId]: {
         ...(listColumnSettings[nativeColumnDraft.projectId] ?? {}),
@@ -4036,7 +4285,11 @@ function newPerson() {
             ? { dateFormat: nativeColumnDraft.dateFormat ?? "default" }
             : {}),
           ...(nativeColumnDraft.columnId === "priority"
-            ? { displayStyle: nativeColumnDraft.displayStyle ?? "text", priorityColors: nativeColumnDraft.priorityColors ?? {} }
+            ? { displayStyle: nativeColumnDraft.displayStyle ?? "text", priorityColors: nativeColumnDraft.priorityColors ?? {}, priorityOptions: (nativeColumnDraft.priorityOptions ?? priorityOptionsFor(nativeColumnDraft.projectId)).map(option => ({ ...option, label: option.label.trim() })) }
+            : {}),
+          ...(nativeColumnDraft.columnId === "repeat"
+            ? { displayStyle: nativeColumnDraft.displayStyle === "text" ? "text" : "badge",
+                repeatOptions: (nativeColumnDraft.repeatOptions ?? []).map(option => ({ ...option, label: option.label.trim() })) }
             : {}),
           ...(nativeColumnDraft.columnId === "task-progress"
             ? {
@@ -4159,6 +4412,25 @@ function newPerson() {
       ...option,
       label: option.label.trim(),
     }));
+    // STEP 295X.73: mirror web API validation for desktop saves.
+    if (options.length > 30 || options.some(option => !option.label) ||
+      new Set(options.map(option => option.id)).size !== options.length ||
+      new Set(options.map(option => option.label.toLowerCase())).size !== options.length ||
+      !statuses.every(status => options.some(option => option.id === status))) {
+      window.alert("Status names must be unique, nonempty, and keep the four original statuses.");
+      return;
+    }
+    // STEP 295X.86 - TASK PROGRESS DELETE SAFEGUARD
+    // Keep statuses assigned to tasks or subtasks; built-ins are validated above.
+    const removedStatusIds = workflowOptions.filter(existing =>
+      !options.some(option => option.id === existing.id)
+    ).map(option => option.id);
+    if (removedStatusIds.some(id => tasks.some(task =>
+      task.status === id || task.subtasks.some(subtask => subtask.status === id)
+    ))) {
+      setError("Cannot delete a Task Progress option used by a task or subtask. Reassign those items first.");
+      return;
+    }
     if (
       await mutate(
         { action: "saveStatusOptions", options },
@@ -4245,7 +4517,7 @@ function newPerson() {
 
     const saved = await mutate(
       { action: "saveTask", task: { ...t, status } },
-      status === "Done" ? "Nice work. Task completed!" : "Task moved",
+      status === "Done" ? "Nice work. Task completed!" : status === "" ? "Task Progress cleared" : "Task moved",
     );
 
     if (saved && status === "Done" && t.status !== "Done") {
@@ -4397,10 +4669,12 @@ function smartTextFieldUrl(value: string): string | null {
       );
     return value;
   }
+  // STEP 295X.91 - Blank status is a first-class unassigned state.
   function workflowOption(status: Status) {
     return (
       workflowOptions.find((option) => option.id === status) ||
-      defaultStatusOptions.find((option) => option.id === status)!
+      defaultStatusOptions.find((option) => option.id === status) ||
+      { id: "", label: "No status", color: "#8b90a3" }
     );
   }
   function statusForSection(sectionId: string, current: Status) {
@@ -4573,10 +4847,16 @@ function smartTextFieldUrl(value: string): string | null {
       }}
     >
       <div className="card-top">
-        <span className={`priority priority-${t.priority.toLowerCase()}`}>
-          <span />
-          {t.priority}
-        </span>
+        {(() => {
+          const option = priorityOptionsFor(t.projectId).find(item => item.id === t.priority);
+          return option ? (
+            <ListOptionAppearance options={[option]} style="badge" />
+          ) : t.priority ? (
+            <span className="priority">{t.priority}</span>
+          ) : (
+            <span className="priority">No priority</span>
+          );
+        })()}
         <Button
           variant="ghost"
           size="icon-xs"
@@ -4808,7 +5088,7 @@ function smartTextFieldUrl(value: string): string | null {
   };
 
   const listGrid = {
-    gridTemplateColumns: `${orderedListColumnIds
+    gridTemplateColumns: `${visibleListColumnIds
       .map((id) => {
         const width = project ? listColumnWidths[project.id]?.[id] : undefined;
         return typeof width === "number" &&
@@ -4861,7 +5141,7 @@ function smartTextFieldUrl(value: string): string | null {
         }
       }}
     >
-      {orderedListColumnIds.map((columnId) => {
+      {visibleListColumnIds.map((columnId) => {
         if (columnId === "task-name") {
           return (
             <div className="list-name" key={columnId}>
@@ -4985,6 +5265,57 @@ function smartTextFieldUrl(value: string): string | null {
 
 
 
+          if (columnId === "priority") {
+            return (
+              <div key={columnId} className="ml-v2-field-cell">
+              <ChoiceDropdown
+                key={columnId}
+                label={`Priority for ${t.title}`}
+                value={t.priority}
+                displayStyle={
+                  listColumnSettings[t.projectId]?.priority?.displayStyle === "text"
+                    ? "text"
+                    : "badge"
+                }
+                allowClear
+                disabled={busy}
+                options={priorityOptionsFor(t.projectId)}
+                onChange={priority => {
+                  if (!priority || priorityOptionsFor(t.projectId).some(option => option.id === priority)) {
+                    void mutate({ action: "saveTask", task: { ...t, priority } }, "Priority updated");
+                  }
+                }}
+                onEdit={() => {
+                  openPriorityEditor(t.projectId);
+                }}
+              />
+              </div>
+            );
+          }
+
+          // STEP 295X.89B - Inline Task Progress status selector in List View.
+          // Keep existing bar/percentage display modes untouched.
+          if (columnId === "task-progress" && progressStyle !== "bar" && progressStyle !== "percentage") {
+            return (
+              <div key={columnId} className="ml-v2-field-cell">
+                <ChoiceDropdown
+                  label={`Task Progress for ${t.title}`}
+                  value={t.status}
+                  options={workflowOptions}
+                  displayStyle={progressStyle === "badge" ? "badge" : "text"}
+                  allowClear
+                  disabled={busy}
+                  onChange={value => {
+                    if ((value === "" || workflowOptions.some(option => option.id === value)) && value !== t.status) {
+                      void changeStatus(t, value as Status);
+                    }
+                  }}
+                  onEdit={editStatusField}
+                />
+              </div>
+            );
+          }
+
           return (
             <button
               key={columnId}
@@ -5020,14 +5351,17 @@ function smartTextFieldUrl(value: string): string | null {
                   <span>{progressPercentage}%</span>
                 </span>
               )
-            ) : columnId === "priority" &&
-            (listColumnSettings[project?.id ?? ""]?.priority?.displayStyle === "badge" ||
-             listColumnSettings[project?.id ?? ""]?.priority?.displayStyle === "text") ? (
+            ) : columnId === "task-progress" && progressStyle === "badge" ? (
               <ListOptionAppearance
-                options={[{ id: t.priority, label: t.priority, color:
-                  listColumnSettings[t.projectId]?.priority?.priorityColors?.[t.priority] ||
-                  ({ Low: "#7ed3ab", Medium: "#ffc857", High: "#ff8a8a" } as const)[t.priority] }]}
-                style={listColumnSettings[t.projectId]?.priority?.displayStyle === "badge" ? "badge" : "text"} />
+                options={[{
+                  id: t.status,
+                  label: workflowOption(t.status).label,
+                  color: workflowOption(t.status).color,
+                }]}
+                style="badge"
+              />
+            ) : columnId === "priority" ? (
+              value
             ) : showAssigneeAvatar ? (
                 renderAssigneeAvatar(t.assignee)
               ) : columnId === "assignee" && Boolean(t.assignee) ? (
@@ -5125,7 +5459,7 @@ function smartTextFieldUrl(value: string): string | null {
               style={listGrid}
               key={subtask.id}
             >
-              {orderedListColumnIds.map((columnId) =>
+              {visibleListColumnIds.map((columnId) =>
                 columnId === "task-name" ? (
                   <div className="list-subtask-display" key={columnId}>
                     <span className="list-subtask-indent" aria-hidden="true">↳</span>
@@ -5230,32 +5564,28 @@ function smartTextFieldUrl(value: string): string | null {
                       );
                       if (columnId === "priority") {
                         const prioritySettings = listColumnSettings[t.projectId]?.priority;
-                        const options = (["Low", "Medium", "High"] as const).map(level => ({
-                          id: level, label: level,
-                          color: prioritySettings?.priorityColors?.[level] ||
-                            ({ Low: "#7ed3ab", Medium: "#ffc857", High: "#ff8a8a" } as const)[level],
-                        }));
+                        const options = priorityOptionsFor(t.projectId);
                         return <ChoiceDropdown label={`Priority for ${subtask.title}`}
                           value={subtask.priority || ""} options={options}
                           displayStyle={prioritySettings?.displayStyle === "badge" ? "badge" : "text"}
                           disabled={busy}
                           onChange={next => saveSubtaskField({
-                            priority: next ? (next as "Low" | "Medium" | "High") : undefined,
+                            priority: next || undefined,
                           }, "Subtask priority updated")} />;
                       }
                       if (columnId === "task-progress") return (
                         <select aria-label={`Progress for ${subtask.title}`}
-                          value={subtask.status || (subtask.done ? "Done" : "To do")}
+                           value={subtask.status ?? (subtask.done ? "Done" : "To do")}
                           disabled={busy}
                           onChange={(e) => {
                             const status = e.target.value;
-                            saveSubtaskField({ status: status as "To do" | "In progress" | "In review" | "Done", done: status === "Done" }, "Subtask progress updated");
+                            saveSubtaskField({ status: status as Status, done: status === "Done" }, "Subtask progress updated");
                           }}
                         >
-                          <option value="To do">To do</option>
-                          <option value="In progress">In progress</option>
-                          <option value="In review">In review</option>
-                          <option value="Done">Done</option>
+                           <option value="">Clear selection</option>
+                           {workflowOptions.map(option => (
+                             <option key={option.id} value={option.id}>{option.label}</option>
+                           ))}
                         </select>
                       );
                       if (!columnId.startsWith("field:")) return null;
@@ -5348,6 +5678,15 @@ function smartTextFieldUrl(value: string): string | null {
     }
 
     return hour * 60 + minute;
+  };
+
+  const formatCalendarEventTime = (value?: string | null) => {
+    if (!value) return "";
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+    if (!match) return value;
+    const hour = Number(match[1]);
+    if (hour > 23) return value;
+    return `${hour % 12 || 12}:${match[2]} ${hour >= 12 ? "PM" : "AM"}`;
   };
 
   const calendarHourLabel = (hour: number) => {
@@ -5466,7 +5805,7 @@ function smartTextFieldUrl(value: string): string | null {
           taskId: task.id,
           title: task.title || "Untitled task",
           detail: task.dueTime
-            ? `Due today at ${task.dueTime}`
+            ? `Due today at ${(() => { const match = /^(\d{1,2}):(\d{2})/.exec(task.dueTime); if (!match) return task.dueTime; const hour = Number(match[1]); return hour > 23 ? task.dueTime : `${hour % 12 || 12}:${match[2]} ${hour >= 12 ? "PM" : "AM"}`; })()}`
             : "Due today",
           category: "today",
         });
@@ -5993,6 +6332,7 @@ function smartTextFieldUrl(value: string): string | null {
           notificationItems={notificationItems}
           onSearchOpen={openGlobalSearchResult}
           onAccountClick={() => setAccountOpen(true)}
+          onSettingsClick={() => setSettingsOpen(true)}
           onAddTask={() => newTask()}
           onPeopleClick={() => {
             setPersonDraft(null);
@@ -6314,10 +6654,9 @@ function smartTextFieldUrl(value: string): string | null {
                   onChange={(e) => setPriority(e.target.value)}
                 >
                   <option>All priorities</option>
-                  {(["High", "Medium", "Low"] as const).map((value) => (
-                    <option key={value} value={value}>
-                      {filterLabels.priority[value]}
-                    </option>
+                  <option value="">No priority</option>
+                  {Array.from(new Map(projects.flatMap(p => priorityOptionsFor(p.id)).map(option => [option.id, option])).values()).map(option => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
                   ))}
                 </NativeSelect>
                 <NativeSelect
@@ -6326,9 +6665,9 @@ function smartTextFieldUrl(value: string): string | null {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <option>All statuses</option>
-                  {statuses.map((s) => (
-                    <option key={s} value={s}>
-                      {workflowOption(s).label}
+                  {workflowOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
                     </option>
                   ))}
                 </NativeSelect>
@@ -6463,7 +6802,7 @@ function smartTextFieldUrl(value: string): string | null {
             )}
             {view === "Board" && (
               <div className="board">
-                {statuses.map((status) => (
+                {[...workflowOptions, { id: "", label: "No status", color: "#8b90a3" }].map(({ id: status }) => (
                   <section
                     key={status}
                     className={`board-column ${dropTarget === status ? "drop-target" : ""}`}
@@ -6549,7 +6888,7 @@ function smartTextFieldUrl(value: string): string | null {
                       onClick={() => setColumnsOpen(true)}
                     >
                       <Columns3 size={14} />
-                      Columns
+                      Add / Edit Columns
                     </Button>
                   </div>
                 )}
@@ -6619,7 +6958,7 @@ function smartTextFieldUrl(value: string): string | null {
                           onClick={() => setColumnsOpen(true)}
                         >
                           <Columns3 size={14} />
-                          Add Columns
+                          Add / Edit Columns
                         </Button>
                       </div>
                     )}
@@ -6660,14 +6999,14 @@ function smartTextFieldUrl(value: string): string | null {
                         onClick={() => setColumnsOpen(true)}
                       >
                         <Columns3 size={13} />
-                        Add Columns
+                        Add / Edit Columns
                       </button>
                     </div>
                     </>
                     )}
                   </div>
                   <div className="list-head" style={listGrid}>
-                    {orderedListColumnIds.map((columnId, index) => {
+                    {visibleListColumnIds.map((columnId, index) => {
                       const field = projectFields.find(
                         (item) => `field:${item.id}` === columnId,
                       );
@@ -6780,37 +7119,17 @@ function smartTextFieldUrl(value: string): string | null {
                               >
                                 Move right
                               </button>
-                              {project &&
-                                (columnId === "assignee" ||
-                                  columnId === "due-date" ||
-                                  columnId === "priority" ||
-                                  columnId === "task-progress") && (
-                                  <button
-                                    type="button"
-                                    className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent"
-                                    onClick={() => {
-                                      setColumnMenuOpen(null);
-                                      setNativeColumnDraft({
-                                        projectId: project.id,
-                                        columnId,
-                                        ...listColumnSettings[project.id]?.[columnId],
-                                        name: label,
-                                      });
-                                    }}
-                                  >
-                                    Edit column
-                                  </button>
-                                )}
-                              {field && (
+                              {project && columnId !== "task-name" && (
                                 <button
                                   type="button"
-                                  className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent"
+                                  className="block w-full rounded px-2 py-2 text-left text-sm hover:bg-accent disabled:opacity-40"
+                                  disabled={busy}
                                   onClick={() => {
                                     setColumnMenuOpen(null);
-                                    editField(field);
+                                    void setListColumnVisibility(columnId, false);
                                   }}
                                 >
-                                  Edit column
+                                  Hide column
                                 </button>
                               )}
                             </PopoverContent>
@@ -7229,9 +7548,9 @@ onDragOver={(e) => e.preventDefault()}
                               >
                                 {occurrenceDueTime && (
                                   <span className="calendar-entry-time">
-                                    {occurrenceDueTime}
+                                    {formatCalendarEventTime(occurrenceDueTime)}
                                     {occurrenceEndTime &&
-                                      `–${occurrenceEndTime}`}
+                                      `–${formatCalendarEventTime(occurrenceEndTime)}`}
                                   </span>
                                 )}
                                 <span className="calendar-task-title">
@@ -7570,16 +7889,16 @@ onDragOver={(e) => e.preventDefault()}
                                     ...taskTextStyle(task, "calendar"),
                                   }}
                                   onClick={() => editTask(task)}
-                                  title={`${task.title} ${occurrenceDueTime}${
+                                  title={`${task.title} ${formatCalendarEventTime(occurrenceDueTime)}${
                                     occurrenceEndTime
-                                      ? ` - ${occurrenceEndTime}`
+                                      ? ` - ${formatCalendarEventTime(occurrenceEndTime)}`
                                       : ""
                                   }`}
                                 >
                                   <span className="calendar-timeline-task-time">
-                                    {occurrenceDueTime}
+                                    {formatCalendarEventTime(occurrenceDueTime)}
                                     {occurrenceEndTime &&
-                                      ` - ${occurrenceEndTime}`}
+                                      ` - ${formatCalendarEventTime(occurrenceEndTime)}`}
                                   </span>
 
                                   <span className="calendar-timeline-task-title">
@@ -7818,6 +8137,7 @@ onDragOver={(e) => e.preventDefault()}
                           item.movedDate === todayKey(),
                       )?.movedDueTime ?? task.dueTime,
                     title: task.title,
+                    classification: task.classification || "Task",
                     due: task.due,
                     status: task.status,
                     statusColor: workflowOption(task.status).color,
@@ -7871,9 +8191,30 @@ onDragOver={(e) => e.preventDefault()}
             </footer>
           </>
         )}
+            </>
+        )}
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="ml-v2-settings-dialog" style={{ maxWidth: "480px" }}>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>Customize your My Life appearance.</DialogDescription>
+          <div style={{ display: "grid", gap: 16, marginTop: 16 }}>
+            <section aria-label="Appearance settings" style={{ display: "grid", gap: 12, padding: 16, border: "1px solid var(--ml-color-border, #ddd6f0)", borderRadius: 12 }}>
+              <strong>Appearance</strong>
+              <MyLifeThemeSelector />
+              <div className="ml-v2-appearance-wallpaper">
+                <strong>Wallpaper</strong>
+                <button type="button" className="ml-v2-standard-button" onClick={() => { setSettingsOpen(false); window.setTimeout(() => window.dispatchEvent(new Event("my-life-open-wallpaper-editor")), 100); }}>Edit wallpaper</button>
+                <span>Use the existing wallpaper editor. Your saved image stays unchanged until you save or reset it.</span>
+              </div>
+              <CompletionAnimationSettings />
+            </section>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
-        <DialogContent style={{ maxWidth: "440px" }}>
+        <DialogContent className="ml-v2-account-dialog" style={{ maxWidth: "440px" }}>
           <DialogTitle>My account</DialogTitle>
           <DialogDescription>
             Your My Life account information.
@@ -8339,8 +8680,6 @@ onDragOver={(e) => e.preventDefault()}
           </form>
         </DialogContent>
       </Dialog>
-            </>
-        )}
       </MyLifeAppShell>
       </div>
       {notice && (
@@ -8532,29 +8871,130 @@ onDragOver={(e) => e.preventDefault()}
                 </div>
                 {error && <p className="inline-error" role="alert">{error}</p>}
               </div>}
-              assignee={<NativeSelect aria-label="Assignee" value={draft.assignee} onChange={(e) => updateV2Task({ assignee: e.target.value }, true)}>
-                <option value="">Unassigned</option>
-                {draft.assignee && !people.some((p) => p.name === draft.assignee) && <option value={draft.assignee}>{draft.assignee} (not in People)</option>}
-                {people.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
-              </NativeSelect>}
-              dueDate={<div className="ml-task-detail-v2__date-row">
-                <Input aria-label="Due date" type="date" value={draft.due} onChange={(e) => updateV2Task({ due: e.target.value }, true)} />
-                <Input aria-label="Start time" type="time" step={60} value={draft.dueTime} onChange={(e) => updateV2Task({ dueTime: e.target.value }, true)} />
-                <Input aria-label="End time" type="time" step={60} value={draft.endTime} min={draft.dueTime || undefined} onChange={(e) => updateV2Task({ endTime: e.target.value }, true)} />
-              </div>}
+              assignee={<ChoiceDropdown
+                label="Assignee"
+                value={draft.assignee}
+                disabled={busy}
+                options={[
+                  ...(draft.assignee && !people.some(p => p.name === draft.assignee)
+                    ? [{ id: draft.assignee, label: draft.assignee, color: "#7656db" }] : []),
+                  ...people.map(p => ({ id: p.name, label: p.name, color: "#7656db" })),
+                ]}
+                onChange={assignee => updateV2Task({ assignee }, true)}
+              />}
+              dueDate={<Input aria-label="Start date" type="date" value={draft.due} onChange={(e) => updateV2Task({ due: e.target.value }, true)} />}
+              startTime={<MyLifeAmPmTimeSelect label="Start time" value={draft.dueTime} onChange={(dueTime) => updateV2Task({ dueTime }, true)} />}
+              endTime={<MyLifeAmPmTimeSelect label="End time" value={draft.endTime} minTime={draft.dueTime || undefined} onChange={(endTime) => updateV2Task({ endTime }, true)} />}
               project={<NativeSelect aria-label="Project" value={draft.projectId} onChange={(e) => updateV2Task({ projectId: e.target.value, sectionId: "", customValues: {} }, true)}>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </NativeSelect>}
               section={<TaskThemeSelect label="Section" value={draft.sectionId} onChange={(value) => updateV2Task({ sectionId: value }, true)} options={[{ value: "", label: "No section" }, ...sections.filter((s) => s.projectId === draft.projectId).map((s) => ({ value: s.id, label: s.name }))]} />}
               fields={[
-                { id: "priority", label: "Priority", value: <NativeSelect aria-label="Priority" value={draft.priority} onChange={(e) => updateV2Task({ priority: e.target.value as Task["priority"] }, true)}>{["Low", "Medium", "High"].map((p) => <option key={p} value={p}>{filterLabels.priority[p as Task["priority"]] || p}</option>)}</NativeSelect> },
-                { id: "progress", label: "Task Progress", value: <NativeSelect aria-label="Task Progress" value={draft.status} onChange={(e) => {
-                  const status = e.target.value as Status;
-                  if (status === "Done" && draft.status !== "Done" && tasks.some((t) => t.id === draft.id)) { void completeV2Task(); return; }
-                  updateV2Task({ status }, true);
-                }}>{workflowOptions.map((option) => <option key={option.id} value={option.label}>{option.label}</option>)}</NativeSelect> },
-                { id: "classification", label: "Classification", value: <NativeSelect aria-label="Classification" value={draft.classification ?? "Task"} onChange={(e) => updateV2Task({ classification: e.target.value }, true)}>{classificationOptions.map((v) => <option key={v} value={v}>{v}</option>)}</NativeSelect> },
-                { id: "recurrence", label: "Repeat", value: <div className="ml-task-detail-v2__date-row"><NativeSelect aria-label="Repeat" value={draft.recurrenceUnit || "none"} onChange={(e) => updateV2Task({ recurrenceUnit: e.target.value as Task["recurrenceUnit"] }, true)}><option value="none">Does not repeat</option><option value="days">Days</option><option value="weeks">Weeks</option><option value="months">Months</option><option value="years">Years</option></NativeSelect>{draft.recurrenceUnit !== "none" && <Input aria-label="Repeat interval" type="number" min={1} max={999} value={draft.recurrenceInterval || 1} onChange={(e) => updateV2Task({ recurrenceInterval: Math.max(1, Number(e.target.value) || 1) }, true)} />}</div> },
+                { id: "priority", label: "Priority", value:
+                  <ChoiceDropdown
+                    label="Priority"
+                    value={draft.priority}
+                    disabled={busy}
+                    displayStyle="badge"
+                    options={priorityOptionsFor(draft.projectId)}
+                    onChange={value => {
+                      if (!value || priorityOptionsFor(draft.projectId).some(option => option.id === value)) {
+                        updateV2Task({ priority: value }, true);
+                      }
+                    }}
+                    onEdit={() => {
+                      openPriorityEditor(draft.projectId);
+                    }}
+                  /> },
+                { id: "progress", label: "Task Progress", value: <ChoiceDropdown
+                  label="Task Progress"
+                  value={draft.status}
+                  options={workflowOptions}
+                  disabled={busy}
+                  displayStyle="badge"
+                  allowClear
+                  onChange={value => {
+                    if (value === "") {
+                      updateV2Task({ status: "" as Status }, true);
+                      return;
+                    }
+                    const selected = workflowOptions.find(option => option.id === value);
+                    if (!selected) return;
+                    const status = selected.id as Status;
+                    if (status === "Done" && draft.status !== "Done" && tasks.some(t => t.id === draft.id)) {
+                      void completeV2Task(); return;
+                    }
+                    updateV2Task({ status }, true);
+                  }}
+                  onEdit={() => setStatusDraft(workflowOptions.map(option => ({ ...option })))}
+                /> },
+                { id: "classification", label: "Classification", value: <>
+                  <ChoiceDropdown
+                    label="Classification"
+                    value={draft.classification ?? "Task"}
+                    disabled={busy}
+                    displayStyle="badge"
+                    allowClear={false}
+                    options={classificationOptions.map(name => ({
+                      id: name,
+                      label: name,
+                      color: classificationColors[name] ||
+                        legacyClassificationColor(name),
+                    }))}
+                    onChange={classification => {
+                      if (classificationOptions.includes(classification)) {
+                        updateV2Task({ classification }, true);
+                      }
+                    }}
+                    onEdit={() => {
+                      setClassificationRenameOld("");
+                      setClassificationRenameName("");
+                      setClassificationsManaging(true);
+                    }}
+                  />
+
+                </> },
+                { id: "recurrence", label: "Repeat", value:
+                  <div className="ml-task-detail-v2__date-row">
+                    <ChoiceDropdown
+                      label="Repeat"
+                      value={draft.recurrenceUnit || "none"}
+                      disabled={busy}
+                      displayStyle={listColumnSettings[draft.projectId]?.repeat?.displayStyle === "text" ? "text" : "badge"}
+                      allowClear
+                      options={repeatOptionsFor(draft.projectId)}
+                      onEdit={() => openRepeatEditor(draft.projectId)}
+                      onChange={value => {
+                        if (value === "") {
+                          updateV2Task({ recurrenceUnit: "none" }, true);
+                          return;
+                        }
+                        if (
+                          value === "none" ||
+                          value === "days" ||
+                          value === "weeks" ||
+                          value === "months" ||
+                          value === "years"
+                        ) {
+                          updateV2Task({
+                            recurrenceUnit: value as Task["recurrenceUnit"],
+                          }, true);
+                        }
+                      }}
+                    />
+                    {draft.recurrenceUnit !== "none" && (
+                      <Input
+                        aria-label="Repeat interval"
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={draft.recurrenceInterval || 1}
+                        onChange={e => updateV2Task({
+                          recurrenceInterval: Math.max(1, Number(e.target.value) || 1),
+                        }, true)}
+                      />
+                    )}
+                  </div> },
                 ...customFields.filter((f) => f.projectId === draft.projectId).map((field) => ({ id: field.id, label: field.name, value: (field.type === "MultiSelect" || field.type === "People") ? customFieldControl(field, draft.customValues[field.id] || "", value => updateV2Task({ customValues: { ...draft.customValues, [field.id]: value } }, true)) : field.type === "Choice" ? <ChoiceDropdown label={field.name} value={draft.customValues[field.id] || ""}
                   options={field.options} displayStyle={field.displayStyle || "text"} disabled={busy}
                   onChange={value => updateV2Task({ customValues: { ...draft.customValues, [field.id]: value } }, true)}
@@ -8851,7 +9291,7 @@ onDragOver={(e) => e.preventDefault()}
                         style={{ padding: "7px 11px" }}
                         aria-expanded={classificationsManaging}
                         onClick={() =>
-                          setClassificationsManaging((value) => !value)
+                          setClassificationsManaging(true)
                         }
                       >
                         Manage Classifications
@@ -8915,6 +9355,27 @@ onDragOver={(e) => e.preventDefault()}
                                 cursor: "pointer",
                               }}
                             />
+
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              aria-label={`Move ${option} up`}
+                              title="Move up"
+                              disabled={classificationOptions.indexOf(option) === 0}
+                              onClick={() => moveClassification(option, -1)}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              className="ml-v2-standard-button"
+                              aria-label={`Move ${option} down`}
+                              title="Move down"
+                              disabled={classificationOptions.indexOf(option) === classificationOptions.length - 1}
+                              onClick={() => moveClassification(option, 1)}
+                            >
+                              ↓
+                            </button>
 
                             <button
                               type="button"
@@ -9142,26 +9603,11 @@ onDragOver={(e) => e.preventDefault()}
                 </label>
                 <label>
                   Time
-                  <Input
-                    type="time"
-                    step={60}
-                    value={draft.dueTime}
-                    onChange={(e) =>
-                      setDraft({ ...draft, dueTime: e.target.value })
-                    }
-                  />
+                  <MyLifeAmPmTimeSelect label="Start time" value={draft.dueTime} onChange={(dueTime) => setDraft({ ...draft, dueTime })} />
                 </label>
                 <label>
                   End time
-                  <Input
-                    type="time"
-                    step={60}
-                    value={draft.endTime}
-                    min={draft.dueTime || undefined}
-                    onChange={(e) =>
-                      setDraft({ ...draft, endTime: e.target.value })
-                    }
-                  />
+                  <MyLifeAmPmTimeSelect label="End time" value={draft.endTime} minTime={draft.dueTime || undefined} onChange={(endTime) => setDraft({ ...draft, endTime })} />
                 </label>
                 <label>
                   Repeat
@@ -9223,8 +9669,9 @@ onDragOver={(e) => e.preventDefault()}
                       })
                     }
                   >
-                    {["Low", "Medium", "High"].map((p) => (
-                      <option key={p}>{p}</option>
+                    <option value="">No priority</option>
+                    {priorityOptionsFor(draft.projectId).map(option => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
                     ))}
                   </NativeSelect>
                 </label>
@@ -9698,6 +10145,85 @@ onDragOver={(e) => e.preventDefault()}
           )}
         </DialogContent>
       </Dialog>
+      {/* STEP 295X.46: Independent Radix modal; task editor's pointer lock must not freeze its controls. */}
+      <Dialog open={classificationsManaging} onOpenChange={setClassificationsManaging}>
+        <DialogContent className="ml-v2-classification-manager-dialog ml-v2-classification-field-match ml-v2-unified-editor" style={{ width: "min(588px, calc(100vw - 32px))", maxWidth: "none", maxHeight: "min(88vh, 800px)", overflowY: "auto", padding: 0 }}>
+          <DialogTitle className="sr-only">Manage classifications</DialogTitle>
+          <section className="ml-v2-classification-field-editor">
+            <header className="ml-v2-classification-field-header">
+              <h2>Edit field</h2>
+              <p>Customize the field and its options for every task in this project. Changes to classifications are applied immediately.</p>
+            </header>
+            <div className="ml-v2-classification-field-metadata form-grid">
+              <label>Field title<Input value="Classification" disabled readOnly /></label>
+              <label>Field type<Input value="Single-select" disabled readOnly /></label>
+            </div>
+            <div className="ml-v2-classification-field-options">
+              <div className="ml-v2-classification-field-section-heading">Options</div>
+              <p className="ml-v2-classification-field-hint">Choose a name and color for each item in this list.</p>
+              <div className="ml-v2-classification-field-list">
+                {classificationOptions.map((option, index) => (
+                  <div key={option} className="ml-v2-classification-field-row">
+                    {/* STEP 295X.65 - SIX-DOT REORDER HANDLE */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="ml-v2-classification-field-grip" aria-label={`Reorder ${option}`} title={`Reorder ${option}`}>
+                          <svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true" fill="currentColor">
+                            <circle cx="4" cy="4" r="1.35" /><circle cx="10" cy="4" r="1.35" />
+                            <circle cx="4" cy="9" r="1.35" /><circle cx="10" cy="9" r="1.35" />
+                            <circle cx="4" cy="14" r="1.35" /><circle cx="10" cy="14" r="1.35" />
+                          </svg>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="ml-v2-classification-reorder-menu" sideOffset={6}>
+                        <div className="ml-v2-classification-reorder-heading">Reorder {option}</div>
+                        <button type="button" disabled={index === 0} onClick={() => moveClassification(option, -1)}>Move up</button>
+                        <button type="button" disabled={index === classificationOptions.length - 1} onClick={() => moveClassification(option, 1)}>Move down</button>
+                      </PopoverContent>
+                    </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button type="button" className="ml-v2-classification-field-color" aria-label={`Change color for ${option}`} style={{ backgroundColor: classificationColors[option] || legacyClassificationColor(option) }}>
+                          <ChevronDown size={13} />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="color-palette">
+                        <strong>Color</strong>
+                        <MyLifeGroupedColorPalette selected={classificationColors[option] || legacyClassificationColor(option)} label={`${option} classification`} onSelect={color => {
+                          const colors = { ...readClassificationColors(), ...classificationColors };
+                          persistClassificationColors({ ...colors, [option]: color });
+                        }} />
+                      </PopoverContent>
+                    </Popover>
+                    <button type="button" className="ml-v2-classification-field-name" title={`Rename ${option}`} onClick={() => { setClassificationRenameOld(option); setClassificationRenameName(option); }}>{option}</button>
+                    <button type="button" className="ml-v2-classification-field-delete" disabled={classificationOptions.length <= 1} onClick={() => deleteClassification(option)} aria-label={`Delete ${option}`} title={`Delete ${option}`}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {classificationRenameOld && (
+                <div className="ml-v2-classification-field-edit">
+                  <label htmlFor="ml-v2-classification-rename">Rename {classificationRenameOld}</label>
+                  <div className="ml-v2-classification-field-edit-line">
+                    <Input id="ml-v2-classification-rename" aria-label="Rename classification" value={classificationRenameName} onChange={event => setClassificationRenameName(event.target.value)} />
+                    <button type="button" onClick={renameClassification}>Save name</button>
+                    <button type="button" onClick={() => { setClassificationRenameOld(""); setClassificationRenameName(""); }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+              <div className="ml-v2-classification-field-add">
+                <Input aria-label="New classification name" placeholder="New classification name" value={newClassificationName} onChange={event => setNewClassificationName(event.target.value)} />
+                <button type="button" onClick={addClassification}><span aria-hidden="true">＋</span> Add option</button>
+              </div>
+            </div>
+            <footer className="ml-v2-classification-field-footer">
+              <button type="button" className="ml-v2-classification-field-cancel" onClick={() => setClassificationsManaging(false)}>Cancel</button>
+              <button type="button" className="ml-v2-classification-field-done" onClick={() => setClassificationsManaging(false)}>Done</button>
+            </footer>
+          </section>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={!!projectDraft}
         onOpenChange={(open) => {
@@ -10099,9 +10625,9 @@ onDragOver={(e) => e.preventDefault()}
                 columnId;
 
               return (
-                <button
-                  key={columnId}
-                  className="column-manager-row"
+                <div key={columnId} className="flex items-center gap-2">
+                  <button
+                  className="column-manager-row flex-1"
                   draggable={!!project && !busy && columnId !== "task-name"}
                   onDragStart={(e) => {
                     e.stopPropagation();
@@ -10171,6 +10697,32 @@ onDragOver={(e) => e.preventDefault()}
                     {columnId !== "task-name" && <ChevronRight size={14} />}
                   </small>
                 </button>
+                  {columnId === "task-name" ? (
+                    <span
+                      className="shrink-0 px-2 text-xs text-muted-foreground"
+                      title="Task name is permanently visible"
+                    >
+                      Always visible
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="column-visibility-button"
+                      disabled={!project || busy}
+                      aria-label={`${listColumnSettings[project?.id ?? ""]?.[columnId]?.visible === false ? "Show" : "Hide"} ${columnName} column`}
+                      onClick={() => {
+                        void setListColumnVisibility(
+                          columnId,
+                          listColumnSettings[project?.id ?? ""]?.[columnId]?.visible === false,
+                        );
+                      }}
+                    >
+                      {listColumnSettings[project?.id ?? ""]?.[columnId]?.visible === false
+                        ? "Show"
+                        : "Hide"}
+                    </button>
+                  )}
+                </div>
               );
             })}
 
@@ -10193,11 +10745,11 @@ onDragOver={(e) => e.preventDefault()}
           if (!open && !busy) setNativeColumnDraft(null);
         }}
       >
-        <DialogContent className="field-dialog">
-          <DialogTitle>Edit column</DialogTitle>
+        <DialogContent className="field-dialog ml-v2-native-column-dialog ml-v2-unified-editor">
+          <DialogTitle>Edit field</DialogTitle>
           <DialogDescription>
-            Change this project's column name. The native field type and task
-            functionality remain unchanged.
+            Customize the field name, display style, and available option names and colors.
+            Built-in task behavior and stored values remain unchanged.
           </DialogDescription>
           {nativeColumnDraft && (
             <form onSubmit={saveNativeColumnName} className="editor-form">
@@ -10208,6 +10760,7 @@ onDragOver={(e) => e.preventDefault()}
                     required
                     maxLength={100}
                     value={nativeColumnDraft.name}
+                    disabled={nativeColumnDraft.columnId === "repeat"}
                     onChange={(e) =>
                       setNativeColumnDraft({
                         ...nativeColumnDraft,
@@ -10224,6 +10777,7 @@ onDragOver={(e) => e.preventDefault()}
                       "due-date": "Due date",
                       priority: "Priority",
                       "task-progress": "Task Progress",
+                      repeat: "Repeat",
                     }[nativeColumnDraft.columnId]}
                     disabled
                   />
@@ -10232,109 +10786,203 @@ onDragOver={(e) => e.preventDefault()}
               {nativeColumnDraft.columnId === "assignee" && (
                 <label>
                   Assignee display
-                  <select
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  <NativeColumnSettingsDropdown
+                    label="Assignee display"
                     value={nativeColumnDraft.displayStyle ?? "name"}
-                    onChange={(e) =>
+                    options={[
+                      { id: "name", label: "Name" },
+                      { id: "avatar", label: "Avatar" },
+                    ]}
+                    onChange={(value) =>
                       setNativeColumnDraft({
                         ...nativeColumnDraft,
-                        displayStyle: e.target.value as "name" | "avatar",
+                        displayStyle: value as "name" | "avatar",
                       })
                     }
-                  >
-                    <option value="name">Name</option>
-                    <option value="avatar">Avatar</option>
-                  </select>
+                  />
                 </label>
               )}
               {nativeColumnDraft.columnId === "due-date" && (
                 <label>
                   Date format
-                  <select
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  <NativeColumnSettingsDropdown
+                    label="Date format"
                     value={nativeColumnDraft.dateFormat ?? "default"}
-                    onChange={(e) =>
+                    options={[
+                      { id: "default", label: "Default (existing format)" },
+                      { id: "short", label: "Short (Oct 11)" },
+                      { id: "long", label: "Long (October 11, 2026)" },
+                      { id: "iso", label: "ISO (2026-10-11)" },
+                    ]}
+                    onChange={(value) =>
                       setNativeColumnDraft({
                         ...nativeColumnDraft,
-                        dateFormat: e.target.value as
-                          | "default"
-                          | "short"
-                          | "long"
-                          | "iso",
+                        dateFormat: value as "default" | "short" | "long" | "iso",
                       })
                     }
-                  >
-                    <option value="default">Default (existing format)</option>
-                    <option value="short">Short (Oct 11)</option>
-                    <option value="long">Long (October 11, 2026)</option>
-                    <option value="iso">ISO (2026-10-11)</option>
-                  </select>
+                  />
                 </label>
               )}
               {nativeColumnDraft.columnId === "priority" && (
                 <label>
                   Priority display
-                  <select
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  <NativeColumnSettingsDropdown
+                    label="Priority display"
                     value={nativeColumnDraft.displayStyle ?? "text"}
-                    onChange={(e) =>
+                    options={[
+                      { id: "text", label: "Text" },
+                      { id: "badge", label: "Badge (existing My Life colors)" },
+                    ]}
+                    onChange={(value) =>
                       setNativeColumnDraft({
                         ...nativeColumnDraft,
-                        displayStyle: e.target.value as "text" | "badge",
+                        displayStyle: value as "text" | "badge",
                       })
                     }
-                  >
-                    <option value="text">Text</option>
-                    <option value="badge">Badge (existing My Life colors)</option>
-                  </select>
+                  />
                 </label>
               )}
               {nativeColumnDraft.columnId === "priority" && (
                 <fieldset className="ml-v2-priority-colors">
-                  <legend>Priority badge and text colors</legend>
-                  {(["Low", "Medium", "High"] as const).map(level => {
-                    const currentColor = nativeColumnDraft.priorityColors?.[level] ||
-                      ({ Low: "#7ed3ab", Medium: "#ffc857", High: "#ff8a8a" } as const)[level];
-                    return <div key={level} className="ml-v2-priority-color-row">
-                      <span>{level}</span>
-                      <ListOptionAppearance options={[{ id: level, label: level, color: currentColor }]}
-                        style={nativeColumnDraft.displayStyle === "badge" ? "badge" : "text"} />
+                  <legend>Options</legend>
+                  <p className="ml-v2-priority-options-hint">Choose a name and color for each item in this list.</p>
+                  {(nativeColumnDraft.priorityOptions ?? []).map((option, index) => (
+                    <div key={option.id} className="option-editor-row ml-v2-priority-color-row">
                       <Popover>
                         <PopoverTrigger asChild>
-                          <button type="button" className="ml-v2-priority-color-trigger"
-                            aria-label={`Change ${level} color`} style={{ backgroundColor: currentColor }}>
-                            <ChevronDown size={13} />
+                          <button type="button" className="ml-v2-classification-field-grip" aria-label={`Reorder ${option.label}`} title={`Reorder ${option.label}`}>
+                            <GripVertical size={16} />
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent align="start" className="color-palette">
-                          <strong>{level} color</strong>
-                          <MyLifeGroupedColorPalette selected={currentColor} label={`${level} priority`} onSelect={color => setNativeColumnDraft({ ...nativeColumnDraft, priorityColors: { ...nativeColumnDraft.priorityColors, [level]: color } })} />
+                        <PopoverContent align="start" sideOffset={6} className="ml-v2-classification-reorder-menu">
+                          <div className="ml-v2-classification-reorder-heading">Reorder {option.label}</div>
+                          <button type="button" disabled={index === 0} onClick={() => {
+                            const items = [...(nativeColumnDraft.priorityOptions ?? [])];
+                            [items[index - 1], items[index]] = [items[index], items[index - 1]];
+                            setNativeColumnDraft({ ...nativeColumnDraft, priorityOptions: items });
+                          }}>Move up</button>
+                          <button type="button" disabled={index === (nativeColumnDraft.priorityOptions?.length ?? 0) - 1} onClick={() => {
+                            const items = [...(nativeColumnDraft.priorityOptions ?? [])];
+                            [items[index + 1], items[index]] = [items[index], items[index + 1]];
+                            setNativeColumnDraft({ ...nativeColumnDraft, priorityOptions: items });
+                          }}>Move down</button>
                         </PopoverContent>
                       </Popover>
-                    </div>;
-                  })}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button type="button" className="ml-v2-priority-color-trigger" aria-label={`Change ${option.label} color`}
+                            style={{ backgroundColor: option.color }}><ChevronDown size={13}/></button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="color-palette">
+                          <strong>{option.label} color</strong>
+                          <MyLifeGroupedColorPalette selected={option.color} label={`${option.label} priority`}
+                            onSelect={color => setNativeColumnDraft({ ...nativeColumnDraft,
+                              priorityOptions: nativeColumnDraft.priorityOptions?.map(item => item.id === option.id ? { ...item, color } : item),
+                            })} />
+                        </PopoverContent>
+                      </Popover>
+                      <Input aria-label={`Priority option ${index + 1} name`} required maxLength={100}
+                        value={option.label} onChange={e => setNativeColumnDraft({
+                          ...nativeColumnDraft,
+                          priorityOptions: nativeColumnDraft.priorityOptions?.map(item => item.id === option.id ? { ...item, label: e.target.value } : item),
+                        })} />
+                      <button type="button" aria-label={`Remove ${option.label}`} disabled={(nativeColumnDraft.priorityOptions?.length ?? 0) <= 1}
+                        onClick={() => setNativeColumnDraft({ ...nativeColumnDraft,
+                          priorityOptions: nativeColumnDraft.priorityOptions?.filter(item => item.id !== option.id),
+                        })}><Trash2 size={15}/></button>
+                    </div>
+                  ))}
+                  <button type="button" className="choice-edit-action"
+                    disabled={(nativeColumnDraft.priorityOptions?.length ?? 0) >= 30}
+                    onClick={() => setNativeColumnDraft({ ...nativeColumnDraft,
+                      priorityOptions: [...(nativeColumnDraft.priorityOptions ?? []), {
+                        id: `priority-${crypto.randomUUID()}`, label: `Priority ${(nativeColumnDraft.priorityOptions?.length ?? 0) + 1}`,
+                        color: "#7656db",
+                      }],
+                    })}>+ Add option</button>
                 </fieldset>
+              )}
+              {nativeColumnDraft.columnId === "repeat" && (
+                <>
+                  <label>
+                    Repeat display
+                    <NativeColumnSettingsDropdown
+                      label="Repeat display"
+                      value={nativeColumnDraft.displayStyle === "text" ? "text" : "badge"}
+                      options={[{ id: "text", label: "Text" }, { id: "badge", label: "Badge" }]}
+                      onChange={value => setNativeColumnDraft({ ...nativeColumnDraft, displayStyle: value as "text" | "badge" })}
+                    />
+                  </label>
+                  <fieldset className="ml-v2-priority-colors">
+                    <legend>Options</legend>
+                    <p className="ml-v2-priority-options-hint">Change names, colors and order. Scheduling behavior stays protected.</p>
+                    {(nativeColumnDraft.repeatOptions ?? []).map((option, index) => (
+                      <div key={option.id} className="option-editor-row ml-v2-priority-color-row">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="ml-v2-classification-field-grip" aria-label={`Reorder ${option.label}`}>
+                              <GripVertical size={16}/>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" sideOffset={6} className="ml-v2-classification-reorder-menu">
+                            <div className="ml-v2-classification-reorder-heading">Reorder {option.label}</div>
+                            <button type="button" disabled={index === 0} onClick={() => {
+                              const items = [...(nativeColumnDraft.repeatOptions ?? [])];
+                              [items[index-1], items[index]] = [items[index], items[index-1]];
+                              setNativeColumnDraft({ ...nativeColumnDraft, repeatOptions: items });
+                            }}>Move up</button>
+                            <button type="button" disabled={index === 4} onClick={() => {
+                              const items = [...(nativeColumnDraft.repeatOptions ?? [])];
+                              [items[index+1], items[index]] = [items[index], items[index+1]];
+                              setNativeColumnDraft({ ...nativeColumnDraft, repeatOptions: items });
+                            }}>Move down</button>
+                          </PopoverContent>
+                        </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="ml-v2-priority-color-trigger" aria-label={`Change ${option.label} color`}
+                              style={{ backgroundColor: option.color }}><ChevronDown size={13}/></button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="color-palette">
+                            <strong>{option.label} color</strong>
+                            <MyLifeGroupedColorPalette selected={option.color} label={`${option.label} repeat`}
+                              onSelect={color => setNativeColumnDraft({ ...nativeColumnDraft,
+                                repeatOptions: nativeColumnDraft.repeatOptions?.map(item => item.id === option.id ? { ...item, color } : item),
+                              })}/>
+                          </PopoverContent>
+                        </Popover>
+                        <Input aria-label={`Repeat option ${index+1} name`} required maxLength={100}
+                          value={option.label} onChange={e => setNativeColumnDraft({ ...nativeColumnDraft,
+                            repeatOptions: nativeColumnDraft.repeatOptions?.map(item => item.id === option.id ? { ...item, label: e.target.value } : item),
+                          })}/>
+                        <span title="Built-in recurrence unit cannot be deleted" aria-label="Protected option"><span>🔒</span></span>
+                      </div>
+                    ))}
+                  </fieldset>
+                </>
               )}
               {nativeColumnDraft.columnId === "task-progress" && (
                 <label>
                   Task Progress display
-                  <select
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                  <NativeColumnSettingsDropdown
+                    label="Task Progress display"
                     value={nativeColumnDraft.progressStyle ?? "existing"}
-                    onChange={(e) =>
+                    options={[
+                      { id: "existing", label: "Existing status and subtask counts" },
+                      { id: "bar", label: "Progress bar" },
+                      { id: "percentage", label: "Percentage" },
+                      { id: "badge", label: "Colored badge" },
+                    ]}
+                    onChange={(value) =>
                       setNativeColumnDraft({
                         ...nativeColumnDraft,
                         progressStyle:
-                          e.target.value === "existing"
+                          value === "existing"
                             ? undefined
-                            : (e.target.value as "bar" | "percentage"),
+                            : (value as "bar" | "percentage" | "badge"),
                       })
                     }
-                  >
-                    <option value="existing">Existing status and subtask counts</option>
-                    <option value="bar">Progress bar</option>
-                    <option value="percentage">Percentage</option>
-                  </select>
+                  />
                 </label>
               )}
               <div className="editor-footer">
@@ -10347,7 +10995,7 @@ onDragOver={(e) => e.preventDefault()}
                   Cancel
                 </Button>
                 <Button type="submit" disabled={busy || !nativeColumnDraft.name.trim()}>
-                  Save column
+                  {nativeColumnDraft.columnId === "repeat" ? "Save field" : "Save column"}
                 </Button>
               </div>
             </form>
@@ -10360,7 +11008,7 @@ onDragOver={(e) => e.preventDefault()}
           if (!open && !busy) setStatusDraft(null);
         }}
       >
-        <DialogContent className="field-dialog">
+        <DialogContent className="field-dialog ml-v2-unified-editor">
           <DialogTitle>Edit field</DialogTitle>
           <DialogDescription>
             Rename each status and choose the color shown across your workspace.
@@ -10379,17 +11027,27 @@ onDragOver={(e) => e.preventDefault()}
               </div>
               <fieldset className="option-editor">
                 <legend>Options</legend>
-                <p>
-                  Edit any entry below. Its tasks stay connected when the name
-                  or color changes.
-                </p>
+                <p>Choose a name and color for each item in this list. Existing tasks stay connected when names or colors change.</p>
                 <div className="option-editor-list">
                   {statusDraft.map((option) => (
                     <div
                       className="option-editor-row status-option-row"
                       key={option.id}
                     >
-                      <GripVertical size={16} />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button type="button" className="ml-v2-classification-field-grip" aria-label={`Reorder ${option.label}`} title={`Reorder ${option.label}`}>
+                            <GripVertical size={16} />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="ml-v2-classification-reorder-menu">
+                          <div className="ml-v2-classification-reorder-heading">Reorder {option.label}</div>
+                          <button type="button" disabled={statusDraft.findIndex(item => item.id === option.id) === 0}
+                            onClick={() => setStatusDraft(current => { if (!current) return current; const next = [...current]; const index = next.findIndex(item => item.id === option.id); if (index <= 0) return current; [next[index - 1], next[index]] = [next[index], next[index - 1]]; return next; })}>Move up</button>
+                          <button type="button" disabled={statusDraft.findIndex(item => item.id === option.id) === statusDraft.length - 1}
+                            onClick={() => setStatusDraft(current => { if (!current) return current; const next = [...current]; const index = next.findIndex(item => item.id === option.id); if (index < 0 || index >= next.length - 1) return current; [next[index + 1], next[index]] = [next[index], next[index + 1]]; return next; })}>Move down</button>
+                        </PopoverContent>
+                      </Popover>
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
@@ -10421,9 +11079,43 @@ onDragOver={(e) => e.preventDefault()}
                           )
                         }
                       />
+                      <button
+                        type="button"
+                        className="delete-button"
+                        aria-label={`Delete ${option.label}`}
+                        title={statuses.includes(option.id) ? "Required status cannot be deleted" : `Delete ${option.label}`}
+                        disabled={busy || statuses.includes(option.id)}
+                        onClick={() => {
+                          if (tasks.some(task => task.status === option.id || task.subtasks.some(subtask => subtask.status === option.id))) {
+                            setError("This status is assigned to a task or subtask. Reassign those items first.");
+                            return;
+                          }
+                          setStatusDraft(current => current ? current.filter(item => item.id !== option.id) : current);
+                        }}
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   ))}
                 </div>
+                {/* STEP 295X.73: custom Task Progress choices */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="add-option"
+                  disabled={busy || statusDraft.length >= 30}
+                  onClick={() => setStatusDraft(current => current ? [
+                    ...current,
+                    {
+                      id: `status-${crypto.randomUUID()}`,
+                      label: `Option ${current.length + 1}`,
+                      color: choicePalette[current.length % choicePalette.length],
+                    },
+                  ] : current)}
+                >
+                  <Plus size={15} />
+                  Add option
+                </Button>
               </fieldset>
               <div className="editor-footer">
                 <Button
@@ -10453,7 +11145,7 @@ onDragOver={(e) => e.preventDefault()}
           if (!open && !busy) setFieldDraft(null);
         }}
       >
-        <DialogContent className="field-dialog">
+        <DialogContent className="field-dialog ml-v2-unified-editor">
           <DialogTitle>
             {customFields.some((f) => f.id === fieldDraft?.id)
               ? "Edit field"
@@ -10557,7 +11249,53 @@ onDragOver={(e) => e.preventDefault()}
                   <div className="option-editor-list">
                     {fieldDraft.options.map((option) => (
                       <div className="option-editor-row" key={option.id}>
-                        <GripVertical size={16} />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="ml-v2-classification-field-grip"
+                              aria-label="Reorder option"
+                              title="Reorder option"
+                            >
+                              <GripVertical size={16} />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="start"
+                            sideOffset={6}
+                            className="ml-v2-classification-reorder-menu"
+                          >
+                            <div className="ml-v2-classification-reorder-heading">
+                              Reorder option
+                            </div>
+                            <button
+                              type="button"
+                              disabled={fieldDraft.options.findIndex((item) => item.id === option.id) === 0}
+                              onClick={() => {
+                                const items = [...fieldDraft.options];
+                                const index = items.findIndex((item) => item.id === option.id);
+                                if (index <= 0) return;
+                                [items[index - 1], items[index]] = [items[index], items[index - 1]];
+                                setFieldDraft({ ...fieldDraft, options: items });
+                              }}
+                            >
+                              Move up
+                            </button>
+                            <button
+                              type="button"
+                              disabled={fieldDraft.options.findIndex((item) => item.id === option.id) === fieldDraft.options.length - 1}
+                              onClick={() => {
+                                const items = [...fieldDraft.options];
+                                const index = items.findIndex((item) => item.id === option.id);
+                                if (index < 0 || index >= items.length - 1) return;
+                                [items[index], items[index + 1]] = [items[index + 1], items[index]];
+                                setFieldDraft({ ...fieldDraft, options: items });
+                              }}
+                            >
+                              Move down
+                            </button>
+                          </PopoverContent>
+                        </Popover>
                         <Popover>
                           <PopoverTrigger asChild>
                             <button

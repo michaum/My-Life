@@ -30,7 +30,7 @@
 [data-ml-theme="dark"] {
   color-scheme: dark;
   --ml-color-background: #171923;
-  --ml-color-surface: #262633;
+  --ml-color-surface: #202436;
   --ml-color-surface-soft: #302d3d;
   --ml-color-text: #f2effb;
   --ml-color-text-muted: #bbb5ca;
@@ -38,7 +38,7 @@
   --ml-color-accent: #8b6bea;
   --ml-color-accent-text: #ffffff;
   --ml-color-focus: #bba4ff;
-  --ml-button-bg: #302d3d;
+  --ml-button-bg: #292e46;
   --ml-button-text: #e1d8f6;
   --ml-button-border: #665778;
   --ml-button-hover-bg: #44365f;
@@ -60,7 +60,7 @@
   [data-ml-theme="system"] {
     color-scheme: dark;
     --ml-color-background: #171923;
-    --ml-color-surface: #262633;
+    --ml-color-surface: #202436;
     --ml-color-surface-soft: #302d3d;
     --ml-color-text: #f2effb;
     --ml-color-text-muted: #bbb5ca;
@@ -68,7 +68,7 @@
     --ml-color-accent: #8b6bea;
     --ml-color-accent-text: #ffffff;
     --ml-color-focus: #bba4ff;
-    --ml-button-bg: #302d3d;
+    --ml-button-bg: #292e46;
     --ml-button-text: #e1d8f6;
     --ml-button-border: #665778;
     --ml-button-hover-bg: #44365f;

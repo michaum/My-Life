@@ -503,15 +503,7 @@ export function MyLifeTopBar({
           document.body
         )}
 
-        <button type="button" className="ml-v2-account-button"
-          onClick={onAccountClick} aria-label="Open account">
-          <span className="ml-v2-avatar">{initial}</span>
-          <span className="ml-v2-account-copy">
-            <strong>{userName || "My account"}</strong>
-            <span>Account</span>
-          </span>
-          <UserRound className="ml-v2-account-icon" size={16} />
-        </button>
+
       </div>
     </header>
   );

@@ -5,7 +5,7 @@
 /* Core dashboard panels */
 
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-widget {
-  background-color: #262633; color: #f2effb; border-color: rgba(215,204,240,.23);
+  background-color: #202436; color: #f2effb; border-color: rgba(215,204,240,.23);
 }
 
 /* Dashboard supporting text */
@@ -17,13 +17,13 @@ html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-empty {
 /* Dashboard notes */
 
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-notes-card {
-  background-color: #262633; color: #f2effb; border-color: rgba(215,204,240,.23);
+  background-color: #202436; color: #f2effb; border-color: rgba(215,204,240,.23);
 }
 
 /* Dashboard appointments */
 
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-appointments {
-  background-color: #262633; color: #f2effb; border-color: rgba(215,204,240,.23);
+  background-color: #202436; color: #f2effb; border-color: rgba(215,204,240,.23);
 }
 
 html[data-ml-theme="dark"] .ml-v2 .ml-v2-universal-header { background-color: rgba(38,38,51,.90); color: #f2effb; border-color: rgba(215,204,240,.22); }

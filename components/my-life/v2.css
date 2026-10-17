@@ -4549,6 +4549,7 @@
   font-size: 11px;
   white-space: nowrap;
 }
+/* STEP 295X.103C - Task completion confirmation, official Light/Dark palette. */
 .ml-v2 .ml-v2-today-confirm-backdrop {
   position: fixed;
   inset: 0;
@@ -4560,8 +4561,9 @@
 }
 .ml-v2 .ml-v2-today-confirm {
   width: min(420px, 100%);
-  background: white;
-  color: #292238;
+  background: #ffffff;
+  color: #202331;
+  border: 1px solid #ddd6f0;
   border-radius: 18px;
   padding: 25px;
   box-shadow: 0 22px 65px rgba(0, 0, 0, .24);
@@ -4582,23 +4584,28 @@
 .ml-v2 .ml-v2-today-confirm-actions button {
   padding: 10px 15px;
   border-radius: 9px;
-  border: 1px solid #ddd4f4;
-  background: white;
-  color: #6540c4;
+  border: 1px solid #ddd6f0;
+  background: #f9faff;
+  color: #7656db;
   cursor: pointer;
   transition: transform 180ms ease, background 180ms ease,
     box-shadow 180ms ease;
 }
 .ml-v2 .ml-v2-today-confirm-actions button:last-child {
-  background: #7545d9;
-  color: white;
-  border-color: #7545d9;
+  background: #7656db;
+  color: #ffffff;
+  border-color: #7656db;
 }
 .ml-v2 .ml-v2-today-confirm-actions button:hover:not(:disabled) {
   transform: translateY(-2px);
-  background: #6540c4;
-  color: white;
-  box-shadow: 0 5px 14px rgba(101, 64, 196, .2);
+  background: #eee8ff;
+  border-color: #7656db;
+  color: #6545b5;
+  box-shadow: 0 5px 14px rgba(118, 86, 219, .2);
+}
+.ml-v2 .ml-v2-today-confirm-actions button:last-child:hover:not(:disabled) {
+  background: #6846c7;
+  color: #ffffff;
 }
 .ml-v2 .ml-v2-today-confirm-actions button:active:not(:disabled) {
   transform: scale(.97);
@@ -4606,8 +4613,27 @@
 .ml-v2 .ml-v2-today-check:focus-visible,
 .ml-v2 .ml-v2-today-task-main:focus-visible,
 .ml-v2 .ml-v2-today-confirm-actions button:focus-visible {
-  outline: 3px solid #a78bfa;
+  outline: 3px solid #7656db;
   outline-offset: 3px;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-today-confirm {
+  background: #202436;
+  color: #f2f4ff;
+  border-color: #424b6a;
+  color-scheme: dark;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-today-confirm p {
+  color: #c0c6db;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-today-confirm-actions button:not(:last-child) {
+  background: #292e46;
+  color: #f2f4ff;
+  border-color: #626d9a;
+}
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-today-confirm-actions button:not(:last-child):hover:not(:disabled) {
+  background: #343b58;
+  color: #ffffff;
+  border-color: #7656db;
 }
 @media (prefers-reduced-motion: reduce) {
   .ml-v2 .ml-v2-today-task-row,
@@ -5609,7 +5635,7 @@
 .ml-v2 .ml-v2-dashboard-reference
 .ml-v2-weekly-calendar-events > button {
   display: grid;
-  grid-template-columns: 65px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   column-gap: 10px;
 }
@@ -10151,9 +10177,24 @@ html[data-ml-theme="dark"] .ml-v2
   text-align: right;
 }
 
+/* STEP 295X.97C: Show the single saved Classification badge in appointments. */
 .ml-v2 .ml-v2-dashboard-appointments-list
-  .ml-v2-appointment-classification {
-  display: none;
+  .ml-v2-appointment-classification.ml-v2-dashboard-classification-tag {
+  display: inline-flex;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  justify-self: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: transparent;
+  line-height: 1.25;
+  font-size: 11px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ml-v2 .ml-v2-dashboard-appointments-list > li > .ml-v2-today-assignee {
@@ -11555,7 +11596,7 @@ html[data-ml-theme="light"] .ml-v2-task-detail-panel--preview > [data-slot="dial
 }
 
 html[data-ml-theme="dark"] [data-slot="popover-content"].ml-v2-list-column-popover {
-  background: #262633 !important;
+  background: #202436 !important;
   color: #e8e6f5 !important;
   border-color: #55516f !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, .35) !important;
@@ -11645,7 +11686,7 @@ html[data-ml-theme="dark"]
 .list-head > *:hover .ml-v2-column-menu-trigger, .list-head > *:focus-within .ml-v2-column-menu-trigger, .ml-v2-column-menu-trigger[data-state="open"] { opacity: 1; }
 html[data-ml-theme="dark"] .ml-v2-number-settings { border-color: #55516f; }
 html[data-ml-theme="dark"] .ml-v2-number-preview { color: #c3adff; }
-html[data-ml-theme="dark"] .ml-v2-multi-option { background: #262633; color: #e8e6f5; border-color: #55516f; }
+html[data-ml-theme="dark"] .ml-v2-multi-option { background: #202436; color: #e8e6f5; border-color: #55516f; }
 html[data-ml-theme="dark"] .ml-v2-multi-option:hover { background: #39334f; }
 @media (hover: none) { .ml-v2-column-menu-trigger { opacity: 1; } }
 
@@ -11656,7 +11697,7 @@ html[data-ml-theme="dark"] .editor-form select {
 }
 html[data-ml-theme="dark"] .editor-form select option,
 html[data-ml-theme="dark"] .editor-form select optgroup {
-  background-color: #262633;
+  background-color: #202436;
   color: #e8e6f5;
 }
 html[data-ml-theme="light"] .editor-form select {
@@ -11681,7 +11722,7 @@ html:not([data-ml-theme="dark"]) .field-dialog {
   --ml-field-accent: #7656db;
 }
 html[data-ml-theme="dark"] .field-dialog {
-  --ml-field-bg: #262633;
+  --ml-field-bg: #202436;
   --ml-field-control: #303044;
   --ml-field-text: #e8e6f5;
   --ml-field-muted: #c2bdd3;
@@ -11724,7 +11765,7 @@ html:not([data-ml-theme="dark"]) :is(.color-palette, .ml-v2-people-field-menu) {
   --ml-pop-bg: #ffffff; --ml-pop-text: #202331; --ml-pop-border: #d9dce8; --ml-pop-hover: #eeeaff;
 }
 html[data-ml-theme="dark"] :is(.color-palette, .ml-v2-people-field-menu) {
-  --ml-pop-bg: #262633; --ml-pop-text: #e8e6f5; --ml-pop-border: #55516f; --ml-pop-hover: #39334f;
+  --ml-pop-bg: #202436; --ml-pop-text: #e8e6f5; --ml-pop-border: #55516f; --ml-pop-hover: #39334f;
 }
 :is(.color-palette, .ml-v2-people-field-menu) {
   background: var(--ml-pop-bg) !important; color: var(--ml-pop-text) !important;
@@ -13578,3 +13619,124 @@ html[data-ml-theme="dark"] .ml-v2
   border-color: #a78bfa;
   box-shadow: 0 0 0 2px rgba(167, 139, 250, .55);
 }
+
+
+/* STEP 295X.61 - TODAY TASK DARK TEXT AND LEFT ALIGNMENT */
+
+/* Correct the older centered title layout without moving the avatar. */
+.ml-v2 .ml-v2-today-task-main .ml-v2-today-task-text {
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.ml-v2 .ml-v2-today-task-main .ml-v2-coming-up-title {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  margin-inline-end: auto;
+  text-align: left !important;
+}
+
+/* The actual application theme attribute is data-ml-theme. */
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-today-task-main .ml-v2-coming-up-title {
+  color: #f2effb !important;
+}
+
+
+
+
+/* STEP 295X.96D - Single viewport-safe positioning rule for field editors.
+   DialogContent already has Tailwind's independent `translate` property;
+   neutralize it to prevent double centering with the transform below. */
+[data-slot="dialog-content"]:is(.field-dialog, .ml-v2-classification-manager-dialog) {
+  position: fixed !important;
+  inset: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  width: min(588px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 32px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+@media (max-height: 520px) {
+  [data-slot="dialog-content"]:is(.field-dialog, .ml-v2-classification-manager-dialog) {
+    max-height: calc(100dvh - 16px) !important;
+  }
+}
+/* Keep the portal-based color picker and grouped shades scrollable. */
+[data-radix-popper-content-wrapper] .color-palette:has(.ml-v2-grouped-palette) {
+  max-height: var(--radix-popover-content-available-height, calc(100dvh - 24px)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+.color-palette .ml-v2-grouped-palette-scroll {
+  max-height: min(410px, calc(100dvh - 165px)) !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* STEP 295X.97E - Align mini calendar times at the far right. */
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > button > .ml-v2-weekly-calendar-event-time {
+  justify-self: end;
+  white-space: nowrap;
+}
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > button > .ml-v2-calendar-task-done {
+  grid-column: 1 / -1;
+}
+
+
+/* STEP 295X.100C - Mini Calendar event times use regular font weight. */
+.ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-events > button > .ml-v2-weekly-calendar-event-time {
+  font-weight: 400 !important;
+}
+
+/* STEP 295X.99B - Overview-only date/time text contrast.
+   Classification colors, event accents and layout remain unchanged. */
+html:not([data-ml-theme="dark"]) .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-tasks-date-label,
+  .ml-v2-today-time,
+  .ml-v2-dashboard-appointment-date,
+  .ml-v2-weekly-calendar-event-time,
+  .ml-v2-weekly-calendar-days button span,
+  .ml-v2-weekly-calendar-days button strong
+) { color: #202331 !important; }
+html[data-ml-theme="dark"] .ml-v2 .ml-v2-dashboard-reference :is(
+  .ml-v2-today-tasks-date-label,
+  .ml-v2-today-time,
+  .ml-v2-dashboard-appointment-date,
+  .ml-v2-weekly-calendar-event-time,
+  .ml-v2-weekly-calendar-days button span,
+  .ml-v2-weekly-calendar-days button strong
+) { color: #ffffff !important; }
+/* Preserve legible white day numbers on the purple selected-date circle. */
+html .ml-v2 .ml-v2-dashboard-reference .ml-v2-weekly-calendar-days button[aria-pressed="true"] strong {
+  color: #ffffff !important;
+}
+
+/* STEP 295X.104 - Wallpaper editor inherits official light/dark dialog colors. */
+html:not([data-ml-theme="dark"]) .ml-v2-wallpaper-dialog {
+  background: #ffffff;
+  color: #202331;
+  border: 1px solid #ddd6f0;
+}
+html[data-ml-theme="dark"] .ml-v2-wallpaper-dialog {
+  background: #202436;
+  color: #f2f4ff;
+  border: 1px solid #424b6a;
+}
+html[data-ml-theme="dark"] .ml-v2-wallpaper-dialog :is(input, select, button) {
+  color: #f2f4ff;
+  accent-color: #7656db;
+}
+html[data-ml-theme="dark"] .ml-v2-wallpaper-dialog :is(input, select) { background: #272d43; border-color: #424b6a; }
+.ml-v2-wallpaper-dialog :is(input, select, button):focus-visible { outline: 2px solid #7656db; outline-offset: 2px; }

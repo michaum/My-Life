@@ -636,8 +636,9 @@ export function MyLifeDashboard({
 
                         </span>
                         <span
-                          className="ml-v2-appointment-classification"
+                          className="ml-v2-appointment-classification ml-v2-dashboard-classification-tag"
                           style={{ color: classificationPastelColor(appointment.classification || "Task") }}
+                          title={`Classification: ${appointment.classification || "Task"}`}
                         >
                           {appointment.classification || "Task"}
                         </span>

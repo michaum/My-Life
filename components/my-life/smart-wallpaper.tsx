@@ -146,6 +146,16 @@ export function SmartWallpaper() {
     }
   }, []);
 
+  useEffect(() => {
+    const showEditor = () => {
+      setDraft(saved ? { ...saved } : null);
+      setError("");
+      setOpen(true);
+    };
+    window.addEventListener("my-life-open-wallpaper-editor", showEditor);
+    return () => window.removeEventListener("my-life-open-wallpaper-editor", showEditor);
+  }, [saved]);
+
   const current = open ? draft : saved;
 
   const variables = current
@@ -244,17 +254,7 @@ export function SmartWallpaper() {
         onDrop={drop}
       >
         {dragging && <div className="ml-v2-wallpaper-drop-hint">Drop image to change wallpaper</div>}
-        <button
-          type="button"
-          className="ml-v2-standard-button ml-v2-wallpaper-edit-button"
-          onClick={() => {
-            setDraft(saved ? { ...saved } : null);
-            setError("");
-            setOpen(true);
-          }}
-        >
-          Edit Wallpaper
-        </button>
+
       </div>
 
       <input

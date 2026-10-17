@@ -1802,30 +1802,150 @@ html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form legend {
   flex-direction: column;
   gap: 8px;
 }
-.column-manager > button:not([data-slot="button"]) {
+/* My Life V2.0 - Columns dialog, approved Light/Dark standards.
+   Dialog content is portalled outside .ml-v2, so use inherited
+   dialog theme tokens rather than .ml-v2-only selectors. */
+.column-manager .column-manager-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-width: 0;
   padding: 12px;
-  border: 1px solid #e2e8db;
-  border-radius: 7px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--foreground);
   text-align: left;
+  transition: background-color 150ms ease, border-color 150ms ease,
+    color 150ms ease, box-shadow 150ms ease;
 }
-.column-manager > button:not([data-slot="button"]):hover {
-  background: #f2edff;
-  border-color: #bba4ff;
-  color: #7656db;
+.column-manager .column-manager-row:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--ring);
+  color: var(--foreground);
 }
-.column-manager > button > span,
-.column-manager > button > small {
+.column-manager .column-manager-row:active:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+.column-manager .column-manager-row:focus-visible,
+.column-manager .column-visibility-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.column-manager .column-manager-row > span,
+.column-manager .column-manager-row > small {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.column-manager > button > small {
-  font-size: 9px;
-  color: #96a18b;
+.column-manager .column-manager-row > small {
+  font-size: 10px;
+  color: var(--muted-foreground);
 }
+.column-manager .column-visibility-button {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease,
+    color 150ms ease, box-shadow 150ms ease;
+}
+.column-manager .column-visibility-button:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--ring);
+}
+.column-manager .column-visibility-button:active:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+.column-manager .column-visibility-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.column-manager .column-manager-row[draggable="true"] {
+  cursor: grab;
+}
+.column-manager .column-manager-row[draggable="true"]:active {
+  cursor: grabbing;
+}
+.column-manager .column-manager-row[draggable="false"] {
+  cursor: default;
+}
+/* STEP 295D - Official Columns dialog Dark Mode.
+   Scoped to this portal dialog; other dialogs retain their own themes.
+   Background #171923, panel #202438, controls #292e46,
+   hover #343b58, borders #626d9a, focus purple #7656db. */
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager) {
+  --background: #202438;
+  --foreground: #f2effb;
+  --card: #292e46;
+  --card-foreground: #f2effb;
+  --popover: #202438;
+  --popover-foreground: #f2effb;
+  --secondary: #292e46;
+  --secondary-foreground: #f2effb;
+  --muted: #292e46;
+  --muted-foreground: #c0c6db;
+  --accent: #343b58;
+  --accent-foreground: #ffffff;
+  --border: #626d9a;
+  --input: #626d9a;
+  --ring: #7656db;
+  background-color: #202438;
+  color: #f2effb;
+  border-color: #626d9a;
+  color-scheme: dark;
+}
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-manager-row,
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-visibility-button {
+  background-color: #292e46;
+  border-color: #626d9a;
+  color: #f2effb;
+}
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-manager-row:hover:not(:disabled),
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-visibility-button:hover:not(:disabled) {
+  background-color: #343b58;
+  border-color: #7656db;
+}
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-manager-row:active:not(:disabled),
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-visibility-button:active:not(:disabled) {
+  background-color: #343b58;
+  border-color: #7656db;
+  box-shadow: inset 0 0 0 1px #7656db;
+}
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-manager-row:focus-visible,
+html[data-ml-theme="dark"] [data-slot="dialog-content"]:has(.column-manager)
+.column-manager .column-visibility-button:focus-visible {
+  outline: 2px solid #7656db;
+  outline-offset: 2px;
+}
+
+/* Official light palette for the Columns dialog only. */
+html:not([data-ml-theme="dark"]) [data-slot="dialog-content"]:has(.column-manager) {
+  --background: #ffffff;
+  --foreground: #202331;
+  --card: #ffffff;
+  --muted-foreground: #73788c;
+  --accent: #f2edff;
+  --accent-foreground: #202331;
+  --border: #ded5f4;
+  --ring: #7656db;
+}
+
 .empty-field-list {
   display: flex;
   align-items: center;
@@ -1867,7 +1987,7 @@ html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form legend {
 
 .column-manager-row > span > svg:first-child {
   flex: 0 0 auto;
-  color: #9aa690;
+  color: var(--muted-foreground);
 }
 
 .column-drag-handle {
@@ -1948,11 +2068,11 @@ html[data-ml-theme="dark"] [data-slot="dialog-content"] .editor-form legend {
 /* Radix dialogs are portalled under body, outside .ml-v2.
    Scope these tokens to dialog content, not the whole document. */
 html[data-ml-theme="dark"] [data-slot="dialog-content"] {
-  --background: #262633;
+  --background: #202436;
   --foreground: #f2effb;
-  --card: #262633;
+  --card: #202436;
   --card-foreground: #f2effb;
-  --popover: #262633;
+  --popover: #202436;
   --popover-foreground: #f2effb;
   --secondary: #302d3d;
   --secondary-foreground: #f2effb;
@@ -1997,3 +2117,689 @@ html[data-ml-theme="dark"] [data-slot="dialog-content"]
   button[data-slot="dialog-close"] {
   color: var(--foreground);
 }
+
+
+/* STEP 295S - Native Edit Column official Light/Dark controls.
+   Replaces STEP 295P trigger styling; scoped to native Edit column only. */
+
+html:not([data-ml-theme="dark"]) .ml-v2-native-column-dialog {
+  --ml-native-control: #ffffff;
+  --ml-native-text: #202331;
+  --ml-native-border: #ded5f4;
+  --ml-native-hover: #f2edff;
+  --ml-native-focus: #7656db;
+  --ml-native-disabled: #f9faff;
+  --ml-native-disabled-text: #73788c;
+}
+
+html[data-ml-theme="dark"] .ml-v2-native-column-dialog {
+  --ml-native-control: #292e46;
+  --ml-native-text: #e8eaf5;
+  --ml-native-border: #626d9a;
+  --ml-native-hover: #343b58;
+  --ml-native-focus: #9b86ed;
+  --ml-native-disabled: #202438;
+  --ml-native-disabled-text: #c0c6db;
+}
+
+.ml-v2-native-column-dialog .editor-form input:not([type="checkbox"]),
+.ml-v2-native-column-dialog .ml-v2-native-column-select-trigger {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--ml-native-border) !important;
+  border-radius: 7px;
+  background: var(--ml-native-control) !important;
+  color: var(--ml-native-text) !important;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.ml-v2-native-column-dialog .editor-form input:not([type="checkbox"]):not(:disabled):hover,
+.ml-v2-native-column-dialog .ml-v2-native-column-select-trigger:hover,
+.ml-v2-native-column-dialog .ml-v2-native-column-select-trigger[aria-expanded="true"] {
+  background: var(--ml-native-hover) !important;
+  border-color: var(--ml-native-focus) !important;
+}
+
+.ml-v2-native-column-dialog .editor-form input:not([type="checkbox"]):not(:disabled):focus-visible,
+.ml-v2-native-column-dialog .ml-v2-native-column-select-trigger:focus-visible {
+  background: var(--ml-native-hover) !important;
+  border-color: var(--ml-native-focus) !important;
+  outline: 2px solid var(--ml-native-focus) !important;
+  outline-offset: 2px;
+}
+
+.ml-v2-native-column-dialog .editor-form input:disabled {
+  background: var(--ml-native-disabled) !important;
+  color: var(--ml-native-disabled-text) !important;
+  border-color: var(--ml-native-border) !important;
+  opacity: 1 !important;
+  cursor: not-allowed;
+}
+
+.ml-v2-native-column-dialog .ml-v2-native-column-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 11px;
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ml-v2-native-column-dialog .ml-v2-native-column-select-trigger > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ml-v2-native-column-dialog .ml-v2-native-column-select-trigger > svg {
+  flex-shrink: 0;
+}
+
+.ml-v2-native-column-select-menu .ml-v2-field-select-option[aria-pressed="true"] {
+  font-weight: 600;
+}
+
+
+/* STEP 295X.49 — classification editor matches approved field editor theme. */
+html:not([data-ml-theme="dark"]) .ml-v2-classification-manager-dialog {
+  --ml-class-bg: #ffffff; --ml-class-text: #202331; --ml-class-border: #ddd6f0;
+  --ml-class-hover: #eeeaff; --ml-class-input: #f9faff;
+}
+html[data-ml-theme="dark"] .ml-v2-classification-manager-dialog {
+  --ml-class-bg: #292e44; --ml-class-text: #e8e6f5; --ml-class-border: #68759e;
+  --ml-class-hover: #343c59; --ml-class-input: #343c59;
+}
+.ml-v2-classification-manager-dialog {
+  background: var(--ml-class-bg) !important; color: var(--ml-class-text) !important;
+  border: 1px solid var(--ml-class-border) !important;
+}
+.ml-v2-classification-manager-dialog > section {
+  background: var(--ml-class-bg) !important; color: var(--ml-class-text) !important;
+  border-color: var(--ml-class-border) !important; box-shadow: none !important;
+  width: 100% !important; max-height: none !important;
+}
+.ml-v2-classification-manager-dialog > section > div > div {
+  border-color: var(--ml-class-border) !important;
+}
+.ml-v2-classification-manager-dialog :is(input, .ml-v2-standard-button) {
+  background: var(--ml-class-input) !important; color: var(--ml-class-text) !important;
+  border-color: var(--ml-class-border) !important;
+}
+.ml-v2-classification-manager-dialog .ml-v2-standard-button:hover:not(:disabled) {
+  background: var(--ml-class-hover) !important;
+}
+.ml-v2-classification-manager-dialog :is(button, input):focus-visible {
+  outline: 2px solid #7656db !important; outline-offset: 2px;
+}
+.ml-v2-classification-manager-dialog .option-color-button {
+  width: 36px; height: 34px; border: 1px solid var(--ml-class-border);
+  border-radius: 7px; display: grid; place-items: center; cursor: pointer;
+}
+.ml-v2-classification-manager-dialog .option-color-button:hover { outline: 2px solid #7656db; }
+@media (max-width: 600px) {
+  .ml-v2-classification-manager-dialog > section > div > div {
+    grid-template-columns: minmax(0,1fr) auto !important;
+  }
+}
+
+/* STEP 295X.54 - Classification names beside dashboard tasks and appointments. */
+.ml-v2-dashboard-classification-tag {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  max-width: 130px;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+}
+.ml-v2-today-task-row > .ml-v2-dashboard-classification-tag { max-width: 105px; }
+.ml-v2-weekly-calendar-events > button > .ml-v2-dashboard-classification-tag { margin-inline: 5px; }
+.ml-v2-dashboard-appointment-title > .ml-v2-dashboard-classification-tag { margin-right: 8px; vertical-align: middle; }
+@media (max-width: 600px) {
+  .ml-v2-dashboard-classification-tag { max-width: 85px; font-size: 10px; padding: 1px 5px; }
+}
+
+/* STEP 295X.57 - Keep a readable gap after task titles in Today's Tasks. */
+.ml-v2 .ml-v2-coming-up-title > .ml-v2-dashboard-classification-tag,
+.ml-v2-coming-up-title > .ml-v2-dashboard-classification-tag {
+  margin-inline-start: 8px;
+  vertical-align: middle;
+}
+
+/* STEP 295X.58 - Align Today task names beside avatars, not centered in the row. */
+.ml-v2 .ml-v2-today-task-main {
+  justify-content: flex-start;
+  text-align: left;
+  min-width: 0;
+}
+.ml-v2 .ml-v2-today-task-text {
+  justify-content: flex-end;
+  text-align: left;
+  min-width: 0;
+  margin-inline-end: auto;
+}
+.ml-v2 .ml-v2-coming-up-title {
+  text-align: left;
+  color: inherit;
+}
+
+/* STEP 295X.59 - Today task titles: left aligned immediately after avatar. */
+.ml-v2 .ml-v2-today-task-main .ml-v2-today-task-text {
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  margin-inline-end: auto;
+}
+.ml-v2 .ml-v2-today-task-main .ml-v2-today-task-text > .ml-v2-coming-up-title {
+  flex: 0 1 auto !important;
+  width: auto !important;
+  max-width: 100%;
+  text-align: left !important;
+  margin-inline-end: auto;
+}
+/* Restore readable task titles in Dark Mode. Classification badges retain their own color. */
+.ml-v2:is([data-theme="dark"], .dark) .ml-v2-today-task-main .ml-v2-coming-up-title,
+.dark .ml-v2 .ml-v2-today-task-main .ml-v2-coming-up-title,
+[data-theme="dark"] .ml-v2 .ml-v2-today-task-main .ml-v2-coming-up-title {
+  color: #f5f5ff !important;
+}
+
+
+/* STEP 295X.63B - CLASSIFICATION MANAGER REDESIGN */
+.ml-v2-classification-manager-dialog {
+  --cm-bg: #ffffff;
+  --cm-row: #f9faff;
+  --cm-text: #202331;
+  --cm-muted: #73788c;
+  --cm-border: #ded5f4;
+  --cm-hover: #f2edff;
+  background: var(--cm-bg) !important;
+  color: var(--cm-text) !important;
+  border: 1px solid var(--cm-border) !important;
+  border-radius: 16px !important;
+}
+html[data-ml-theme="dark"] .ml-v2-classification-manager-dialog {
+  --cm-bg: #202438;
+  --cm-row: #292e46;
+  --cm-text: #f2effb;
+  --cm-muted: #c0c6db;
+  --cm-border: #626d9a;
+  --cm-hover: #343b58;
+}
+.ml-v2-classification-editor {
+  display: grid;
+  gap: 20px;
+  padding: 28px;
+  background: var(--cm-bg);
+  color: var(--cm-text);
+}
+.ml-v2-classification-editor-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid var(--cm-border);
+}
+.ml-v2-classification-editor-header h2 {
+  color: var(--cm-text);
+}
+.ml-v2-classification-editor-header p {
+  color: var(--cm-muted);
+  opacity: 1 !important;
+  line-height: 1.5;
+}
+.ml-v2-classification-editor-list {
+  display: grid;
+  gap: 9px;
+}
+.ml-v2-classification-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  background: var(--cm-row);
+  border: 1px solid var(--cm-border);
+  border-radius: 10px;
+}
+.ml-v2-classification-editor-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+  color: var(--cm-text);
+}
+.ml-v2-classification-editor-order,
+.ml-v2-classification-editor-actions,
+.ml-v2-classification-editor-input-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ml-v2-classification-editor-row button.ml-v2-standard-button,
+.ml-v2-classification-editor-form button.ml-v2-standard-button {
+  min-height: 32px;
+  padding: 5px 9px;
+  color: var(--cm-text);
+  background: var(--cm-row);
+  border: 1px solid var(--cm-border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.ml-v2-classification-editor-row button:hover:not(:disabled),
+.ml-v2-classification-editor-form button:hover:not(:disabled) {
+  background: var(--cm-hover);
+  border-color: #7656db;
+}
+.ml-v2-classification-editor button:focus-visible,
+.ml-v2-classification-editor input:focus-visible {
+  outline: 2px solid #7656db;
+  outline-offset: 2px;
+}
+.ml-v2-classification-editor button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ml-v2-classification-editor-form {
+  display: grid;
+  gap: 10px;
+}
+.ml-v2-classification-editor-form label {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--cm-text);
+}
+.ml-v2-classification-editor-input-row input {
+  flex: 1 1 210px;
+  min-width: 0;
+  background: var(--cm-row);
+  color: var(--cm-text);
+  border: 1px solid var(--cm-border);
+}
+.ml-v2-classification-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 18px;
+  border-top: 1px solid var(--cm-border);
+}
+.ml-v2-classification-editor-done {
+  min-height: 38px;
+  padding: 8px 24px;
+  border: 1px solid #7656db;
+  border-radius: 9px;
+  background: #7656db;
+  color: #ffffff;
+  font-weight: 650;
+  cursor: pointer;
+}
+.ml-v2-classification-editor-done:hover {
+  background: #6546c9;
+}
+@media (max-width: 620px) {
+  .ml-v2-classification-editor {
+    padding: 18px;
+  }
+  .ml-v2-classification-editor-row {
+    grid-template-columns: minmax(0, 1fr) 40px;
+  }
+  .ml-v2-classification-editor-order,
+  .ml-v2-classification-editor-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+/* STEP 295X.64 - EDIT FIELD MATCH */
+.ml-v2-classification-field-match { --cf-bg:#ffffff; --cf-input:#f9faff; --cf-text:#202331; --cf-muted:#73788c; --cf-line:#ded5f4; --cf-hover:#f2edff; background:var(--cf-bg)!important; color:var(--cf-text)!important; border:1px solid var(--cf-line)!important; border-radius:9px!important; }
+html[data-ml-theme="dark"] .ml-v2-classification-field-match { --cf-bg:#202438; --cf-input:#292e46; --cf-text:#f2effb; --cf-muted:#c0c6db; --cf-line:#626d9a; --cf-hover:#343b58; }
+.ml-v2-classification-field-editor { padding:22px 23px; color:var(--cf-text); display:grid; gap:23px; }
+.ml-v2-classification-field-header h2 { font-size:17px; font-weight:700; margin:0 0 12px; color:var(--cf-text); }
+.ml-v2-classification-field-header p { font-size:12px; line-height:1.5; color:var(--cf-muted); margin:0; }
+.ml-v2-classification-field-options { display:grid; gap:8px; }
+.ml-v2-classification-field-section-heading { font-size:12px; font-weight:650; }
+.ml-v2-classification-field-hint { font-size:11px; color:var(--cf-muted); margin:0 0 3px; }
+.ml-v2-classification-field-list { border-top:1px solid var(--cf-line); }
+.ml-v2-classification-field-row { display:grid; grid-template-columns:16px 27px minmax(0,1fr) 24px; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--cf-line); min-height:47px; }
+.ml-v2-classification-field-move { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; }
+.ml-v2-classification-field-move button { background:transparent; border:0; padding:0; width:16px; height:14px; font-size:12px; line-height:12px; color:var(--cf-muted); cursor:pointer; }
+.ml-v2-classification-field-move button:disabled { opacity:.24; cursor:default; }
+.ml-v2-classification-field-color { width:27px; height:27px; display:grid; place-items:center; border:0; border-radius:50%; color:#171923; cursor:pointer; }
+.ml-v2-classification-field-name { display:block; width:100%; min-width:0; min-height:33px; padding:7px 10px; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:var(--cf-input); color:var(--cf-text); border:1px solid var(--cf-line); border-radius:5px; font-size:12px; cursor:pointer; }
+.ml-v2-classification-field-delete { background:transparent; color:var(--cf-muted); border:0; font-size:19px; cursor:pointer; }
+.ml-v2-classification-field-delete:disabled { opacity:.35; cursor:default; }
+.ml-v2-classification-field-add { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:3px; }
+.ml-v2-classification-field-add input, .ml-v2-classification-field-edit input { background:var(--cf-input); color:var(--cf-text); border:1px solid var(--cf-line); min-width:150px; flex:1 1 180px; }
+.ml-v2-classification-field-add button, .ml-v2-classification-field-edit button, .ml-v2-classification-field-cancel { padding:8px 12px; background:var(--cf-input); color:var(--cf-text); border:1px solid var(--cf-line); border-radius:5px; font-size:12px; cursor:pointer; }
+.ml-v2-classification-field-edit { display:grid; gap:7px; margin-top:8px; }
+.ml-v2-classification-field-edit label { font-size:12px; }
+.ml-v2-classification-field-edit-line { display:flex; flex-wrap:wrap; gap:7px; }
+.ml-v2-classification-field-footer { display:flex; align-items:center; justify-content:flex-end; gap:8px; border-top:1px solid var(--cf-line); padding-top:16px; }
+.ml-v2-classification-field-done { background:#7656db; color:#fff; border:1px solid #7656db; padding:9px 16px; border-radius:5px; font-size:12px; font-weight:650; cursor:pointer; }
+.ml-v2-classification-field-done:hover { background:#6546c9; }
+.ml-v2-classification-field-editor button:hover:not(:disabled):not(.ml-v2-classification-field-done):not(.ml-v2-classification-field-color) { border-color:#7656db; }
+.ml-v2-classification-field-editor button:focus-visible, .ml-v2-classification-field-editor input:focus-visible { outline:2px solid #7656db; outline-offset:2px; }
+@media(max-width:480px) { .ml-v2-classification-field-editor { padding:18px 15px; } .ml-v2-classification-field-row { gap:6px; } }
+
+/* STEP 295X.65 - SIX-DOT REORDER HANDLE */
+.ml-v2-classification-field-grip {
+  display: grid; place-items: center; width: 16px; height: 30px;
+  padding: 0; border: 0; background: transparent;
+  color: var(--cf-muted, #73788c); cursor: pointer;
+}
+.ml-v2-classification-field-grip:hover { color: #987df0; }
+.ml-v2-classification-reorder-menu {
+  width: 174px; min-width: 0; padding: 8px; display: grid; gap: 5px;
+  background: #ffffff; color: #202331; border: 1px solid #ded5f4;
+  border-radius: 8px; box-shadow: 0 12px 28px rgba(0,0,0,.18);
+}
+html[data-ml-theme="dark"] .ml-v2-classification-reorder-menu {
+  background: #292e46; color: #f2effb; border-color: #626d9a;
+}
+.ml-v2-classification-reorder-heading { font-size: 11px; opacity: .8; padding: 4px 7px; }
+.ml-v2-classification-reorder-menu button {
+  background: transparent; color: inherit; border: 1px solid transparent;
+  text-align: left; border-radius: 5px; padding: 7px; cursor: pointer;
+}
+.ml-v2-classification-reorder-menu button:hover:not(:disabled) {
+  background: #7656db; color: #ffffff;
+}
+.ml-v2-classification-reorder-menu button:disabled { opacity: .35; cursor: default; }
+
+
+/* STEP 295X.78 - FOUR FIELD EDITORS - OFFICIAL SHARED THEME */
+html:not([data-ml-theme="dark"]) .ml-v2-unified-editor {
+  --ue-bg:#ffffff; --ue-row:#f9faff; --ue-text:#202331; --ue-muted:#73788c;
+  --ue-border:#ded5f4; --ue-hover:#eeeaff; --ue-accent:#7656db;
+}
+html[data-ml-theme="dark"] .ml-v2-unified-editor {
+  --ue-bg:#202438; --ue-row:#292e46; --ue-text:#f2effb; --ue-muted:#c0c6db;
+  --ue-border:#626d9a; --ue-hover:#343b58; --ue-accent:#a78bfa;
+}
+.ml-v2-unified-editor {
+  width:min(588px,calc(100vw - 32px)) !important;
+  max-width:none !important; max-height:min(88vh,800px) !important;
+  overflow-y:auto !important; border-radius:12px !important;
+  background:var(--ue-bg) !important; color:var(--ue-text) !important;
+  border:1px solid var(--ue-border) !important;
+  --ml-field-bg:var(--ue-bg); --ml-field-control:var(--ue-row);
+  --ml-field-text:var(--ue-text); --ml-field-muted:var(--ue-muted);
+  --ml-field-border:var(--ue-border); --ml-field-hover:var(--ue-hover);
+  --ml-field-accent:var(--ue-accent);
+}
+.ml-v2-unified-editor:is(.field-dialog) {padding:22px 23px !important;}
+.ml-v2-unified-editor :is([data-slot="dialog-title"],.ml-v2-classification-field-header h2) {
+  color:var(--ue-text) !important; font-size:17px !important; font-weight:700 !important;
+}
+.ml-v2-unified-editor :is([data-slot="dialog-description"],.option-editor>p,.ml-v2-classification-field-hint,.ml-v2-classification-field-header p) {
+  color:var(--ue-muted) !important; font-size:12px !important; line-height:1.5;
+}
+.ml-v2-unified-editor :is(.editor-form,.ml-v2-classification-field-editor) {gap:18px;}
+.ml-v2-unified-editor :is(.option-editor,.ml-v2-priority-colors,.ml-v2-classification-field-options) {
+  border:0 !important; padding:0 !important; margin:0 !important;
+  display:grid; gap:9px; color:var(--ue-text) !important;
+}
+.ml-v2-unified-editor :is(.option-editor legend,.ml-v2-priority-colors legend,.ml-v2-classification-field-section-heading) {
+  color:var(--ue-text) !important; font-size:12px !important; font-weight:650 !important;
+  padding:0 !important; margin-bottom:5px;
+}
+.ml-v2-unified-editor :is(.option-editor-list,.ml-v2-classification-field-list) {
+  display:grid; gap:0; border-top:1px solid var(--ue-border) !important;
+}
+.ml-v2-unified-editor :is(.option-editor-row,.ml-v2-classification-field-row,.ml-v2-priority-color-row) {
+  display:grid !important; grid-template-columns:16px 32px minmax(0,1fr) 28px !important;
+  align-items:center !important; gap:10px !important;
+  min-height:49px; padding:8px 2px !important;
+  border:0 !important; border-bottom:1px solid var(--ue-border) !important;
+  background:transparent !important; border-radius:0 !important;
+}
+.ml-v2-unified-editor .ml-v2-priority-color-row {grid-template-columns:16px 32px minmax(0,1fr) auto 28px !important;}
+.ml-v2-unified-editor .ml-v2-priority-color-row > .ml-v2-appearance-values,
+.ml-v2-unified-editor .ml-v2-priority-color-row > :has(.ml-v2-appearance-value) {min-width:0; max-width:110px;}
+.ml-v2-unified-editor :is(.option-color-button,.ml-v2-priority-color-trigger,.ml-v2-classification-field-color) {
+  width:29px !important; height:29px !important; border-radius:50% !important;
+  border:1px solid var(--ue-border) !important; padding:0 !important;
+  display:grid; place-items:center; cursor:pointer;
+}
+.ml-v2-unified-editor :is(input:not([type="checkbox"]),textarea,select,.ml-v2-classification-field-name) {
+  min-width:0; background:var(--ue-row) !important; color:var(--ue-text) !important;
+  border:1px solid var(--ue-border) !important; border-radius:6px !important;
+}
+.ml-v2-unified-editor input:disabled {opacity:.8 !important;}
+.ml-v2-unified-editor :is(.ml-v2-classification-field-name) {min-height:34px;}
+.ml-v2-unified-editor :is(.remove-option,.ml-v2-classification-field-delete) {
+  color:var(--ue-muted) !important; background:transparent !important;
+  border:0 !important; min-width:25px; min-height:30px; display:grid;place-items:center;
+}
+.ml-v2-unified-editor :is(.add-option,.choice-edit-action,.ml-v2-classification-field-add button) {
+  width:fit-content; min-height:34px; padding:7px 12px;
+  color:var(--ue-text) !important; background:var(--ue-row) !important;
+  border:1px solid var(--ue-border) !important; border-radius:6px !important;
+}
+.ml-v2-unified-editor :is(.editor-footer,.ml-v2-classification-field-footer) {
+  border-top:1px solid var(--ue-border) !important; padding-top:16px !important;
+  display:flex; justify-content:flex-end; gap:9px;
+}
+.ml-v2-unified-editor :is(button,input,select,textarea):focus-visible {
+  outline:2px solid var(--ue-accent) !important; outline-offset:2px !important;
+}
+.ml-v2-unified-editor button:hover:not(:disabled):not(.option-color-button):not(.ml-v2-priority-color-trigger):not(.ml-v2-classification-field-color):not([type="submit"]):not(.ml-v2-classification-field-done) {
+  background-color:var(--ue-hover) !important; border-color:var(--ue-accent) !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-editor {padding:0 !important;}
+.ml-v2-unified-editor .ml-v2-classification-field-add {margin-top:10px;}
+@media(max-width:520px) {
+  .ml-v2-unified-editor:is(.field-dialog) {padding:18px 15px !important;}
+  .ml-v2-unified-editor .ml-v2-priority-color-row {grid-template-columns:16px 30px minmax(0,1fr) 28px !important;}
+  .ml-v2-unified-editor .ml-v2-priority-color-row > :has(.ml-v2-appearance-value) {display:none;}
+  .ml-v2-unified-editor :is(.option-editor-row,.ml-v2-classification-field-row) {gap:6px !important;}
+}
+
+
+/* STEP 295X.81 - EDIT FIELD TEMPLATE ALIGNMENT
+   All four editors use the Multi Select dialog as the visual reference.
+   Classification intentionally retains immediate-save behavior and Done label. */
+.ml-v2-unified-editor.ml-v2-classification-manager-dialog {
+  padding:22px 23px !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-editor {
+  display:flex !important;
+  flex-direction:column;
+  gap:18px !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-header h2 {
+  font-size:17px !important;
+  font-weight:700 !important;
+  margin:0 0 12px !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-header p {margin:0 !important;}
+.ml-v2-unified-editor .ml-v2-classification-field-metadata {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-metadata label {
+  display:flex; flex-direction:column; gap:6px;
+  font-size:11px; color:var(--ue-muted);
+}
+.ml-v2-unified-editor .ml-v2-classification-field-metadata input {
+  width:100%; height:35px; padding:7px 11px;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-section-heading {
+  margin:0 !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-hint {
+  margin:0 0 10px !important; font-size:12px !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-row {
+  min-height:49px !important; padding:8px 2px !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-name {
+  min-height:34px !important; font-size:12px !important;
+  cursor:pointer;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-add {
+  display:flex; align-items:center; gap:9px; margin-top:12px !important;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-add input {
+  min-height:35px; flex:1 1 auto;
+}
+.ml-v2-unified-editor .ml-v2-classification-field-footer {
+  margin-top:0 !important; padding-top:16px !important;
+}
+.ml-v2-unified-editor .ml-v2-priority-options-hint {
+  margin:0 0 10px !important;
+  font-size:12px; line-height:1.5; color:var(--ue-muted) !important;
+}
+.ml-v2-unified-editor .ml-v2-priority-colors {
+  display:grid !important; gap:0 !important;
+}
+.ml-v2-unified-editor .ml-v2-priority-colors legend {
+  margin-bottom:9px !important;
+}
+.ml-v2-unified-editor .ml-v2-priority-colors .choice-edit-action {
+  margin-top:16px !important; justify-self:start;
+}
+.ml-v2-unified-editor .ml-v2-priority-color-row > input {
+  width:100%; min-width:0;
+}
+.ml-v2-unified-editor .status-option-row {
+  grid-template-columns:16px 32px minmax(0,1fr) 28px !important;
+}
+.ml-v2-unified-editor .status-option-row::after {content:"";}
+.ml-v2-unified-editor .option-editor > .add-option {margin-top:16px !important;}
+@media(max-width:520px) {
+  .ml-v2-unified-editor.ml-v2-classification-manager-dialog {padding:18px 15px !important;}
+  .ml-v2-unified-editor .ml-v2-classification-field-metadata {grid-template-columns:1fr;}
+  .ml-v2-unified-editor .ml-v2-classification-field-add {flex-wrap:wrap;}
+}
+
+
+/* STEP 295X.88 - UNIFIED NEUTRAL DELETE ICONS */
+.ml-v2-unified-editor :is(.delete-button,.remove-option,.ml-v2-classification-field-delete,.ml-v2-priority-color-row > button[aria-label^="Remove"]) {
+  color:var(--ue-text, #202331) !important;
+  background:transparent !important;
+  border:0 !important;
+  width:28px; min-width:28px; height:32px;
+  padding:0; display:grid; place-items:center;
+  cursor:pointer;
+}
+.ml-v2-unified-editor :is(.delete-button,.remove-option,.ml-v2-classification-field-delete,.ml-v2-priority-color-row > button[aria-label^="Remove"]):disabled {
+  opacity:.35; cursor:not-allowed;
+}
+.ml-v2-unified-editor :is(.delete-button,.remove-option,.ml-v2-classification-field-delete,.ml-v2-priority-color-row > button[aria-label^="Remove"]):hover:not(:disabled) {
+  color:var(--ue-text, #202331) !important;
+  background:var(--ue-hover, #eeeaff) !important;
+  border-radius:6px;
+}
+
+/* STEP 295X101G: Scoped Settings colors from official My Life theme tokens. */
+html:not([data-ml-theme="dark"]) .ml-v2-settings-dialog {
+  --ml-color-border: #ddd6f0; --ml-color-text-muted: #73788c;
+  --ml-field-bg: #fff; --ml-field-text: #202331; --ml-field-border: #ddd6f0;
+  background: #fff; color: #202331; border-color: #ddd6f0;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-settings-dialog [data-slot="dialog-description"] { color: #73788c; }
+html:not([data-ml-theme="dark"]) .ml-v2-settings-dialog section[aria-label="Appearance settings"] {
+  background: #f9faff; border-color: #ddd6f0 !important;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-settings-dialog .ml-theme-choice select {
+  background: #fff; color: #202331; border-color: #ddd6f0;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-settings-dialog .ml-theme-choice select:hover {
+  background: #eee8ff; border-color: #7656db;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-settings-dialog :is(button,select):focus-visible {
+  outline: 2px solid #7656db; outline-offset: 2px;
+}
+/* STEP 295X101H: Match the navy dashboard dark surfaces, not the legacy purple-grey tokens. */
+html[data-ml-theme="dark"] .ml-v2-settings-dialog {
+  --ml-color-surface: #202436;
+  --ml-color-surface-soft: #272d43;
+  --ml-color-text: #f2f4ff;
+  --ml-color-text-muted: #c2c9df;
+  --ml-color-border: #424b6a;
+  --ml-field-bg: #272d43;
+  --ml-field-text: #f2f4ff;
+  --ml-field-border: #424b6a;
+  --ml-color-focus: #a98aff;
+  background: var(--ml-color-surface);
+  color: var(--ml-color-text);
+  border-color: var(--ml-color-border);
+}
+html[data-ml-theme="dark"] .ml-v2-settings-dialog [data-slot="dialog-description"] {
+  color: var(--ml-color-text-muted);
+}
+html[data-ml-theme="dark"] .ml-v2-settings-dialog section[aria-label="Appearance settings"] {
+  background: var(--ml-color-surface-soft);
+  border-color: var(--ml-color-border) !important;
+}
+html[data-ml-theme="dark"] .ml-v2-settings-dialog .ml-theme-choice,
+html[data-ml-theme="dark"] .ml-v2-settings-dialog .ml-theme-choice__label {
+  color: var(--ml-color-text-muted);
+}
+html[data-ml-theme="dark"] .ml-v2-settings-dialog .ml-theme-choice select {
+  background: var(--ml-field-bg);
+  color: var(--ml-field-text);
+  border-color: var(--ml-field-border);
+}
+html[data-ml-theme="dark"] .ml-v2-settings-dialog .ml-theme-choice select:hover {
+  background: #303752;
+  border-color: #7656db;
+}
+html[data-ml-theme="dark"] .ml-v2-settings-dialog :is(button,select):focus-visible {
+  outline: 2px solid var(--ml-color-focus);
+  outline-offset: 2px;
+}
+
+/* STEP 295X.102 - Appearance controls; use official semantic theme colors. */
+.ml-v2-appearance-wallpaper, .ml-v2-completion-settings { display:grid; gap:9px; padding:12px; border:1px solid var(--ml-color-border, #ddd6f0); border-radius:10px; background:var(--ml-color-surface-soft, #f9faff); color:var(--ml-color-text, #202331); }
+.ml-v2-appearance-wallpaper span, .ml-v2-completion-hint { font-size:12px; color:var(--ml-color-text-muted, #73788c); }
+.ml-v2-completion-settings select, .ml-v2-completion-actions button, .ml-v2-appearance-wallpaper button { color:var(--ml-color-text, #202331); background:var(--ml-color-surface, #fff); border:1px solid var(--ml-color-border, #ddd6f0); border-radius:8px; padding:8px 10px; }
+.ml-v2-completion-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.ml-v2-completion-settings :is(button,select):hover, .ml-v2-appearance-wallpaper button:hover { border-color:var(--ml-color-accent, #7656db); }
+.ml-v2-completion-settings :is(button,select):focus-visible, .ml-v2-appearance-wallpaper button:focus-visible { outline:2px solid var(--ml-color-focus, #7656db); outline-offset:2px; }
+.ml-v2-completion-error { font-size:12px; color:var(--ml-color-danger, #c72525); }
+.ml-v2-custom-completion-image { position:absolute; width:min(360px, 65vw); height:min(360px, 65vh); object-fit:contain; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; }
+.ml-v2-completion-symbols { position:absolute; inset:0; pointer-events:none; }
+.ml-v2-completion-symbols span { position:absolute; top:55%; font-size:clamp(22px, 5vw, 52px); animation:ml-v2-completion-float 2.8s ease-out both; }
+@keyframes ml-v2-completion-float { 0% { opacity:0; transform:translateY(40px) scale(.5); } 25% { opacity:1; } 100% { opacity:0; transform:translateY(-210px) rotate(35deg) scale(1.3); } }
+.ml-v2-completion-preview { position:relative; min-height:65px; }
+.ml-v2-completion-preview > button { position:relative; z-index:100000; }
+html[data-ml-theme="dark"] .ml-v2-appearance-wallpaper, html[data-ml-theme="dark"] .ml-v2-completion-settings { background:#202436; color:#f2effb; border-color:var(--ml-color-border, #544b67); }
+html[data-ml-theme="dark"] .ml-v2-completion-settings select, html[data-ml-theme="dark"] .ml-v2-completion-actions button, html[data-ml-theme="dark"] .ml-v2-appearance-wallpaper button { background:var(--ml-color-surface, #202436); color:var(--ml-color-text, #f2effb); }
+@media (prefers-reduced-motion: reduce) { .ml-v2-completion-symbols span { animation:none; } }
+
+/* STEP 295X.104 - Account dialog uses the same approved theme as the dashboard.
+   Scoped to the account dialog; task classification colors remain unchanged. */
+html:not([data-ml-theme="dark"]) .ml-v2-account-dialog {
+  background: #ffffff;
+  color: #202331;
+  border-color: #ddd6f0;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-account-dialog [data-slot="dialog-description"] { color: #73788c; }
+html:not([data-ml-theme="dark"]) .ml-v2-account-dialog button:not([data-slot="dialog-close"]) {
+  background: #f9faff;
+  color: #202331;
+  border-color: #ddd6f0;
+}
+html:not([data-ml-theme="dark"]) .ml-v2-account-dialog button:not([data-slot="dialog-close"]):hover { background: #eee8ff; border-color: #7656db; }
+html[data-ml-theme="dark"] .ml-v2-account-dialog {
+  background: #202436;
+  color: #f2f4ff;
+  border-color: #424b6a;
+}
+html[data-ml-theme="dark"] .ml-v2-account-dialog [data-slot="dialog-description"] { color: #c2c9df; }
+html[data-ml-theme="dark"] .ml-v2-account-dialog button:not([data-slot="dialog-close"]) {
+  background: #272d43;
+  color: #f2f4ff;
+  border-color: #424b6a;
+}
+html[data-ml-theme="dark"] .ml-v2-account-dialog button:not([data-slot="dialog-close"]):hover { background: #303752; border-color: #7656db; }
+.ml-v2-account-dialog button:focus-visible { outline: 2px solid #7656db; outline-offset: 2px; }

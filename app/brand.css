@@ -89,8 +89,7 @@ button:focus-visible,a:focus-visible{outline-color:#7656db}
 .subtasks-editor>strong,.comments-editor>strong,.help-content strong{color:#727272}
 .subtask-row input{accent-color:#7656db}
 .comment p,.help-content p{color:#727272}
-.column-manager>button:not([data-slot=button]){border-color:#d2dfde}
-.column-manager>button:not([data-slot=button]):hover{background:#e7f0f0}
+
 .empty-field-list{border-color:#d4d4d4;color:#727272}
 .error-banner{border-left:4px solid #7656db}
 .workspace-footer{color:#d7d7d7}

@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Check, CheckCheck, ChevronRight, Clock3 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { PeopleProfileHoverCard } from "../people-profile-hover-card";
+import { getClassificationColor } from "../classification-colors";
 
 export type DashboardUpcomingTask = {
   id: string;
   title: string;
+  classification?: string;
   due: string;
   dueTime?: string;
   assignee?: string;
@@ -28,31 +30,12 @@ export type ComingUpWidgetProps = {
   onViewAssigneeProfile?: (personId: string) => void;
 };
 
-// STEP P36C.1O.1D - Stable pastel title color per task.
-const TASK_PASTELS = [
-  "#B17AC6", // Lavender
-  "#9874D4", // Soft violet
-  "#58A69B", // Mint
-  "#C58B61", // Peach
-  "#679AC9", // Sky blue
-  "#A38BCB", // Lilac
-  "#BD8AAB", // Mauve
-  "#6B9B84", // Sage
-];
-
-function pastelForTask(id: string): string {
-  let hash = 0;
-  for (let index = 0; index < id.length; index += 1) {
-    hash = (hash * 31 + id.charCodeAt(index)) >>> 0;
-  }
-  return TASK_PASTELS[hash % TASK_PASTELS.length];
-}
-
 function displayTime(value?: string) {
   if (!value) return "All day";
-  const match = /^(\\d{1,2}):(\\d{2})/.exec(value);
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value);
   if (!match) return value;
   const hour = Number(match[1]);
+  if (hour > 23) return value;
   const minute = match[2];
   return `${hour % 12 || 12}:${minute} ${hour >= 12 ? "PM" : "AM"}`;
 }
@@ -108,7 +91,7 @@ export function ComingUpWidget({
                       // STEP P36C.1O.1H - Match Upcoming Appointments.
                       fontSize: "13px",
                       fontWeight: 700,
-                      color: pastelForTask(task.id),
+                      // STEP 295X.58 - Respect user-selected textStyle; otherwise inherit normal theme text.
                     }}
                   >
                     {task.title}
@@ -145,6 +128,9 @@ export function ComingUpWidget({
                       </PeopleProfileHoverCard>
                     ) : assigneeDisplay;
                   })()}
+                </span>
+                <span className="ml-v2-dashboard-classification-tag" style={{ color: getClassificationColor(task.classification || "Task") }} title={`Classification: ${task.classification || "Task"}`}>
+                  {task.classification || "Task"}
                 </span>
                 <span className="ml-v2-today-time">
                   <Clock3 size={12} aria-hidden="true" />

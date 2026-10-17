@@ -17,6 +17,11 @@ export function readMyLifeThemePreference(): MyLifeThemePreference {
   if (typeof window === "undefined") return "light";
   try {
     const stored: unknown = window.localStorage.getItem(MY_LIFE_THEME_STORAGE_KEY);
+    if (stored === "system") {
+      const resolved = resolveMyLifeTheme("system");
+      window.localStorage.setItem(MY_LIFE_THEME_STORAGE_KEY, resolved);
+      return resolved;
+    }
     return isMyLifeThemePreference(stored) ? stored : "light";
   } catch {
     return "light";

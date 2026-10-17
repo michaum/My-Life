@@ -1,6 +1,5 @@
 "use client";
 
-import { MyLifeThemeSelector } from "./theme/theme-selector";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -44,6 +43,7 @@ type MyLifeSidebarProps = {
   onExport?: () => void;
   onAdminClick?: () => void;
   onHelpClick?: () => void;
+  onSettingsClick?: () => void;
   onLogout?: () => void;
   onAccountClick?: () => void;
   collapsed?: boolean;
@@ -124,6 +124,7 @@ export function MyLifeSidebar({
   onExport,
   onAdminClick,
   onHelpClick,
+  onSettingsClick,
   onLogout,
   onAccountClick,
   collapsed = false,
@@ -289,9 +290,6 @@ export function MyLifeSidebar({
       <div className="ml-v2-sidebar-spacer" />
 
       <div className="ml-v2-sidebar-tools">
-        <div className="ml-v2-sidebar-appearance">
-          <MyLifeThemeSelector />
-        </div>
         {onExport ? (
           <button
             type="button"
@@ -337,6 +335,20 @@ export function MyLifeSidebar({
             <span className="ml-v2-nav-text">
               Help & getting started
             </span>
+          </button>
+        ) : null}
+
+        {onSettingsClick ? (
+          <button
+            type="button"
+            className="ml-v2-nav-item"
+            onClick={onSettingsClick}
+            title="Settings"
+          >
+            <span className="ml-v2-nav-icon">
+              <Settings2 size={17} />
+            </span>
+            <span className="ml-v2-nav-text">Settings</span>
           </button>
         ) : null}
 

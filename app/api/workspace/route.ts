@@ -11,12 +11,12 @@ const taskSchema = z.object({
   title: z.string().trim().min(1).max(250),
   classification: z.string().trim().max(100).default("Task"),
   description: z.string().max(10000),
-  status: z.enum(statuses),
+  status: z.string().trim().max(100),
   color: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .default("#e5e5e5"),
-  priority: z.enum(["Low", "Medium", "High"]),
+  priority: z.string().max(100),
   assignee: z.string().max(100),
   due: z
     .string()
@@ -58,8 +58,8 @@ const taskSchema = z.object({
           "Invalid subtask due date",
         ).optional(),
         assignee: z.string().max(100).optional(),
-        priority: z.enum(["Low", "Medium", "High"]).optional(),
-        status: z.enum(statuses).optional(),
+        priority: z.string().max(100).optional(),
+        status: z.string().trim().max(100).optional(),
         customValues: z.record(z.string().min(1).max(100), z.string().max(5000))
           .refine((v) => Object.keys(v).length <= 50, "Too many subtask custom values")
           .optional(),
@@ -201,16 +201,19 @@ const choiceSchema = z.object({
   label: z.string().trim().min(1).max(100),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
+// STEP 295X.73: preserve core statuses while allowing additional workflow choices.
 const statusOptionsSchema = z
-  .array(choiceSchema.extend({ id: z.enum(statuses) }))
-  .length(statuses.length)
+  .array(choiceSchema)
+  .min(statuses.length)
+  .max(30)
   .refine(
-    (options) =>
-      statuses.every((status) =>
-        options.some((option) => option.id === status),
-      ),
-    "Every workflow status is required.",
-  );
+    (options) => statuses.every((status) => options.some((option) => option.id === status)),
+    "Every original workflow status is required.",
+  )
+  .refine((options) => new Set(options.map((option) => option.id)).size === options.length,
+    "Workflow option IDs must be unique.")
+  .refine((options) => new Set(options.map((option) => option.label.trim().toLowerCase())).size === options.length,
+    "Workflow option names must be unique.");
 const filterLabelsSchema = z.object({
   priority: z.object({
     High: z.string().trim().min(1).max(40),
@@ -237,18 +240,53 @@ const nativeColumnSettingsSchema = z.object({
   visible: z.boolean().optional(),
   displayStyle: z.enum(["name", "avatar", "text", "badge"]).optional(),
   dateFormat: z.enum(["default", "short", "long", "iso"]).optional(),
-  progressStyle: z.enum(["bar", "percentage"]).optional(),
-  priorityColors: z.object({ Low: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), Medium: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(), High: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional() }).optional(),
+  progressStyle: z.enum(["bar", "percentage", "badge"]).optional(),
+  priorityColors: z.record(z.string(), z.string().regex(/^#[0-9a-fA-F]{6}$/)).optional(),
+  priorityOptions: z.array(choiceSchema).min(1).max(30).optional(),
+  repeatOptions: z.array(choiceSchema).length(5).superRefine((options, ctx) => {
+    const ids = ["none", "days", "weeks", "months", "years"];
+    if (new Set(options.map(option => option.id)).size !== 5 ||
+        !ids.every(id => options.some(option => option.id === id)) ||
+        new Set(options.map(option => option.label.trim().toLocaleLowerCase())).size !== 5) {
+      ctx.addIssue({ code: "custom", message: "Repeat must retain its five distinct recurrence units" });
+    }
+  }).optional(),
 });
 
 const listColumnSettingsSchema = z.record(
   z.string(),
-  z.object({
-    assignee: nativeColumnSettingsSchema.optional(),
-    "due-date": nativeColumnSettingsSchema.optional(),
-    priority: nativeColumnSettingsSchema.optional(),
-    "task-progress": nativeColumnSettingsSchema.optional(),
-  }).partial(),
+  z.record(
+    z.string(),
+    nativeColumnSettingsSchema,
+  ).superRefine((settings, ctx) => {
+    for (const [columnId, value] of Object.entries(settings)) {
+      if (columnId === "task-name") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Task name visibility cannot be modified",
+          path: [columnId],
+        });
+      } else if (
+        columnId.startsWith("field:") &&
+        Object.keys(value).some((key) => key !== "visible")
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Custom columns support visibility settings only",
+          path: [columnId],
+        });
+      } else if (
+        !["assignee", "due-date", "priority", "task-progress", "repeat"].includes(columnId) &&
+        !columnId.startsWith("field:")
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Unknown column setting",
+          path: [columnId],
+        });
+      }
+    }
+  }),
 );
 const defaultFilterLabels = {
   priority: { High: "High", Medium: "Medium", Low: "Low" },
@@ -743,7 +781,7 @@ export async function POST(request: Request) {
                 id: z.string().min(1),
                 sectionId: z.string(),
                 sortOrder: z.number().int().min(0),
-                status: z.enum(statuses),
+                status: z.string().trim().max(100),
               }),
             )
             .max(1000),

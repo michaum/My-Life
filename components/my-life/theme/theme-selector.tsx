@@ -18,7 +18,7 @@ export function MyLifeThemeSelector() {
     return initializeMyLifeTheme();
   }, []);
   const change = (value: string) => {
-    if (value !== "light" && value !== "dark" && value !== "system") return;
+    if (value !== "light" && value !== "dark") return;
     setPreference(value);
     saveMyLifeThemePreference(value);
   };
@@ -33,7 +33,6 @@ export function MyLifeThemeSelector() {
       >
         <option value="light">☀ Light</option>
         <option value="dark">☾ Dark</option>
-        <option value="system">◈ System</option>
       </select>
     </label>
   );

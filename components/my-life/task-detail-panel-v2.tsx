@@ -13,6 +13,8 @@ export type TaskDetailPanelV2Props = {
   title: ReactNode;
   assignee?: ReactNode;
   dueDate?: ReactNode;
+  startTime?: ReactNode;
+  endTime?: ReactNode;
   dependencies?: ReactNode;
   project?: ReactNode;
   section?: ReactNode;
@@ -31,6 +33,8 @@ export function TaskDetailPanelV2({
   title,
   assignee,
   dueDate,
+  startTime,
+  endTime,
   dependencies,
   project,
   section,
@@ -74,9 +78,21 @@ export function TaskDetailPanelV2({
             <div>{assignee ?? "Unassigned"}</div>
           </div>
           <div className="ml-task-detail-v2__property">
-            <span>Due date</span>
+            <span>Start date</span>
             <div>{dueDate ?? "No due date"}</div>
           </div>
+          {startTime != null && (
+            <div className="ml-task-detail-v2__property">
+              <span>Start time</span>
+              <div>{startTime}</div>
+            </div>
+          )}
+          {endTime != null && (
+            <div className="ml-task-detail-v2__property">
+              <span>End time</span>
+              <div>{endTime}</div>
+            </div>
+          )}
           {dependencies != null && (
             <div className="ml-task-detail-v2__property">
               <span>Dependencies</span>
