@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
+import { initializeMyLifeTheme } from "@/components/my-life/theme/theme-controller";
 
 async function setLoginWindowMode() {
   if (!("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) return;
@@ -35,6 +36,7 @@ export default function LoginPage() {
   const [appVersion, setAppVersion] = useState("");
 
   useEffect(() => {
+    const stopThemeSync = initializeMyLifeTheme();
     const previousHtmlBackground = document.documentElement.style.background;
     const previousBodyBackground = document.body.style.background;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -74,7 +76,16 @@ export default function LoginPage() {
           window.location.href = "/";
         });
       }
-    });
+    }).catch(() => { /* Sign-in remains available if session lookup fails. */ });
+
+    return () => {
+      stopThemeSync();
+      document.documentElement.style.background = previousHtmlBackground;
+      document.body.style.background = previousBodyBackground;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.margin = previousBodyMargin;
+    };
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -133,7 +144,18 @@ export default function LoginPage() {
         background: "transparent",
       }}
     >
+      <style>{`
+        .ml-v2-login-form { background: var(--ml-color-surface); color: var(--ml-color-text); border: 1px solid var(--ml-color-border); box-shadow: 0 18px 55px rgba(10, 12, 26, .18); }
+        .ml-v2-login-subtitle, .ml-v2-login-version { color: var(--ml-color-text-muted); }
+        .ml-v2-login-input { background: var(--ml-field-bg); color: var(--ml-field-text); border: 1px solid var(--ml-field-border); }
+        .ml-v2-login-input:focus-visible { outline: 2px solid #7656db; outline-offset: 2px; }
+        .ml-v2-login-button { background: #7656db; color: #fff; }
+        .ml-v2-login-button:focus-visible { outline: 2px solid var(--ml-color-focus); outline-offset: 3px; }
+        [data-ml-theme="dark"] .ml-v2-login-form { background: #202436; border-color: #544b67; box-shadow: 0 18px 55px rgba(0, 0, 0, .35); }
+        [data-ml-theme="dark"] .ml-v2-login-input { background: #292e46; border-color: #665778; color: #f2effb; }
+      `}</style>
       <form
+        className="ml-v2-login-form"
         onSubmit={submit}
         style={{
           width: "100%",
@@ -141,12 +163,7 @@ export default function LoginPage() {
           boxSizing: "border-box",
           padding: "32px",
           borderRadius: "20px",
-          border: "1px solid black",
-          backgroundImage: "linear-gradient(rgba(255,255,255,0.86), rgba(255,255,255,0.86)), url('/images/my-life-backgound.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          color: "#111",
-          boxShadow: "none",
+          position: "relative",
         }}
       >
         <button
@@ -183,7 +200,7 @@ export default function LoginPage() {
 
         <div style={{ marginBottom: "28px" }}>
           <h1 style={{ margin: 0, fontSize: "32px" }}>My Life</h1>
-          <p style={{ margin: "8px 0 0", color: "#3f3f3f", fontWeight: 500 }}>
+          <p className="ml-v2-login-subtitle" style={{ margin: "8px 0 0", fontWeight: 500 }}>
             Sign in to your shared workspace.
           </p>
         </div>
@@ -193,6 +210,7 @@ export default function LoginPage() {
             Email
           </span>
           <input
+            className="ml-v2-login-input"
             type="email"
             autoComplete="email"
             value={email}
@@ -203,11 +221,7 @@ export default function LoginPage() {
               boxSizing: "border-box",
               padding: "12px 14px",
               borderRadius: "10px",
-              border: "1px solid #8a8a8a",
-              background: "rgba(255,255,255,0.96)",
-              color: "#111",
               fontSize: "16px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
             }}
           />
         </label>
@@ -217,6 +231,7 @@ export default function LoginPage() {
             Password
           </span>
           <input
+            className="ml-v2-login-input"
             type="password"
             autoComplete="current-password"
             value={password}
@@ -227,11 +242,7 @@ export default function LoginPage() {
               boxSizing: "border-box",
               padding: "12px 14px",
               borderRadius: "10px",
-              border: "1px solid #8a8a8a",
-              background: "rgba(255,255,255,0.96)",
-              color: "#111",
               fontSize: "16px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.10)",
             }}
           />
         </label>
@@ -276,14 +287,13 @@ export default function LoginPage() {
 
         <button
           type="submit"
+          className="ml-v2-login-button"
           disabled={busy}
           style={{
             width: "100%",
             padding: "12px 16px",
             border: 0,
             borderRadius: "10px",
-            background: "#7656db",
-            color: "#ffffff",
             fontSize: "16px",
             fontWeight: 700,
             cursor: busy ? "wait" : "pointer",
@@ -294,11 +304,11 @@ export default function LoginPage() {
         </button>
         {appVersion && (
           <div
+            className="ml-v2-login-version"
             style={{
               marginTop: "18px",
               textAlign: "center",
               fontSize: "12px",
-              color: "#555",
               fontWeight: 500,
             }}
           >
